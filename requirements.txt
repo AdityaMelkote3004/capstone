@@ -1,0 +1,11 @@
+# Core dependencies for stock return prediction baseline
+torch>=2.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+yfinance>=0.2.0
+matplotlib>=3.7.0
+pyyaml>=6.0
+
+# Interactive dashboard
+streamlit>=1.28.0
+plotly>=5.17.0

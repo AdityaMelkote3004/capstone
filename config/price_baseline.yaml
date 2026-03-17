@@ -1,0 +1,43 @@
+# Configuration for Price-Based Baseline Model
+# Stock Return Prediction
+
+# Data configuration
+data:
+  ticker: "AAPL"              # Stock ticker symbol
+  start_date: "2015-01-01"    # Start date for data
+  end_date: "2023-12-31"      # End date for data
+  window_size: 20             # Number of past days to use (W)
+  
+  # Train/val/test split ratios
+  train_ratio: 0.7            # 70% for training
+  val_ratio: 0.15             # 15% for validation
+  test_ratio: 0.15            # 15% for testing
+
+# Model configuration
+model:
+  type: "lstm"                # Model type: "lstm" or "mlp"
+  
+  # LSTM-specific parameters
+  params:
+    hidden_dim: 64            # LSTM hidden state size
+    num_layers: 2             # Number of LSTM layers
+    dropout: 0.2              # Dropout probability
+  
+  # Alternative: MLP parameters (if type: "mlp")
+  # params:
+  #   hidden_dims: [128, 64]  # Hidden layer sizes
+  #   dropout: 0.2
+
+# Training configuration
+training:
+  num_epochs: 50              # Number of training epochs
+  batch_size: 32              # Batch size
+  learning_rate: 0.001        # Learning rate for Adam
+  weight_decay: 0.0           # L2 regularization (0 = no regularization)
+  use_gpu: true               # Use GPU if available
+  seed: 42                    # Random seed for reproducibility
+
+# Paths
+paths:
+  checkpoints: "results/price_only/checkpoints"
+  results: "results/price_only"

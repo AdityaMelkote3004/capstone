@@ -1,0 +1,9 @@
+Stock Return Prediction - Test Set Metrics
+============================================================
+Ticker: AAPL
+Test Period: 2022-08-26 00:00:00 to 2023-12-28 00:00:00
+
+MSE:                   0.000278
+MAE:                   0.012151
+RMSE:                  0.016671
+Directional Accuracy:  0.4896
