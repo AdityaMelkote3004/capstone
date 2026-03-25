@@ -1,0 +1,81 @@
+{
+  "generated_at": "2026-03-25T10:24:22.809887",
+  "steps": [
+    {
+      "name": "Step 1 \u2014 Price Only",
+      "feature_key": "price",
+      "n_features": 15,
+      "accuracy": 0.4934,
+      "f1_macro": 0.4651,
+      "mcc": 0.001,
+      "auc": 0.4998,
+      "confusion_matrix": [
+        [
+          827,
+          2401
+        ],
+        [
+          778,
+          2269
+        ]
+      ]
+    },
+    {
+      "name": "Step 2 \u2014 Price + Sentiment",
+      "feature_key": "price_sentiment",
+      "n_features": 18,
+      "accuracy": 0.4947,
+      "f1_macro": 0.4691,
+      "mcc": 0.0032,
+      "auc": 0.5018,
+      "confusion_matrix": [
+        [
+          864,
+          2364
+        ],
+        [
+          807,
+          2240
+        ]
+      ]
+    },
+    {
+      "name": "Step 3 \u2014 Price + Fundamentals",
+      "feature_key": "price_fund",
+      "n_features": 43,
+      "accuracy": 0.5042,
+      "f1_macro": 0.4778,
+      "mcc": 0.0254,
+      "auc": 0.5136,
+      "confusion_matrix": [
+        [
+          876,
+          2352
+        ],
+        [
+          759,
+          2288
+        ]
+      ]
+    },
+    {
+      "name": "Step 4 \u2014 Full Structured (All Modalities)",
+      "feature_key": "full",
+      "n_features": 46,
+      "accuracy": 0.5033,
+      "f1_macro": 0.478,
+      "mcc": 0.0227,
+      "auc": 0.5142,
+      "confusion_matrix": [
+        [
+          889,
+          2339
+        ],
+        [
+          778,
+          2269
+        ]
+      ]
+    }
+  ]
+}

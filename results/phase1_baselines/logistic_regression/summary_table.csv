@@ -1,0 +1,5 @@
+Step,N_Features,Accuracy,F1_Macro,MCC,AUC_ROC
+Step 1 — Price Only,15,0.4934,0.4651,0.001,0.4998
+Step 2 — Price + Sentiment,18,0.4947,0.4691,0.0032,0.5018
+Step 3 — Price + Fundamentals,43,0.5042,0.4778,0.0254,0.5136
+Step 4 — Full Structured (All Modalities),46,0.5033,0.478,0.0227,0.5142

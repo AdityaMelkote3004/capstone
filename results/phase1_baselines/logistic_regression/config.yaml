@@ -1,0 +1,39 @@
+model: LogisticRegression
+params:
+  C: 0.1
+  max_iter: 2000
+  solver: lbfgs
+  random_state: 42
+splits:
+  train:
+    start: '2014-01-01'
+    end: '2015-03-31'
+  val:
+    start: '2015-04-01'
+    end: '2015-07-31'
+  test:
+    start: '2015-08-01'
+    end: '2015-12-31'
+leakage_fix: All same-day technical indicators and tweet counts are lagged by 1 trading
+  day per ticker. Return = sign(Return) == Target, so using Return directly gives
+  100% accuracy (data leakage).
+fundamental_strategy: Forward-fill within ticker (filing data valid until next filing),
+  binary presence mask added per column, zero-fill residual NaN.
+normalisation: StandardScaler fitted on train split only, applied to test.
+steps:
+- step: 1
+  name: "Step 1 \u2014 Price Only"
+  feature_key: price
+  n_features: 15
+- step: 2
+  name: "Step 2 \u2014 Price + Sentiment"
+  feature_key: price_sentiment
+  n_features: 18
+- step: 3
+  name: "Step 3 \u2014 Price + Fundamentals"
+  feature_key: price_fund
+  n_features: 43
+- step: 4
+  name: "Step 4 \u2014 Full Structured (All Modalities)"
+  feature_key: full
+  n_features: 46

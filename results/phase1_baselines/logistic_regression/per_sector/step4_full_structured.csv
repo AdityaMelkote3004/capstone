@@ -1,0 +1,10 @@
+Sector,N,Accuracy,F1_macro,AUC
+Financial,712,0.5239,0.5145,0.5337
+Utilities,781,0.5365,0.4687,0.5322
+Technology,681,0.5316,0.5004,0.5267
+Conglomerates,947,0.4847,0.472,0.5113
+Industrial_Goods,363,0.4904,0.4071,0.5056
+Services,552,0.5127,0.4797,0.5021
+Consumer_Goods,671,0.5067,0.4836,0.5014
+Healthcare,747,0.4712,0.4239,0.4959
+Basic_Materials,821,0.4775,0.4752,0.4904
