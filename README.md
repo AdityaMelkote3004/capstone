@@ -76,35 +76,122 @@ git checkout LR-baseline
 pip install -r requirements.txt
 ```
 
+## Quick Start
+
+### Prerequisites
+- Python 3.8 or higher installed
+- pip package manager
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/AdityaMelkote3004/capstone.git
+cd capstone
+git checkout LR-baseline
+```
+
+### Step 2: Create Virtual Environment (Recommended)
+
+**Windows:**
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+**macOS/Linux:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### Step 3: Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+This will install:
+- pandas
+- scikit-learn
+- numpy
+- streamlit
+- pyyaml
+- matplotlib
+- seaborn
+
 ## Usage
 
-### Run Baseline Model
+### Option 1: Train the Baseline Model
 
-To train and evaluate the baseline logistic regression model:
+To train and evaluate the baseline logistic regression model from scratch:
 
 ```bash
 python run_baseline.py
 ```
 
-This will:
-1. Load the dataset from `stocknet_final_modeling_set.csv`
-2. Train logistic regression models with progressive feature sets
-3. Generate metrics and visualizations
-4. Save results to `results/phase1_baselines/logistic_regression/`
+**What happens:**
+1. Loads the dataset from `stocknet_final_modeling_set.csv`
+2. Splits data chronologically:
+   - **Train**: 2014-01-01 to 2015-03-31
+   - **Val**: 2015-04-01 to 2015-07-31
+   - **Test**: 2015-08-01 to 2015-12-31
+3. Trains logistic regression models with 4 progressive feature sets:
+   - Step 1: Price features only (15 features)
+   - Step 2: Price + Sentiment (18 features)
+   - Step 3: Price + Fundamentals (43 features)
+   - Step 4: Full structured data (46 features)
+4. Generates metrics (Accuracy, F1-Score, MCC, AUC-ROC)
+5. Creates visualizations and saves results
 
-### View Results with Streamlit
+**Estimated runtime:** 5-10 minutes
 
-Launch the interactive web interface:
+**Output location:** `results/phase1_baselines/logistic_regression/`
+
+### Option 2: View Results with Streamlit (Interactive Dashboard)
+
+If you've already trained the model or want to explore existing results:
 
 ```bash
 streamlit run streamlit_app.py
 ```
 
-This provides:
-- Visual exploration of model metrics
-- Sector-wise performance analysis
-- Confusion matrices and feature importance plots
-- Comparison of different feature engineering steps
+**In your browser:**
+- Opens automatically at `http://localhost:8501`
+- If not, manually navigate to that URL
+
+**Features available:**
+- 📊 Visual exploration of all model metrics
+- 🏭 Sector-wise performance analysis
+- 🔲 Confusion matrices for each step
+- 📈 Feature importance plots
+- 📋 Comparison tables across feature engineering steps
+- 💾 Export capabilities for results
+
+**To stop the Streamlit server:**
+Press `Ctrl+C` in the terminal
+
+### Option 3: Alternative Streamlit App
+
+An alternative interface is also available:
+
+```bash
+streamlit run streamlit_app1.py
+```
+
+## Viewing Results
+
+If you only want to view pre-computed results **without retraining**:
+
+Results are already saved in: `results/phase1_baselines/logistic_regression/`
+
+**Key files:**
+- `metrics.json` — All model metrics in JSON format
+- `summary_table.csv` — Quick comparison table
+- `config.yaml` — Model configuration and parameters
+- `confusion_matrices.png` — Visual confusion matrices
+- `feature_importance.png` — Feature importance ranking
+- `metrics_comparison.png` — Performance metric comparisons
+- `per_sector/` — Detailed results per stock sector
 
 ## Data Input
 
