@@ -54,3 +54,8 @@ Thumbs.db
 
 # Logs
 *.log
+.mcp.json
+
+# Large files / duplicates
+Preprocessed_stocknet_secedgar/
+Preprocessed_stocknet_secedgar.zip

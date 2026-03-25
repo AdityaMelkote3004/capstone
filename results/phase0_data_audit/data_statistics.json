@@ -1,0 +1,540 @@
+{
+  "total_rows": 26603,
+  "num_tickers": 87,
+  "num_sectors": 9,
+  "total_columns": 46,
+  "date_range": {
+    "start": "2014-01-02 00:00:00",
+    "end": "2015-12-31 00:00:00"
+  },
+  "rows_per_ticker": {
+    "mean": 305.8,
+    "min": 145,
+    "max": 404
+  },
+  "tickers_per_sector": {
+    "Conglomerates": 13,
+    "Utilities": 12,
+    "Basic_Materials": 10,
+    "Financial": 10,
+    "Consumer_Goods": 10,
+    "Healthcare": 10,
+    "Technology": 9,
+    "Services": 8,
+    "Industrial_Goods": 5
+  },
+  "sectors": [
+    "Basic_Materials",
+    "Conglomerates",
+    "Consumer_Goods",
+    "Financial",
+    "Healthcare",
+    "Industrial_Goods",
+    "Services",
+    "Technology",
+    "Utilities"
+  ],
+  "tickers": [
+    "AAPL",
+    "ABB",
+    "ABBV",
+    "AEP",
+    "AGFS",
+    "AMGN",
+    "AMZN",
+    "BA",
+    "BABA",
+    "BAC",
+    "BBL",
+    "BCH",
+    "BHP",
+    "BP",
+    "BRK-A",
+    "BSAC",
+    "BUD",
+    "C",
+    "CAT",
+    "CELG",
+    "CHL",
+    "CHTR",
+    "CMCSA",
+    "CODI",
+    "CSCO",
+    "CVX",
+    "D",
+    "DHR",
+    "DIS",
+    "DUK",
+    "EXC",
+    "FB",
+    "GD",
+    "GE",
+    "GOOG",
+    "HD",
+    "HON",
+    "HRG",
+    "HSBC",
+    "IEP",
+    "INTC",
+    "JNJ",
+    "JPM",
+    "KO",
+    "LMT",
+    "MA",
+    "MCD",
+    "MDT",
+    "MMM",
+    "MO",
+    "MRK",
+    "MSFT",
+    "NEE",
+    "NGG",
+    "NVS",
+    "ORCL",
+    "PCG",
+    "PCLN",
+    "PEP",
+    "PFE",
+    "PG",
+    "PICO",
+    "PM",
+    "PPL",
+    "PTR",
+    "RDS-B",
+    "REX",
+    "SLB",
+    "SNP",
+    "SNY",
+    "SO",
+    "SPLP",
+    "SRE",
+    "T",
+    "TM",
+    "TOT",
+    "TSM",
+    "UL",
+    "UN",
+    "UNH",
+    "UPS",
+    "UTX",
+    "V",
+    "VZ",
+    "WFC",
+    "WMT",
+    "XOM"
+  ],
+  "target_distribution": {
+    "0": 13244,
+    "1": 13359
+  },
+  "target_balance": 0.5022,
+  "target_pct": {
+    "0": 49.78,
+    "1": 50.22
+  },
+  "missing_data": {
+    "Return": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "RSI_14": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "MACD": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "MACD_Signal": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "MACD_Hist": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "Volatility_5": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "Volatility_20": {
+      "n_missing": 1,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "Price_MA5_Ratio": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "Price_MA10_Ratio": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "Price_MA20_Ratio": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "Volume_Change": {
+      "n_missing": 1,
+      "n_inf": 14,
+      "pct_missing": 0.06,
+      "group": "Price/Technical"
+    },
+    "HL_Spread": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "MA_5": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "MA_10": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Price/Technical"
+    },
+    "Revenue": {
+      "n_missing": 9809,
+      "n_inf": 0,
+      "pct_missing": 36.87,
+      "group": "Fundamental"
+    },
+    "NetIncome": {
+      "n_missing": 9193,
+      "n_inf": 0,
+      "pct_missing": 34.56,
+      "group": "Fundamental"
+    },
+    "TotalAssets": {
+      "n_missing": 9193,
+      "n_inf": 0,
+      "pct_missing": 34.56,
+      "group": "Fundamental"
+    },
+    "TotalLiabilities": {
+      "n_missing": 9489,
+      "n_inf": 0,
+      "pct_missing": 35.67,
+      "group": "Fundamental"
+    },
+    "StockholdersEquity": {
+      "n_missing": 9193,
+      "n_inf": 0,
+      "pct_missing": 34.56,
+      "group": "Fundamental"
+    },
+    "EPS": {
+      "n_missing": 9931,
+      "n_inf": 0,
+      "pct_missing": 37.33,
+      "group": "Fundamental"
+    },
+    "Cash": {
+      "n_missing": 10420,
+      "n_inf": 0,
+      "pct_missing": 39.17,
+      "group": "Fundamental"
+    },
+    "ROA": {
+      "n_missing": 9193,
+      "n_inf": 0,
+      "pct_missing": 34.56,
+      "group": "Fundamental"
+    },
+    "Profit_Margin": {
+      "n_missing": 9857,
+      "n_inf": 0,
+      "pct_missing": 37.05,
+      "group": "Fundamental"
+    },
+    "Debt_To_Equity": {
+      "n_missing": 9489,
+      "n_inf": 0,
+      "pct_missing": 35.67,
+      "group": "Fundamental"
+    },
+    "Current_Ratio": {
+      "n_missing": 10716,
+      "n_inf": 0,
+      "pct_missing": 40.28,
+      "group": "Fundamental"
+    },
+    "Asset_Turnover": {
+      "n_missing": 9809,
+      "n_inf": 0,
+      "pct_missing": 36.87,
+      "group": "Fundamental"
+    },
+    "Operating_Margin": {
+      "n_missing": 13656,
+      "n_inf": 0,
+      "pct_missing": 51.33,
+      "group": "Fundamental"
+    },
+    "Company_Tweet_Count": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Tweet"
+    },
+    "Event_Tweet_Count": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Tweet"
+    },
+    "Total_Tweet_Count": {
+      "n_missing": 0,
+      "n_inf": 0,
+      "pct_missing": 0.0,
+      "group": "Tweet"
+    }
+  },
+  "split_sizes": {
+    "train": 21247,
+    "val": 0,
+    "test": 5356,
+    "train_pct": 79.9,
+    "val_pct": 0.0,
+    "test_pct": 20.1
+  },
+  "split_method": "Per-ticker chronological 80/20",
+  "train_date_range": {
+    "start": "2014-01-02 00:00:00",
+    "end": "2015-11-10 00:00:00"
+  },
+  "test_date_range": {
+    "start": "2015-07-23 00:00:00",
+    "end": "2015-12-31 00:00:00"
+  },
+  "tweet_coverage": {
+    "company_text_pct": 43.42,
+    "event_text_pct": 11.16,
+    "any_text_pct": 45.14,
+    "company_text_rows": 11550,
+    "event_text_rows": 2970,
+    "any_text_rows": 12008
+  },
+  "tweet_count_stats": {
+    "Company_Tweet_Count": {
+      "mean": 1.96,
+      "median": 0.0,
+      "max": 553,
+      "zero_pct": 56.58
+    },
+    "Event_Tweet_Count": {
+      "mean": 0.19,
+      "median": 0.0,
+      "max": 36,
+      "zero_pct": 88.84
+    },
+    "Total_Tweet_Count": {
+      "mean": 2.16,
+      "median": 0.0,
+      "max": 555,
+      "zero_pct": 54.86
+    }
+  },
+  "feature_sets": {
+    "FS1_Price": {
+      "num_features": 14,
+      "columns": [
+        "Return",
+        "RSI_14",
+        "MACD",
+        "MACD_Signal",
+        "MACD_Hist",
+        "Volatility_5",
+        "Volatility_20",
+        "Price_MA5_Ratio",
+        "Price_MA10_Ratio",
+        "Price_MA20_Ratio",
+        "Volume_Change",
+        "HL_Spread",
+        "MA_5",
+        "MA_10"
+      ]
+    },
+    "FS2_Price_Fundamentals": {
+      "num_features": 22,
+      "columns": [
+        "Return",
+        "RSI_14",
+        "MACD",
+        "MACD_Signal",
+        "MACD_Hist",
+        "Volatility_5",
+        "Volatility_20",
+        "Price_MA5_Ratio",
+        "Price_MA10_Ratio",
+        "Price_MA20_Ratio",
+        "Volume_Change",
+        "HL_Spread",
+        "MA_5",
+        "MA_10",
+        "Revenue",
+        "NetIncome",
+        "TotalAssets",
+        "TotalLiabilities",
+        "StockholdersEquity",
+        "EPS",
+        "Cash",
+        "ROA"
+      ]
+    },
+    "FS3_Price_Tweets": {
+      "num_features": 17,
+      "columns": [
+        "Return",
+        "RSI_14",
+        "MACD",
+        "MACD_Signal",
+        "MACD_Hist",
+        "Volatility_5",
+        "Volatility_20",
+        "Price_MA5_Ratio",
+        "Price_MA10_Ratio",
+        "Price_MA20_Ratio",
+        "Volume_Change",
+        "HL_Spread",
+        "MA_5",
+        "MA_10",
+        "Company_Tweet_Count",
+        "Event_Tweet_Count",
+        "Total_Tweet_Count"
+      ]
+    },
+    "FS4_Full_Structured": {
+      "num_features": 25,
+      "columns": [
+        "Return",
+        "RSI_14",
+        "MACD",
+        "MACD_Signal",
+        "MACD_Hist",
+        "Volatility_5",
+        "Volatility_20",
+        "Price_MA5_Ratio",
+        "Price_MA10_Ratio",
+        "Price_MA20_Ratio",
+        "Volume_Change",
+        "HL_Spread",
+        "MA_5",
+        "MA_10",
+        "Revenue",
+        "NetIncome",
+        "TotalAssets",
+        "TotalLiabilities",
+        "StockholdersEquity",
+        "EPS",
+        "Cash",
+        "ROA",
+        "Company_Tweet_Count",
+        "Event_Tweet_Count",
+        "Total_Tweet_Count"
+      ]
+    }
+  },
+  "infinity_issues": {
+    "Volume_Change": 14
+  },
+  "per_sector_target": {
+    "Basic_Materials": {
+      "total": 3427,
+      "up": 1589,
+      "down": 1838,
+      "up_pct": 46.37
+    },
+    "Conglomerates": {
+      "total": 3832,
+      "up": 1837,
+      "down": 1995,
+      "up_pct": 47.94
+    },
+    "Consumer_Goods": {
+      "total": 2786,
+      "up": 1437,
+      "down": 1349,
+      "up_pct": 51.58
+    },
+    "Financial": {
+      "total": 3094,
+      "up": 1555,
+      "down": 1539,
+      "up_pct": 50.26
+    },
+    "Healthcare": {
+      "total": 3158,
+      "up": 1646,
+      "down": 1512,
+      "up_pct": 52.12
+    },
+    "Industrial_Goods": {
+      "total": 1495,
+      "up": 740,
+      "down": 755,
+      "up_pct": 49.5
+    },
+    "Services": {
+      "total": 2443,
+      "up": 1252,
+      "down": 1191,
+      "up_pct": 51.25
+    },
+    "Technology": {
+      "total": 2862,
+      "up": 1463,
+      "down": 1399,
+      "up_pct": 51.12
+    },
+    "Utilities": {
+      "total": 3506,
+      "up": 1840,
+      "down": 1666,
+      "up_pct": 52.48
+    }
+  },
+  "data_quality_fixes": {
+    "Volume_Change_infinities": {
+      "issue": "Infinity values in Volume_Change column",
+      "count": 14,
+      "fix": "Replaced inf/-inf with 0.0"
+    },
+    "null_values": {
+      "issue": "Null values in technical and tweet features",
+      "fix": "Filled with 0.0"
+    },
+    "fundamental_nulls": {
+      "issue": "Missing SEC EDGAR fundamentals (~40-50%)",
+      "fix": "Forward-fill within each ticker, then zero-fill remaining"
+    },
+    "normalization": {
+      "method": "Z-score normalization using training set statistics only",
+      "no_leakage": true
+    }
+  }
+}

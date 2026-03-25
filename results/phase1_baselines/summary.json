@@ -1,0 +1,230 @@
+{
+  "Logistic Regression | Price Only (14 technical)": {
+    "accuracy": 0.5184,
+    "f1": 0.568,
+    "mcc": 0.0342,
+    "auc": 0.524,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        993,
+        1429
+      ],
+      [
+        941,
+        1558
+      ]
+    ],
+    "feature_set": "Price Only (14 technical)",
+    "model": "Logistic Regression"
+  },
+  "LSTM | Price Only (14 technical)": {
+    "accuracy": 0.4946,
+    "f1": 0.5037,
+    "mcc": -0.0111,
+    "auc": 0.5046,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        1172,
+        1250
+      ],
+      [
+        1237,
+        1262
+      ]
+    ],
+    "feature_set": "Price Only (14 technical)",
+    "model": "LSTM"
+  },
+  "MLP | Price Only (14 technical)": {
+    "accuracy": 0.4932,
+    "f1": 0.3705,
+    "mcc": -0.008,
+    "auc": 0.4808,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        1693,
+        729
+      ],
+      [
+        1765,
+        734
+      ]
+    ],
+    "feature_set": "Price Only (14 technical)",
+    "model": "MLP"
+  },
+  "Logistic Regression | Price + Fundamentals (8 EDGAR)": {
+    "accuracy": 0.5164,
+    "f1": 0.5654,
+    "mcc": 0.0301,
+    "auc": 0.519,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        993,
+        1429
+      ],
+      [
+        951,
+        1548
+      ]
+    ],
+    "feature_set": "Price + Fundamentals (8 EDGAR)",
+    "model": "Logistic Regression"
+  },
+  "LSTM | Price + Fundamentals (8 EDGAR)": {
+    "accuracy": 0.5038,
+    "f1": 0.4659,
+    "mcc": 0.0101,
+    "auc": 0.5091,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        1414,
+        1008
+      ],
+      [
+        1434,
+        1065
+      ]
+    ],
+    "feature_set": "Price + Fundamentals (8 EDGAR)",
+    "model": "LSTM"
+  },
+  "MLP | Price + Fundamentals (8 EDGAR)": {
+    "accuracy": 0.4942,
+    "f1": 0.4831,
+    "mcc": -0.0107,
+    "auc": 0.4993,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        1269,
+        1153
+      ],
+      [
+        1336,
+        1163
+      ]
+    ],
+    "feature_set": "Price + Fundamentals (8 EDGAR)",
+    "model": "MLP"
+  },
+  "Logistic Regression | Price + Tweet Counts (3 cols)": {
+    "accuracy": 0.5212,
+    "f1": 0.5653,
+    "mcc": 0.0403,
+    "auc": 0.5267,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        1033,
+        1389
+      ],
+      [
+        967,
+        1532
+      ]
+    ],
+    "feature_set": "Price + Tweet Counts (3 cols)",
+    "model": "Logistic Regression"
+  },
+  "LSTM | Price + Tweet Counts (3 cols)": {
+    "accuracy": 0.4818,
+    "f1": 0.3774,
+    "mcc": -0.033,
+    "auc": 0.4756,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        1598,
+        824
+      ],
+      [
+        1726,
+        773
+      ]
+    ],
+    "feature_set": "Price + Tweet Counts (3 cols)",
+    "model": "LSTM"
+  },
+  "MLP | Price + Tweet Counts (3 cols)": {
+    "accuracy": 0.4853,
+    "f1": 0.5324,
+    "mcc": -0.033,
+    "auc": 0.4848,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        946,
+        1476
+      ],
+      [
+        1057,
+        1442
+      ]
+    ],
+    "feature_set": "Price + Tweet Counts (3 cols)",
+    "model": "MLP"
+  },
+  "Logistic Regression | Price + Fundamentals + Tweets (Full)": {
+    "accuracy": 0.5164,
+    "f1": 0.5615,
+    "mcc": 0.0303,
+    "auc": 0.5192,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        1017,
+        1405
+      ],
+      [
+        975,
+        1524
+      ]
+    ],
+    "feature_set": "Price + Fundamentals + Tweets (Full)",
+    "model": "Logistic Regression"
+  },
+  "LSTM | Price + Fundamentals + Tweets (Full)": {
+    "accuracy": 0.5017,
+    "f1": 0.4407,
+    "mcc": 0.0073,
+    "auc": 0.4974,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        1503,
+        919
+      ],
+      [
+        1533,
+        966
+      ]
+    ],
+    "feature_set": "Price + Fundamentals + Tweets (Full)",
+    "model": "LSTM"
+  },
+  "MLP | Price + Fundamentals + Tweets (Full)": {
+    "accuracy": 0.4906,
+    "f1": 0.4489,
+    "mcc": -0.0165,
+    "auc": 0.4875,
+    "n_samples": 4921,
+    "confusion_matrix": [
+      [
+        1393,
+        1029
+      ],
+      [
+        1478,
+        1021
+      ]
+    ],
+    "feature_set": "Price + Fundamentals + Tweets (Full)",
+    "model": "MLP"
+  }
+}

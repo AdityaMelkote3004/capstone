@@ -1,0 +1,69 @@
+data:
+  parquet_path: "dataset/stocknet_final_modeling_set.parquet"
+  train_end: "2015-03-31"
+  val_end: "2015-07-31"
+  window_size: 5
+  technical_features:
+    - Return
+    - RSI_14
+    - MACD
+    - MACD_Hist
+    - Volatility_5
+    - Volatility_20
+    - Price_MA5_Ratio
+    - Price_MA10_Ratio
+    - Price_MA20_Ratio
+    - Volume_Change
+    - HL_Spread
+  fundamental_features:
+    - Revenue
+    - NetIncome
+    - TotalAssets
+    - TotalLiabilities
+    - StockholdersEquity
+    - EPS
+    - Cash
+    - Profit_Margin
+    - Debt_To_Equity
+    - ROA
+    - Current_Ratio
+    - Asset_Turnover
+    - Operating_Margin
+
+model:
+  temporal_encoder:
+    d_model: 64
+    nhead: 4
+    num_layers: 2
+    dim_feedforward: 128
+    dropout: 0.2
+  fundamental_encoder:
+    hidden_dim: 64
+    output_dim: 32
+    dropout: 0.2
+  text_encoder:
+    model_name: "ProsusAI/finbert"
+    embedding_dim: 768
+    projection_dim: 64
+  graph:
+    gat_heads: 4
+    gat_layers: 2
+    correlation_threshold: 0.5
+  fusion_dim: 160
+  classifier:
+    hidden_dim: 64
+    dropout: 0.3
+
+training:
+  seed: 42
+  batch_size: 64
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  num_epochs: 50
+  patience: 10
+  use_gpu: true
+
+federated:
+  num_rounds: 20
+  local_epochs: 3
+  mu: 0.01
