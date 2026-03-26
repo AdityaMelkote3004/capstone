@@ -250,8 +250,8 @@ def main():
 
     for fs_key in FEATURE_SETS:
         print(f"\n--- Feature Set: {fs_key} ---")
-        train_ds, test_ds, info = build_datasets(
-            PARQUET, feature_set=fs_key, window_size=5, train_ratio=0.8
+        train_ds, val_ds, test_ds, info = build_datasets(
+            PARQUET, feature_set=fs_key, window_size=5
         )
         n_feat = info['num_features']
 

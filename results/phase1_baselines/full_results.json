@@ -2,244 +2,248 @@
   "FS1_Price": {
     "label": "Price Only (14 technical)",
     "num_features": 14,
-    "train_size": 20812,
-    "test_size": 4921,
+    "train_size": 15534,
+    "val_size": 3924,
+    "test_size": 5840,
     "models": {
       "Logistic Regression": {
-        "accuracy": 0.5184,
-        "f1": 0.568,
-        "mcc": 0.0342,
-        "n_samples": 4921,
+        "accuracy": 0.4979,
+        "f1": 0.5991,
+        "mcc": 0.0115,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            993,
-            1429
+            717,
+            2279
           ],
           [
-            941,
-            1558
+            653,
+            2191
           ]
         ],
-        "auc": 0.524
+        "auc": 0.5034
       },
       "LSTM": {
-        "accuracy": 0.4946,
-        "f1": 0.5037,
-        "mcc": -0.0111,
-        "n_samples": 4921,
+        "accuracy": 0.5033,
+        "f1": 0.5206,
+        "mcc": 0.0091,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            1172,
-            1250
+            1364,
+            1632
           ],
           [
-            1237,
-            1262
+            1269,
+            1575
           ]
         ],
-        "auc": 0.5046,
-        "loss": 0.694735
+        "auc": 0.5208,
+        "loss": 0.693909
       },
       "MLP": {
-        "accuracy": 0.4932,
-        "f1": 0.3705,
-        "mcc": -0.008,
-        "n_samples": 4921,
+        "accuracy": 0.481,
+        "f1": 0.4996,
+        "mcc": -0.0356,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            1693,
-            729
+            1296,
+            1700
           ],
           [
-            1765,
-            734
+            1331,
+            1513
           ]
         ],
-        "auc": 0.4808,
-        "loss": 0.69742
+        "auc": 0.4892,
+        "loss": 0.706987
       }
     }
   },
   "FS2_Price_Fundamentals": {
     "label": "Price + Fundamentals (8 EDGAR)",
     "num_features": 22,
-    "train_size": 20812,
-    "test_size": 4921,
+    "train_size": 15534,
+    "val_size": 3924,
+    "test_size": 5840,
     "models": {
       "Logistic Regression": {
-        "accuracy": 0.5164,
-        "f1": 0.5654,
-        "mcc": 0.0301,
-        "n_samples": 4921,
+        "accuracy": 0.4969,
+        "f1": 0.596,
+        "mcc": 0.0085,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            993,
-            1429
+            735,
+            2261
           ],
           [
-            951,
-            1548
+            677,
+            2167
           ]
         ],
-        "auc": 0.519
+        "auc": 0.5042
       },
       "LSTM": {
-        "accuracy": 0.5038,
-        "f1": 0.4659,
-        "mcc": 0.0101,
-        "n_samples": 4921,
+        "accuracy": 0.5207,
+        "f1": 0.5216,
+        "mcc": 0.0422,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            1414,
-            1008
+            1515,
+            1481
           ],
           [
-            1434,
-            1065
+            1318,
+            1526
           ]
         ],
-        "auc": 0.5091,
-        "loss": 0.694934
+        "auc": 0.5305,
+        "loss": 0.691311
       },
       "MLP": {
-        "accuracy": 0.4942,
-        "f1": 0.4831,
-        "mcc": -0.0107,
-        "n_samples": 4921,
+        "accuracy": 0.492,
+        "f1": 0.6103,
+        "mcc": 0.0005,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            1269,
-            1153
+            550,
+            2446
           ],
           [
-            1336,
-            1163
+            521,
+            2323
           ]
         ],
-        "auc": 0.4993,
-        "loss": 0.694453
+        "auc": 0.5046,
+        "loss": 0.698223
       }
     }
   },
   "FS3_Price_Tweets": {
     "label": "Price + Tweet Counts (3 cols)",
     "num_features": 17,
-    "train_size": 20812,
-    "test_size": 4921,
+    "train_size": 15534,
+    "val_size": 3924,
+    "test_size": 5840,
     "models": {
       "Logistic Regression": {
-        "accuracy": 0.5212,
-        "f1": 0.5653,
-        "mcc": 0.0403,
-        "n_samples": 4921,
+        "accuracy": 0.4988,
+        "f1": 0.5961,
+        "mcc": 0.0126,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            1033,
-            1389
+            753,
+            2243
           ],
           [
-            967,
-            1532
+            684,
+            2160
           ]
         ],
-        "auc": 0.5267
+        "auc": 0.506
       },
       "LSTM": {
-        "accuracy": 0.4818,
-        "f1": 0.3774,
-        "mcc": -0.033,
-        "n_samples": 4921,
+        "accuracy": 0.5062,
+        "f1": 0.504,
+        "mcc": 0.0128,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            1598,
-            824
+            1491,
+            1505
           ],
           [
-            1726,
-            773
+            1379,
+            1465
           ]
         ],
-        "auc": 0.4756,
-        "loss": 0.699197
+        "auc": 0.5158,
+        "loss": 0.693211
       },
       "MLP": {
-        "accuracy": 0.4853,
-        "f1": 0.5324,
-        "mcc": -0.033,
-        "n_samples": 4921,
+        "accuracy": 0.4856,
+        "f1": 0.477,
+        "mcc": -0.029,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            946,
-            1476
+            1466,
+            1530
           ],
           [
-            1057,
-            1442
+            1474,
+            1370
           ]
         ],
-        "auc": 0.4848,
-        "loss": 0.700843
+        "auc": 0.4899,
+        "loss": 0.705003
       }
     }
   },
   "FS4_Full_Structured": {
     "label": "Price + Fundamentals + Tweets (Full)",
     "num_features": 25,
-    "train_size": 20812,
-    "test_size": 4921,
+    "train_size": 15534,
+    "val_size": 3924,
+    "test_size": 5840,
     "models": {
       "Logistic Regression": {
-        "accuracy": 0.5164,
-        "f1": 0.5615,
-        "mcc": 0.0303,
-        "n_samples": 4921,
+        "accuracy": 0.4981,
+        "f1": 0.5935,
+        "mcc": 0.0105,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            1017,
-            1405
+            769,
+            2227
           ],
           [
-            975,
-            1524
+            704,
+            2140
           ]
         ],
-        "auc": 0.5192
+        "auc": 0.5049
       },
       "LSTM": {
-        "accuracy": 0.5017,
-        "f1": 0.4407,
-        "mcc": 0.0073,
-        "n_samples": 4921,
+        "accuracy": 0.5125,
+        "f1": 0.4403,
+        "mcc": 0.0195,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            1503,
-            919
+            1873,
+            1123
           ],
           [
-            1533,
-            966
+            1724,
+            1120
           ]
         ],
-        "auc": 0.4974,
-        "loss": 0.699237
+        "auc": 0.5123,
+        "loss": 0.699078
       },
       "MLP": {
-        "accuracy": 0.4906,
-        "f1": 0.4489,
-        "mcc": -0.0165,
-        "n_samples": 4921,
+        "accuracy": 0.4832,
+        "f1": 0.5462,
+        "mcc": -0.0269,
+        "n_samples": 5840,
         "confusion_matrix": [
           [
-            1393,
-            1029
+            1006,
+            1990
           ],
           [
-            1478,
-            1021
+            1028,
+            1816
           ]
         ],
-        "auc": 0.4875,
-        "loss": 0.702497
+        "auc": 0.4931,
+        "loss": 0.704274
       }
     }
   }

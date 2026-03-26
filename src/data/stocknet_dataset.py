@@ -1,4 +1,4 @@
-"""StockNet Dataset with per-ticker 80/20 time-based split and 4 feature sets."""
+"""StockNet Dataset with global date-based train/val/test split and 4 feature sets."""
 
 import numpy as np
 import pandas as pd
@@ -75,27 +75,34 @@ def load_and_clean(parquet_path: str) -> pd.DataFrame:
     return df
 
 
-# ── Per-ticker 80/20 time-based split ─────────────────────
+# ── Global date-based train/val/test split ─────────────────
+# Matches StockNet / ALSTM / HATS literature split exactly.
+# Enables direct comparison with prior published results and avoids
+# cross-ticker temporal leakage in the Phase 4 GAT graph model.
 
-def split_per_ticker(df: pd.DataFrame, train_ratio: float = 0.8
-                     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+TRAIN_END = pd.Timestamp('2015-03-31')   # inclusive
+VAL_START = pd.Timestamp('2015-04-01')
+VAL_END   = pd.Timestamp('2015-07-31')   # inclusive
+TEST_START = pd.Timestamp('2015-08-01')
+
+
+def split_by_date(df: pd.DataFrame
+                  ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
-    Per-ticker chronological split as per the flowchart:
-    For each ticker, sort by Date, take first 80% as train, last 20% as test.
-    Aggregate all tickers' train/test sets.
+    Global date split applied uniformly across all 87 tickers:
+      Train : 2014-01-02 -> 2015-03-31  (~15,969 rows)
+      Val   : 2015-04-01 -> 2015-07-31  (~4,359 rows)
+      Test  : 2015-08-01 -> 2015-12-31  (~6,275 rows)
+
+    All tickers present in all three splits.
+    Note: AGFS (listed 2015-01-07) has only 8 training rows — exclude it
+    from per-ticker breakdown analyses (< 50 train rows).
     """
-    train_parts, test_parts = [], []
-
-    for ticker, group in df.groupby('Ticker'):
-        group = group.sort_values('Date').reset_index(drop=True)
-        n = len(group)
-        cutoff = int(n * train_ratio)
-        train_parts.append(group.iloc[:cutoff])
-        test_parts.append(group.iloc[cutoff:])
-
-    train_df = pd.concat(train_parts, ignore_index=True)
-    test_df  = pd.concat(test_parts,  ignore_index=True)
-    return train_df, test_df
+    dates = pd.to_datetime(df['Date'])
+    train_df = df[dates <= TRAIN_END].copy()
+    val_df   = df[(dates >= VAL_START) & (dates <= VAL_END)].copy()
+    test_df  = df[dates >= TEST_START].copy()
+    return train_df, val_df, test_df
 
 
 def compute_norm_stats(train_df: pd.DataFrame,
@@ -182,15 +189,17 @@ class StockNetDataset(Dataset):
 # ── Main entry point ───────────────────────────────────────
 
 def build_datasets(parquet_path: str, feature_set: str = 'FS1_Price',
-                   window_size: int = 5, train_ratio: float = 0.8,
-                   ) -> Tuple[StockNetDataset, StockNetDataset, dict]:
+                   window_size: int = 5,
+                   ) -> Tuple[StockNetDataset, StockNetDataset, StockNetDataset, dict]:
     """
     Full pipeline:
-      load → clean → per-ticker 80/20 split → normalize → build datasets.
+      load -> clean -> global date split -> normalize -> build datasets.
 
-    Returns (train_dataset, test_dataset, info_dict).
-    Note: no separate val set per the flowchart; training scripts use
-    a held-out 10% of train for early stopping.
+    Returns (train_dataset, val_dataset, test_dataset, info_dict).
+    Split boundaries (literature-standard):
+      Train : 2014-01-02 -> 2015-03-31
+      Val   : 2015-04-01 -> 2015-07-31
+      Test  : 2015-08-01 -> 2015-12-31
     """
     assert feature_set in FEATURE_SETS, \
         f"feature_set must be one of {list(FEATURE_SETS.keys())}"
@@ -198,26 +207,30 @@ def build_datasets(parquet_path: str, feature_set: str = 'FS1_Price',
     feature_cols = FEATURE_SETS[feature_set]
     df = load_and_clean(parquet_path)
 
-    train_df, test_df = split_per_ticker(df, train_ratio)
+    train_df, val_df, test_df = split_by_date(df)
 
-    # Normalize using train stats only
+    # Normalize using train stats only -- no leakage into val/test
     means, stds = compute_norm_stats(train_df, feature_cols)
     train_df = normalize(train_df, feature_cols, means, stds)
+    val_df   = normalize(val_df,   feature_cols, means, stds)
     test_df  = normalize(test_df,  feature_cols, means, stds)
 
     train_ds = StockNetDataset(train_df, feature_cols, window_size)
+    val_ds   = StockNetDataset(val_df,   feature_cols, window_size)
     test_ds  = StockNetDataset(test_df,  feature_cols, window_size)
 
-    # Per-ticker split stats
+    # Per-ticker split stats (for breakdown analysis)
     ticker_splits = {}
     for ticker, group in df.groupby('Ticker'):
-        n = len(group)
+        gdates = pd.to_datetime(group['Date'])
         ticker_splits[ticker] = {
-            'total': n,
-            'train': int(n * train_ratio),
-            'test':  n - int(n * train_ratio),
+            'total': len(group),
+            'train': int((gdates <= TRAIN_END).sum()),
+            'val':   int(((gdates >= VAL_START) & (gdates <= VAL_END)).sum()),
+            'test':  int((gdates >= TEST_START).sum()),
         }
 
+    total = len(df)
     info = {
         'feature_set':     feature_set,
         'feature_cols':    feature_cols,
@@ -227,13 +240,22 @@ def build_datasets(parquet_path: str, feature_set: str = 'FS1_Price',
         'tickers':         sorted(df['Ticker'].unique().tolist()),
         'sectors':         sorted(df['Sector'].unique().tolist()),
         'train_size':      len(train_ds),
+        'val_size':        len(val_ds),
         'test_size':       len(test_ds),
         'train_rows':      len(train_df),
+        'val_rows':        len(val_df),
         'test_rows':       len(test_df),
-        'train_pct':       round(len(train_df) / len(df) * 100, 1),
-        'test_pct':        round(len(test_df)  / len(df) * 100, 1),
+        'train_pct':       round(len(train_df) / total * 100, 1),
+        'val_pct':         round(len(val_df)   / total * 100, 1),
+        'test_pct':        round(len(test_df)  / total * 100, 1),
+        'split_dates': {
+            'train_end':   str(TRAIN_END.date()),
+            'val_start':   str(VAL_START.date()),
+            'val_end':     str(VAL_END.date()),
+            'test_start':  str(TEST_START.date()),
+        },
         'norm_means':      means.to_dict(),
         'norm_stds':       stds.to_dict(),
         'ticker_splits':   ticker_splits,
     }
-    return train_ds, test_ds, info
+    return train_ds, val_ds, test_ds, info

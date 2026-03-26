@@ -21,9 +21,10 @@ import matplotlib.ticker as mticker
 import seaborn as sns
 
 from src.data.stocknet_dataset import (
-    load_and_clean, split_per_ticker,
+    load_and_clean, split_by_date,
     PRICE_FEATURES, FUNDAMENTAL_FEATURES, TWEET_FEATURES,
     ALL_FUNDAMENTAL_COLS, FEATURE_SETS, SECTOR_MAP,
+    TRAIN_END, VAL_START, VAL_END, TEST_START,
 )
 
 PARQUET  = 'dataset/stocknet_final_modeling_set.parquet'
@@ -82,26 +83,30 @@ def audit_missing_data(raw_df):
     return missing
 
 
-def audit_split_sizes(df, train_ratio=0.8):
-    """Per-ticker 80/20 chronological split stats."""
-    train_df, test_df = split_per_ticker(df, train_ratio)
+def audit_split_sizes(df):
+    """Global date split stats (literature-standard)."""
+    train_df, val_df, test_df = split_by_date(df)
     total = len(df)
     return {
         'split_sizes': {
             'train':     int(len(train_df)),
-            'val':       0,  # No separate val — carved from train during training
+            'val':       int(len(val_df)),
             'test':      int(len(test_df)),
             'train_pct': round(float(len(train_df) / total * 100), 1),
-            'val_pct':   0.0,
-            'test_pct':  round(float(len(test_df) / total * 100), 1),
+            'val_pct':   round(float(len(val_df)   / total * 100), 1),
+            'test_pct':  round(float(len(test_df)  / total * 100), 1),
         },
-        'split_method': 'Per-ticker chronological 80/20',
+        'split_method': 'Global date split (StockNet / ALSTM / HATS literature standard)',
         'train_date_range': {
             'start': str(train_df['Date'].min()),
-            'end':   str(train_df['Date'].max()),
+            'end':   str(TRAIN_END.date()),
+        },
+        'val_date_range': {
+            'start': str(VAL_START.date()),
+            'end':   str(VAL_END.date()),
         },
         'test_date_range': {
-            'start': str(test_df['Date'].min()),
+            'start': str(TEST_START.date()),
             'end':   str(test_df['Date'].max()),
         },
     }

@@ -1,10 +1,10 @@
 """
 Phase 1 — Baseline Modeling Strategy (per flowchart)
-  - Per-ticker 80/20 time-based split
+  - Global date split: Train 2014-01-02->2015-03-31, Val->2015-07-31, Test->2015-12-31
   - 4 Feature Sets (modality ablation)
   - 3 Models: LSTM, Logistic Regression, MLP
   - Metrics: Accuracy, F1, MCC, AUC
-  - Results: 3 models × 4 feature sets = 12 cells
+  - Results: 3 models x 4 feature sets = 12 cells
 """
 
 import sys, os, json
@@ -45,20 +45,20 @@ def run_logistic_regression(train_ds, test_ds, save_dir):
     return m
 
 
-def run_lstm(train_ds, test_ds, input_dim, save_dir):
+def run_lstm(train_ds, val_ds, test_ds, input_dim, save_dir):
     set_seed(SEED)
     model = LSTMBaseline(input_dim=input_dim, hidden_dim=64,
                          num_layers=2, dropout=0.2)
-    trainer = Trainer(model, train_ds, test_ds,
-                      val_ratio=0.1, lr=0.001, save_dir=save_dir)
+    trainer = Trainer(model, train_ds, val_ds, test_ds,
+                      lr=0.001, save_dir=save_dir)
     return trainer.train(num_epochs=EPOCHS, patience=PATIENCE)
 
 
-def run_mlp(train_ds, test_ds, input_dim, save_dir):
+def run_mlp(train_ds, val_ds, test_ds, input_dim, save_dir):
     set_seed(SEED)
     model = MLPBaseline(input_dim=input_dim, hidden_dim=128, dropout=0.2)
-    trainer = Trainer(model, train_ds, test_ds,
-                      val_ratio=0.1, lr=0.001, save_dir=save_dir)
+    trainer = Trainer(model, train_ds, val_ds, test_ds,
+                      lr=0.001, save_dir=save_dir)
     return trainer.train(num_epochs=EPOCHS, patience=PATIENCE)
 
 
@@ -83,12 +83,13 @@ def main():
         print(f"  Feature Set: {fs_label}")
         print(f"{'='*65}")
 
-        train_ds, test_ds, info = build_datasets(
-            PARQUET, feature_set=fs_key, window_size=5, train_ratio=0.8
+        train_ds, val_ds, test_ds, info = build_datasets(
+            PARQUET, feature_set=fs_key, window_size=5
         )
         n_feat = info['num_features']
         print(f"  Features={n_feat} | Train={info['train_size']} | "
-              f"Test={info['test_size']} | Tickers={info['num_tickers']}")
+              f"Val={info['val_size']} | Test={info['test_size']} | "
+              f"Tickers={info['num_tickers']}")
 
         fs_results = {}
 
@@ -102,14 +103,14 @@ def main():
         # ── LSTM ────────────────────────────────────────────
         print(f"\n  [2/3] LSTM (sliding window, W=5)")
         save_dir = f"results/phase1_baselines/{fs_key}/lstm"
-        m = run_lstm(train_ds, test_ds, n_feat, save_dir)
+        m = run_lstm(train_ds, val_ds, test_ds, n_feat, save_dir)
         fs_results['LSTM'] = m
         print(f"    {fmt(m)}")
 
         # ── MLP ─────────────────────────────────────────────
         print(f"\n  [3/3] MLP")
         save_dir = f"results/phase1_baselines/{fs_key}/mlp"
-        m = run_mlp(train_ds, test_ds, n_feat, save_dir)
+        m = run_mlp(train_ds, val_ds, test_ds, n_feat, save_dir)
         fs_results['MLP'] = m
         print(f"    {fmt(m)}")
 
@@ -117,6 +118,7 @@ def main():
             'label': fs_label,
             'num_features': n_feat,
             'train_size': info['train_size'],
+            'val_size': info['val_size'],
             'test_size': info['test_size'],
             'models': fs_results,
         }

@@ -4,7 +4,7 @@ import os, json
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 from sklearn.metrics import (accuracy_score, f1_score,
                               matthews_corrcoef, roc_auc_score, confusion_matrix)
 from typing import Dict
@@ -29,10 +29,10 @@ def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray,
 
 
 class Trainer:
-    """Train LSTM or MLP models with early stopping on a held-out val split."""
+    """Train LSTM or MLP models with early stopping on a dedicated val split."""
 
-    def __init__(self, model, train_dataset, test_dataset,
-                 val_ratio=0.1, lr=0.001, weight_decay=1e-4,
+    def __init__(self, model, train_dataset, val_dataset, test_dataset,
+                 lr=0.001, weight_decay=1e-4,
                  device='auto', save_dir='results'):
         self.device = (torch.device('cuda' if torch.cuda.is_available() else 'cpu')
                        if device == 'auto' else torch.device(device))
@@ -40,16 +40,9 @@ class Trainer:
         self.save_dir = save_dir
         os.makedirs(save_dir, exist_ok=True)
 
-        # Hold out val_ratio of train for early stopping
-        n_val   = max(1, int(len(train_dataset) * val_ratio))
-        n_train = len(train_dataset) - n_val
-        train_sub, val_sub = random_split(
-            train_dataset, [n_train, n_val],
-            generator=torch.Generator().manual_seed(42)
-        )
-        self.train_loader = DataLoader(train_sub, batch_size=64, shuffle=True)
-        self.val_loader   = DataLoader(val_sub,   batch_size=256)
-        self.test_loader  = DataLoader(test_dataset, batch_size=256)
+        self.train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+        self.val_loader   = DataLoader(val_dataset,   batch_size=256)
+        self.test_loader  = DataLoader(test_dataset,  batch_size=256)
 
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(
