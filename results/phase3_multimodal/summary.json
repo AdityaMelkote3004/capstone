@@ -1,0 +1,42 @@
+{
+  "model": "Multimodal LSTM",
+  "latent_dim": 64,
+  "window_size": 5,
+  "price_features": [
+    "Return",
+    "RSI_14",
+    "MACD",
+    "MACD_Signal",
+    "MACD_Hist",
+    "Volatility_5",
+    "Volatility_20",
+    "Price_MA5_Ratio",
+    "Price_MA10_Ratio",
+    "Price_MA20_Ratio",
+    "Volume_Change",
+    "HL_Spread",
+    "MA_5",
+    "MA_10"
+  ],
+  "fundamental_features": [
+    "Revenue",
+    "NetIncome",
+    "TotalAssets",
+    "TotalLiabilities",
+    "StockholdersEquity",
+    "EPS",
+    "Cash",
+    "ROA"
+  ],
+  "company_embedding_dim": 768,
+  "train_samples": 15534,
+  "val_samples": 3924,
+  "test_samples": 5840,
+  "metrics": {
+    "accuracy": 0.5210616438356165,
+    "f1": 0.4731587869655302,
+    "mcc": 0.03855144889701352,
+    "auc": 0.5139314327213593
+  },
+  "event_text_rows": 2970
+}
