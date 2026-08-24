@@ -1,0 +1,21 @@
+{
+  "test": {
+    "accuracy": 0.487,
+    "f1": 0.655,
+    "mcc": 0.0,
+    "n_samples": 5840,
+    "confusion_matrix": [
+      [
+        0,
+        2996
+      ],
+      [
+        0,
+        2844
+      ]
+    ],
+    "auc": 0.527,
+    "loss": 0.694625
+  },
+  "best_val_mcc": 0.0
+}

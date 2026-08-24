@@ -1,0 +1,116 @@
+{
+  "Logistic Regression | Price + Company FinBERT": {
+    "accuracy": 0.492,
+    "f1": 0.5589,
+    "mcc": -0.008,
+    "auc": 0.4953,
+    "n_samples": 5840,
+    "confusion_matrix": [
+      [
+        993,
+        2003
+      ],
+      [
+        964,
+        1880
+      ]
+    ],
+    "feature_set": "Price + Company FinBERT",
+    "model": "Logistic Regression"
+  },
+  "LSTM | Price + Company FinBERT": {
+    "accuracy": 0.5248,
+    "f1": 0.4721,
+    "mcc": 0.0459,
+    "auc": 0.5304,
+    "n_samples": 5840,
+    "confusion_matrix": [
+      [
+        1824,
+        1172
+      ],
+      [
+        1603,
+        1241
+      ]
+    ],
+    "feature_set": "Price + Company FinBERT",
+    "model": "LSTM"
+  },
+  "MLP | Price + Company FinBERT": {
+    "accuracy": 0.483,
+    "f1": 0.6109,
+    "mcc": -0.0221,
+    "auc": 0.5053,
+    "n_samples": 5840,
+    "confusion_matrix": [
+      [
+        451,
+        2545
+      ],
+      [
+        474,
+        2370
+      ]
+    ],
+    "feature_set": "Price + Company FinBERT",
+    "model": "MLP"
+  },
+  "Logistic Regression | Price + Fundamentals + Company FinBERT": {
+    "accuracy": 0.4932,
+    "f1": 0.5606,
+    "mcc": -0.0053,
+    "auc": 0.4961,
+    "n_samples": 5840,
+    "confusion_matrix": [
+      [
+        992,
+        2004
+      ],
+      [
+        956,
+        1888
+      ]
+    ],
+    "feature_set": "Price + Fundamentals + Company FinBERT",
+    "model": "Logistic Regression"
+  },
+  "LSTM | Price + Fundamentals + Company FinBERT": {
+    "accuracy": 0.487,
+    "f1": 0.655,
+    "mcc": 0.0,
+    "auc": 0.527,
+    "n_samples": 5840,
+    "confusion_matrix": [
+      [
+        0,
+        2996
+      ],
+      [
+        0,
+        2844
+      ]
+    ],
+    "feature_set": "Price + Fundamentals + Company FinBERT",
+    "model": "LSTM"
+  },
+  "MLP | Price + Fundamentals + Company FinBERT": {
+    "accuracy": 0.5038,
+    "f1": 0.5506,
+    "mcc": 0.014,
+    "auc": 0.5124,
+    "n_samples": 5840,
+    "confusion_matrix": [
+      [
+        1167,
+        1829
+      ],
+      [
+        1069,
+        1775
+      ]
+    ],
+    "feature_set": "Price + Fundamentals + Company FinBERT",
+    "model": "MLP"
+  }
+}

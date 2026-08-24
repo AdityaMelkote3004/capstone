@@ -1,0 +1,126 @@
+{
+  "FS5_Price_CompanyEmbedding": {
+    "label": "Price + Company FinBERT",
+    "num_features": 783,
+    "train_size": 15534,
+    "val_size": 3924,
+    "test_size": 5840,
+    "models": {
+      "Logistic Regression": {
+        "accuracy": 0.492,
+        "f1": 0.5589,
+        "mcc": -0.008,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            993,
+            2003
+          ],
+          [
+            964,
+            1880
+          ]
+        ],
+        "auc": 0.4953
+      },
+      "LSTM": {
+        "accuracy": 0.5248,
+        "f1": 0.4721,
+        "mcc": 0.0459,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            1824,
+            1172
+          ],
+          [
+            1603,
+            1241
+          ]
+        ],
+        "auc": 0.5304,
+        "loss": 0.692199
+      },
+      "MLP": {
+        "accuracy": 0.483,
+        "f1": 0.6109,
+        "mcc": -0.0221,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            451,
+            2545
+          ],
+          [
+            474,
+            2370
+          ]
+        ],
+        "auc": 0.5053,
+        "loss": 0.709787
+      }
+    }
+  },
+  "FS6_Price_Fundamentals_CompanyEmbedding": {
+    "label": "Price + Fundamentals + Company FinBERT",
+    "num_features": 791,
+    "train_size": 15534,
+    "val_size": 3924,
+    "test_size": 5840,
+    "models": {
+      "Logistic Regression": {
+        "accuracy": 0.4932,
+        "f1": 0.5606,
+        "mcc": -0.0053,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            992,
+            2004
+          ],
+          [
+            956,
+            1888
+          ]
+        ],
+        "auc": 0.4961
+      },
+      "LSTM": {
+        "accuracy": 0.487,
+        "f1": 0.655,
+        "mcc": 0.0,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            0,
+            2996
+          ],
+          [
+            0,
+            2844
+          ]
+        ],
+        "auc": 0.527,
+        "loss": 0.694625
+      },
+      "MLP": {
+        "accuracy": 0.5038,
+        "f1": 0.5506,
+        "mcc": 0.014,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            1167,
+            1829
+          ],
+          [
+            1069,
+            1775
+          ]
+        ],
+        "auc": 0.5124,
+        "loss": 0.696986
+      }
+    }
+  }
+}
