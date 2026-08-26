@@ -1,0 +1,250 @@
+{
+  "FS1_Price": {
+    "label": "Price Only (14 technical)",
+    "num_features": 14,
+    "train_size": 15534,
+    "val_size": 3924,
+    "test_size": 5840,
+    "models": {
+      "Logistic Regression": {
+        "accuracy": 0.4979,
+        "f1": 0.5991,
+        "mcc": 0.0115,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            717,
+            2279
+          ],
+          [
+            653,
+            2191
+          ]
+        ],
+        "auc": 0.5034
+      },
+      "LSTM": {
+        "accuracy": 0.5098,
+        "f1": 0.4699,
+        "mcc": 0.0164,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            1708,
+            1288
+          ],
+          [
+            1575,
+            1269
+          ]
+        ],
+        "auc": 0.5196,
+        "loss": 0.693937
+      },
+      "MLP": {
+        "accuracy": 0.4834,
+        "f1": 0.5375,
+        "mcc": -0.0274,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            1070,
+            1926
+          ],
+          [
+            1091,
+            1753
+          ]
+        ],
+        "auc": 0.4902,
+        "loss": 0.696576
+      }
+    }
+  },
+  "FS2_Price_Fundamentals": {
+    "label": "Price + Fundamentals (8 EDGAR)",
+    "num_features": 22,
+    "train_size": 15534,
+    "val_size": 3924,
+    "test_size": 5840,
+    "models": {
+      "Logistic Regression": {
+        "accuracy": 0.499,
+        "f1": 0.5996,
+        "mcc": 0.0138,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            723,
+            2273
+          ],
+          [
+            653,
+            2191
+          ]
+        ],
+        "auc": 0.5065
+      },
+      "LSTM": {
+        "accuracy": 0.5183,
+        "f1": 0.5348,
+        "mcc": 0.0394,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            1410,
+            1586
+          ],
+          [
+            1227,
+            1617
+          ]
+        ],
+        "auc": 0.5323,
+        "loss": 0.691355
+      },
+      "MLP": {
+        "accuracy": 0.4911,
+        "f1": 0.5919,
+        "mcc": -0.005,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            713,
+            2283
+          ],
+          [
+            689,
+            2155
+          ]
+        ],
+        "auc": 0.5027,
+        "loss": 0.700116
+      }
+    }
+  },
+  "FS3_Price_Tweets": {
+    "label": "Price + Tweet Counts (3 cols)",
+    "num_features": 17,
+    "train_size": 15534,
+    "val_size": 3924,
+    "test_size": 5840,
+    "models": {
+      "Logistic Regression": {
+        "accuracy": 0.4997,
+        "f1": 0.5974,
+        "mcc": 0.0147,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            750,
+            2246
+          ],
+          [
+            676,
+            2168
+          ]
+        ],
+        "auc": 0.5044
+      },
+      "LSTM": {
+        "accuracy": 0.5094,
+        "f1": 0.5153,
+        "mcc": 0.0202,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            1452,
+            1544
+          ],
+          [
+            1321,
+            1523
+          ]
+        ],
+        "auc": 0.522,
+        "loss": 0.692668
+      },
+      "MLP": {
+        "accuracy": 0.4914,
+        "f1": 0.5078,
+        "mcc": -0.0148,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            1338,
+            1658
+          ],
+          [
+            1312,
+            1532
+          ]
+        ],
+        "auc": 0.5017,
+        "loss": 0.697688
+      }
+    }
+  },
+  "FS4_Full_Structured": {
+    "label": "Price + Fundamentals + Tweets (Full)",
+    "num_features": 25,
+    "train_size": 15534,
+    "val_size": 3924,
+    "test_size": 5840,
+    "models": {
+      "Logistic Regression": {
+        "accuracy": 0.4988,
+        "f1": 0.5963,
+        "mcc": 0.0126,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            751,
+            2245
+          ],
+          [
+            682,
+            2162
+          ]
+        ],
+        "auc": 0.5054
+      },
+      "LSTM": {
+        "accuracy": 0.5062,
+        "f1": 0.4832,
+        "mcc": 0.0107,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            1608,
+            1388
+          ],
+          [
+            1496,
+            1348
+          ]
+        ],
+        "auc": 0.5195,
+        "loss": 0.704927
+      },
+      "MLP": {
+        "accuracy": 0.4882,
+        "f1": 0.5633,
+        "mcc": -0.0151,
+        "n_samples": 5840,
+        "confusion_matrix": [
+          [
+            923,
+            2073
+          ],
+          [
+            916,
+            1928
+          ]
+        ],
+        "auc": 0.4953,
+        "loss": 0.704546
+      }
+    }
+  }
+}

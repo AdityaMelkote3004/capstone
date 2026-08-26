@@ -1,0 +1,804 @@
+Yes. I researched this specifically around your problem: StockNet-style next-day movement prediction using price + tweets/sentiment + fundamentals + inter-stock relationships.
+
+I would not give you 30 papers and tell you to read all of them. There are about 8–10 that are actually useful for us, and each one solves a different part of our current problem.
+
+The papers I would actually use
+Priority	Paper	What we should copy/use
+🔴 1	MAN-SF (2020)	Our main blueprint — hierarchical text attention + temporal attention + bilinear fusion + GAT
+🔴 2	StockNet (2018)	Exact dataset/task/trading-day alignment methodology
+🔴 3	MAC (2023)	Market-driven text embeddings + related-company information + GCN
+🟠 4	Fundamental + text co-attention (2022)	How to integrate fundamentals + news + prices
+🟠 5	Fine-grained Events (2019)	How to turn news into structured financial events
+🟠 6	Event-Driven Learning (2020)	Hierarchical event → news → day → prediction attention
+🟠 7	DASF-Net (2025)	Fundamental graph + industry graph + FinBERT + attention fusion
+🟡 8	AGATS / Graph-based stock prediction (2025)	Dynamic graph + multimodal relational fusion
+🟡 9	MEHGT-LKG (2026)	The eventual Heterogeneous Graph Transformer + LLM events direction
+🟡 10	Financial-tweet sentiment model	Better sentiment encoder specifically for financial Twitter
+1. 🔴 MAN-SF — THIS IS THE ONE WE SHOULD COPY FIRST
+Deep Attentive Learning for Stock Movement Prediction From Social Media Text and Company Correlations
+
+Sawhney et al., EMNLP 2020
+
+Paper — ACL Anthology
+
+PDF
+
+Official GitHub implementation
+
+This is the most important paper for our current situation.
+
+It uses:
+
+                 PRICE
+                   ↓
+                 GRU
+                   ↓
+            Temporal Attention
+                   │
+                   │
+TWEETS → Encoder → GRU
+                   ↓
+             Tweet Attention
+                   ↓
+             Daily Vector
+                   ↓
+                 GRU
+                   ↓
+            Temporal Attention
+                   │
+                   │
+                   └───────┐
+                           ↓
+                    Bilinear Fusion
+                           ↓
+                    Stock Embedding
+                           ↓
+                       GAT
+                           ↓
+                       UP/DOWN
+
+The paper explicitly combines historical prices, social media and company correlations using a hierarchical temporal architecture and graph attention.
+
+Why this is perfect for us
+
+Because your current problem is:
+
+Tweets
+ ↓
+FinBERT
+ ↓
+MEAN
+ ↓
+LSTM
+
+while MAN-SF does:
+
+Tweets
+ ↓
+Tweet-level encoder
+ ↓
+Tweet attention
+ ↓
+Daily representation
+ ↓
+Temporal attention
+
+So we can directly test whether the aggregation architecture, rather than FinBERT dimensionality, is our problem.
+
+Even better
+
+There is an official GitHub implementation.
+
+That means we don't have to reconstruct the architecture from a PDF.
+
+MAN-SF GitHub
+
+The repository contains the model, layers, training code, preprocessing and requirements.
+
+What I want us to copy
+
+Almost exactly:
+
+Price GRU
+Price temporal attention
+Tweet encoder
+Tweet-level attention
+Day-level GRU
+Temporal attention
+Bilinear fusion
+GAT
+Joint optimization
+
+Then add our fundamentals.
+
+2. 🔴 StockNet — OUR DATA METHODOLOGY REFERENCE
+Stock Movement Prediction from Tweets and Historical Prices
+
+Xu & Cohen, ACL 2018
+
+Paper — ACL Anthology
+
+PDF
+
+This is the original StockNet paper.
+
+It is important not primarily because we want to copy its model, but because it tells us how the task should be constructed.
+
+The paper explicitly treats trading-day alignment as a fundamental part of the problem and uses historical tweets + prices in a lag window.
+
+It also uses a deep generative model with recurrent latent variables and a multi-task objective.
+
+What we should copy
+
+Especially:
+
+Trading-day alignment
+Temporal formulation
+Target construction
+Historical lag window
+Train/dev/test methodology
+Avoiding future information
+
+This is the paper we should use to verify that our dataset pipeline is actually a legitimate StockNet-style experiment.
+
+3. 🔴 MAC — VERY IMPORTANT FOR OUR GRAPH + SENTIMENT PROBLEM
+Multi-source Aggregated Classification for Stock Price Movement Prediction
+
+Ma et al., Information Fusion, 2023
+
+Paper — ScienceDirect
+
+This one is extremely relevant because it addresses something we've been struggling with:
+
+Ordinary semantic sentiment isn't necessarily the same thing as market sentiment.
+
+They don't simply take:
+
+Tweet → sentiment score
+
+Instead, they pre-train the text embedding using actual next-day stock movement. In other words, the text representation is explicitly trained to capture information useful for market prediction.
+
+Their architecture:
+
+                 PRICE
+                   │
+                   │
+NEWS → Market-driven text encoder
+                   │
+                   ↓
+              Related stocks
+                   ↓
+                  GCN
+                   ↓
+                BiLSTM
+                   ↓
+               UP / DOWN
+
+They also incorporate news about related companies, not just the target company.
+
+This gives us two ideas worth stealing.
+Idea A — Market-driven text representation
+
+Instead of:
+
+"Is this tweet linguistically positive?"
+
+we ask:
+
+"Does this type of tweet historically contain information about tomorrow's stock movement?"
+
+That is much closer to our objective.
+
+Idea B — Related-company news
+
+If:
+
+TSMC news
+
+changes expectations for:
+
+NVIDIA
+
+our model should have a way to learn that.
+
+MAC uses GCN for this.
+
+What we should copy
+
+Later experiment:
+
+Tweet
+ ↓
+Market-supervised encoder
+ ↓
+Text representation
+
+and:
+
+Company A
+ ↕
+Company B
+ ↕
+Company C
+ ↓
+GAT/GCN
+4. 🟠 Fundamental + Text Co-Attention
+
+This is one I want us to study specifically because your dataset contains fundamentals.
+
+The relevant work investigates integrating fundamental information, technical information and news/text through attention/co-attention for stock movement prediction.
+
+The important architectural idea is:
+
+Price
+  ↓
+representation
+       ↘
+        Co-Attention
+       ↗
+Text
+  ↓
+representation
+
+rather than:
+
+Price + Text
+     ↓
+concatenate
+Why this matters for us
+
+Your current model essentially does:
+
+Price features
++
+Fundamental features
++
+FinBERT vector
+       ↓
+LSTM
+
+We want:
+
+Price
+   ↘
+    interaction
+Fundamentals → attention → representation
+    ↗
+Text
+
+The key idea to copy is feature interaction, not simply adding more features.
+
+5. 🟠 Fine-Grained Financial Events
+Incorporating Fine-grained Events in Stock Movement Prediction
+
+Ding et al., 2019
+
+Paper — ACL Anthology
+
+PDF
+
+This is the paper to use if we decide:
+
+"Sentiment isn't enough. We need to know what actually happened."
+
+They define a financial event dictionary containing 32 event types across 8 categories, including things such as earnings, M&A and credit ratings.
+
+They extract:
+
+Event
+Trigger
+Roles
+Arguments
+
+For example:
+
+Apple acquired company X
+
+becomes something like:
+
+Event = Acquisition
+Company = Apple
+Target = Company X
+
+They then incorporate those events into stock movement prediction and report that the event-based approach outperforms their baselines.
+
+What we should copy
+
+Initially, don't use an LLM.
+
+Use their concept:
+
+News/Tweet
+   ↓
+Event classifier/extractor
+   ↓
+Event type
+   ↓
+Event embedding
+
+Then later we can investigate LLM extraction.
+
+6. 🟠 Event-Driven Learning
+Event-Driven Learning of Systematic Behaviours in Stock Markets
+
+Paper — ACL Anthology
+
+PDF
+
+This one is particularly useful for how to organize the information.
+
+Their model is essentially:
+
+                 BERT
+                  ↓
+              EVENT LEVEL
+                  ↓
+           EVENT ATTENTION
+                  ↓
+               NEWS LEVEL
+                  ↓
+           NEWS ATTENTION
+                  ↓
+              DAY LEVEL
+                  ↓
+          TEMPORAL ATTENTION
+                  ↓
+              PREDICTION
+
+The paper's architecture explicitly has event-, news-, and temporal-level representations and attention.
+
+This is VERY relevant to our problem.
+
+Our current:
+
+many tweets
+ ↓
+mean
+
+could become:
+
+tweets
+ ↓
+events
+ ↓
+event attention
+ ↓
+daily representation
+ ↓
+temporal attention
+
+That is a much more sophisticated use of the information we already have.
+
+7. 🟠 DASF-Net — FUNDAMENTALS + GRAPH + SENTIMENT
+DASF-Net: A Multimodal Framework for Stock Price Forecasting with Diffusion-Based Graph Learning and Optimized Sentiment Fusion
+
+Nguyen et al., 2025
+
+Full paper — MDPI
+
+This is the most relevant paper for our fundamental + graph component.
+
+It uses:
+
+                STOCKS
+                  │
+       ┌──────────┴──────────┐
+       ↓                     ↓
+Industry Graph       Fundamental Graph
+       ↓                     ↓
+  Diffusion               Diffusion
+       └──────────┬──────────┘
+                  ↓
+            Structural rep
+                  │
+                  ↓
+News → FinBERT → Sentiment
+                  │
+                  ↓
+          Multi-head Attention
+                  ↓
+                 LSTM
+                  ↓
+              Prediction
+
+The paper explicitly builds:
+
+Industry graph
+Fundamental graph
+FinBERT sentiment representation
+Multi-head attention fusion
+LSTM forecasting
+
+and reports strong improvements in its own S&P 500 forecasting setup.
+
+What we should copy
+
+Definitely:
+
+Industry graph
++
+Fundamental relationships
++
+Sentiment
++
+Attention fusion
+What I wouldn't copy yet
+
+Their exact diffusion architecture.
+
+Our first graph experiment should be GAT because MAN-SF has a much closer benchmark.
+
+Then we can ask:
+
+Does diffusion-based graph propagation beat GAT on our dataset?
+
+8. 🟡 AGATS / Graph-based Stock Prediction
+Graph-based stock prediction with multisource information and relational data fusion
+
+2025
+
+This is another useful architecture for the dynamic graph + multimodal fusion part.
+
+The paper combines:
+
+technical information
++
+text/sentiment
++
+dynamic stock relationships
+
+using graph attention and relational feature fusion.
+
+The important lesson for us is:
+
+Don't build the graph once and forget about it.
+
+Stock relationships can change.
+
+This is useful when we eventually move from:
+
+static sector graph
+
+to:
+
+dynamic graph(t)
+9. 🟡 MEHGT-LKG — OUR "FINAL FORM" GRAPH PAPER
+MEHGT-LKG: Multimodal Edge-Enhanced Heterogeneous Graph Transformer with LLM-Driven Knowledge Graphs for Stock Trend Prediction
+
+Paper — ScienceDirect
+
+This is the advanced version of where our architecture could eventually go.
+
+It combines:
+
+News
+ ↓
+LLM
+ ↓
+Financial events
+ ↓
+Knowledge graph
+ ↓
+Heterogeneous Graph Transformer
+
+and importantly models edges, not just nodes.
+
+For example:
+
+NVIDIA
+   │
+supplier
+   ↓
+TSMC
+
+The relationship itself has information.
+
+This is where we eventually want to go.
+
+But not now.
+
+First:
+
+GAT
+
+Then:
+
+HGT
+
+Then:
+
+HGT + event graph
+10. 🟡 Financial-Tweet Sentiment
+
+You asked specifically about FinBERT/VADER not helping.
+
+This research is useful because it suggests that financial Twitter deserves its own sentiment representation, rather than assuming FinBERT is automatically optimal.
+
+The PyFin-sentiment work evaluates sentiment models specifically for financial tweets and reports better sentiment classification than VADER, FinBERT and TwitterRoBERTa on its dataset.
+
+This is useful as an experiment, but I would NOT make it our main research direction.
+
+Why?
+
+Because you've already established:
+
+FinBERT
+ ↓
+simple aggregation
+ ↓
+not much improvement
+
+The more important lesson is:
+
+Fix aggregation and market-supervised representation before endlessly swapping sentiment models.
+
+The 5 papers I would actually download first
+
+If you don't want to drown in papers, download these five first:
+
+1. MAN-SF
+
+MAN-SF paper
+
+Purpose: Our main architecture.
+
+Copy:
+
+hierarchical attention
+GRU
+temporal attention
+bilinear fusion
+GAT
+2. StockNet
+
+StockNet paper
+
+Purpose: Correct dataset construction and evaluation.
+
+Copy:
+
+trading-day alignment
+temporal windows
+task formulation
+evaluation methodology
+3. MAC
+
+MAC paper
+
+Purpose: Fix our text representation and related-company information.
+
+Copy:
+
+market-driven text pretraining
+related-company news
+GCN/GNN idea
+4. Fine-grained Events
+
+Fine-Grained Events paper
+
+Purpose: Move beyond "positive/negative".
+
+Copy:
+
+event types
+event extraction
+event representation
+event-aware prediction
+5. DASF-Net
+
+DASF-Net paper
+
+Purpose: Add fundamentals properly.
+
+Copy:
+
+industry graph
+fundamental graph
+FinBERT
+attention-based multimodal fusion
+temporal forecasting
+And there are two pieces of code I'd definitely look at
+MAN-SF official implementation
+
+GitHub — MAN-SF
+
+This is particularly valuable because the repository contains:
+
+model.py
+layers.py
+train.py
+utils.py
+requirements.txt
+
+and preprocessing instructions.
+
+We should use this as our architectural reference rather than reimplementing MAN-SF from memory.
+
+How all these papers fit together
+
+This is the important part.
+
+We're not going to implement ten different models.
+
+We're going to take the strongest idea from each paper and build incrementally.
+
+                    STOCKNET
+                       │
+                       │
+              Data methodology
+                       │
+                       ↓
+                  MAN-SF
+                       │
+       ┌───────────────┼────────────────┐
+       ↓               ↓                ↓
+ Hierarchical      Bilinear           GAT
+ Text Attention     Fusion             Graph
+       │               │                │
+       └───────────────┼────────────────┘
+                       ↓
+                  OUR BASELINE
+                       │
+                       ↓
+                     MAC
+                       │
+              Market-driven text
+                       │
+                       ↓
+               Related-company info
+                       │
+                       ↓
+                    OUR MODEL
+                       │
+                       ↓
+                  DASF-Net
+                       │
+              Fundamental graph
+                       │
+                       ↓
+                    OUR MODEL
+                       │
+                       ↓
+              Fine-grained Events
+                       │
+                       ↓
+                Event embeddings
+                       │
+                       ↓
+                    OUR MODEL
+                       │
+                       ↓
+                  MEHGT-LKG
+                       │
+                       ↓
+               Heterogeneous graph
+                       │
+                       ↓
+                 FINAL MODEL
+What I would NOT copy
+
+This is equally important.
+
+❌ Don't copy DASF-Net's entire architecture immediately.
+
+It solves a different regression problem on a different dataset.
+
+We'll steal the fundamental graph + sentiment fusion idea, not blindly reproduce the entire model.
+
+❌ Don't replace FinBERT with five different LLMs.
+
+Your experiments already indicate that the bottleneck isn't simply embedding dimensionality.
+
+❌ Don't jump to HGT.
+
+GAT has a direct StockNet precedent.
+
+❌ Don't use an LLM to process every tweet.
+
+That would be expensive and doesn't address our current aggregation problem.
+
+❌ Don't use federated learning yet.
+
+It solves privacy/distributed-training problems, not the current prediction bottleneck.
+
+The actual implementation path I'd recommend
+Step 1 — StockNet
+
+Make sure our dataset generation is correct.
+
+↓
+
+Step 2 — MAN-SF
+
+Reproduce the architecture as closely as possible.
+
+Target: ~0.195 MCC.
+
+↓
+
+Step 3 — Our fundamentals
+
+Add:
+
+fundamental value
++
+change
++
+missingness
++
+days since filing
+
+↓
+
+Step 4 — MAC-style market-driven text
+
+Instead of asking:
+
+"Is this tweet positive?"
+
+train/finetune the text representation toward:
+
+"Does this text contain information about tomorrow's movement?"
+
+↓
+
+Step 5 — Events
+
+Add:
+
+earnings
+M&A
+lawsuit
+product
+regulation
+analyst action
+etc.
+
+↓
+
+Step 6 — Better graph
+
+Start:
+
+sector GAT
+
+then:
+
+company relationships
+
+then:
+
+fundamental similarity
+
+↓
+
+Step 7 — DASF-style graph diffusion / HGT
+
+Only if GAT has already proven useful.
+
+↓
+
+Step 8 — Regime + multi-task prediction
+
+Finally:
+
+UP/DOWN
++
+return
++
+volatility
++
+market regime
+If I had to pick the single most important paper for you right now
+
+It's MAN-SF.
+
+Not because it's the newest—it isn't—but because it is the closest match to your actual dataset and current failure mode. It directly addresses the combination of social-media text + historical prices + inter-stock relationships, and it provides both a published architecture and an implementation we can inspect.
+
+And the second most important is MAC, because it addresses the exact thing your FinBERT experiments are telling us:
+
+generic sentiment embeddings aren't necessarily the right representation for predicting market movement.
+
+MAC explicitly learns a market-driven text representation and incorporates related-company information through a graph.
+
+So I would copy MAN-SF first, then selectively merge MAC + DASF-Net + event modelling into it, rather than inventing another architecture from scratch.

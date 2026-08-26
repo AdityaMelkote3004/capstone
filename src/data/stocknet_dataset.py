@@ -132,13 +132,17 @@ class StockNetDataset(Dataset):
     """
 
     def __init__(self, df: pd.DataFrame, feature_cols: List[str],
-                 window_size: int = 5):
+                 window_size: int = 5, strict_windows: bool = True):
         self.feature_cols = feature_cols
         self.window_size  = window_size
+        self.strict_windows = strict_windows
         self.samples      = []
         self._build(df)
 
     def _build(self, df: pd.DataFrame):
+        has_tdi = 'Trading_Day_Index' in df.columns and self.strict_windows
+        skipped_gaps = 0
+
         for ticker, group in df.groupby('Ticker'):
             group  = group.sort_values('Date').reset_index(drop=True)
             feats  = group[self.feature_cols].values.astype(np.float32)
@@ -147,8 +151,19 @@ class StockNetDataset(Dataset):
             sids   = group['Sector_ID'].values.astype(np.int64)
             ctexts = group['Company_Texts'].values
             etexts = group['Event_Texts'].values
+            tdi    = group['Trading_Day_Index'].values if has_tdi else None
 
             for i in range(self.window_size, len(group)):
+                # Buffer-zone days (near-zero movement) were dropped before this point,
+                # so consecutive rows in `group` are not guaranteed to be consecutive
+                # trading days. Trading_Day_Index (assigned per-ticker off the raw,
+                # gap-free price history) lets us verify the window really is
+                # `window_size` real consecutive trading days, not just `window_size`
+                # surviving rows with gaps silently spliced over.
+                if has_tdi and tdi[i] - tdi[i - self.window_size] != self.window_size:
+                    skipped_gaps += 1
+                    continue
+
                 self.samples.append({
                     'window':    feats[i - self.window_size:i],  # (W, F) days [i-W .. i-1]
                     'flat':      feats[i - 1],                    # (F,) yesterday — no leakage
@@ -159,6 +174,12 @@ class StockNetDataset(Dataset):
                     'company_text': ctexts[i],
                     'event_text':   etexts[i],
                 })
+
+        if not has_tdi and self.strict_windows:
+            print("WARNING: 'Trading_Day_Index' column not found — cannot verify "
+                  "windows are real consecutive trading days. Falling back to raw "
+                  "row adjacency, which may silently splice over dropped buffer-zone days.")
+        self.skipped_gap_windows = skipped_gaps
 
     def __len__(self):
         return len(self.samples)
@@ -189,7 +210,7 @@ class StockNetDataset(Dataset):
 # ── Main entry point ───────────────────────────────────────
 
 def build_datasets(parquet_path: str, feature_set: str = 'FS1_Price',
-                   window_size: int = 5,
+                   window_size: int = 5, strict_windows: bool = True,
                    ) -> Tuple[StockNetDataset, StockNetDataset, StockNetDataset, dict]:
     """
     Full pipeline:
@@ -215,9 +236,9 @@ def build_datasets(parquet_path: str, feature_set: str = 'FS1_Price',
     val_df   = normalize(val_df,   feature_cols, means, stds)
     test_df  = normalize(test_df,  feature_cols, means, stds)
 
-    train_ds = StockNetDataset(train_df, feature_cols, window_size)
-    val_ds   = StockNetDataset(val_df,   feature_cols, window_size)
-    test_ds  = StockNetDataset(test_df,  feature_cols, window_size)
+    train_ds = StockNetDataset(train_df, feature_cols, window_size, strict_windows)
+    val_ds   = StockNetDataset(val_df,   feature_cols, window_size, strict_windows)
+    test_ds  = StockNetDataset(test_df,  feature_cols, window_size, strict_windows)
 
     # Per-ticker split stats (for breakdown analysis)
     ticker_splits = {}
