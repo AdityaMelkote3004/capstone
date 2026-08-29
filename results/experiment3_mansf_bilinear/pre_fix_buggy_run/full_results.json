@@ -1,0 +1,66 @@
+{
+  "Price_Only": {
+    "label": "Price only",
+    "backend": null,
+    "accuracy": 0.513978494623656,
+    "f1": 0.6719883889695211,
+    "mcc": 0.010819840548225485,
+    "auc": 0.5425183438155137
+  },
+  "Price_Fundamentals": {
+    "label": "Price + Fundamentals",
+    "backend": null,
+    "accuracy": 0.5174731182795699,
+    "f1": 0.5379665379665379,
+    "mcc": 0.0334001737988994,
+    "auc": 0.5205322309689422
+  },
+  "Price_Text__USE": {
+    "label": "Price + Text (bilinear)",
+    "backend": "USE",
+    "accuracy": 0.5129032258064516,
+    "f1": 0.6780383795309168,
+    "mcc": 0.0,
+    "auc": 0.4886242022667425
+  },
+  "Price_Text_Fundamentals__USE": {
+    "label": "Price + Text (bilinear) + Fundamentals",
+    "backend": "USE",
+    "accuracy": 0.5220430107526882,
+    "f1": 0.5557221389305347,
+    "mcc": 0.04118019382170339,
+    "auc": 0.5144770653134705
+  },
+  "Price_Text__FinBERT": {
+    "label": "Price + Text (bilinear)",
+    "backend": "FinBERT",
+    "accuracy": 0.5129032258064516,
+    "f1": 0.6780383795309168,
+    "mcc": 0.0,
+    "auc": 0.5119291203298764
+  },
+  "Price_Text_Fundamentals__FinBERT": {
+    "label": "Price + Text (bilinear) + Fundamentals",
+    "backend": "FinBERT",
+    "accuracy": 0.5325268817204301,
+    "f1": 0.591304347826087,
+    "mcc": 0.060424261450408814,
+    "auc": 0.5261165083926861
+  },
+  "Price_Text__VADER": {
+    "label": "Price + Text (bilinear)",
+    "backend": "VADER",
+    "accuracy": 0.5126344086021506,
+    "f1": 0.6778034476630531,
+    "mcc": -0.015980001741481634,
+    "auc": 0.5154217342107821
+  },
+  "Price_Text_Fundamentals__VADER": {
+    "label": "Price + Text (bilinear) + Fundamentals",
+    "backend": "VADER",
+    "accuracy": 0.521236559139785,
+    "f1": 0.6702462506943159,
+    "mcc": 0.04140616103563334,
+    "auc": 0.511314478135514
+  }
+}

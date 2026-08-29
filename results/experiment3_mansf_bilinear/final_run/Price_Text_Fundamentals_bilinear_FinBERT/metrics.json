@@ -1,0 +1,10 @@
+{
+  "test": {
+    "label": "Price + Text (bilinear) + Fundamentals",
+    "backend": "FinBERT",
+    "accuracy": 0.5174731182795699,
+    "f1": 0.5930627975515756,
+    "mcc": 0.027744199374718694,
+    "auc": 0.5135000011569736
+  }
+}

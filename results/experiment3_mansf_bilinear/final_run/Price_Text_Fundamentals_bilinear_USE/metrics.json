@@ -1,0 +1,10 @@
+{
+  "test": {
+    "label": "Price + Text (bilinear) + Fundamentals",
+    "backend": "USE",
+    "accuracy": 0.5193548387096775,
+    "f1": 0.6683976261127597,
+    "mcc": 0.03319528726495598,
+    "auc": 0.5087390550302896
+  }
+}

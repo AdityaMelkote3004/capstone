@@ -1,0 +1,10 @@
+{
+  "test": {
+    "label": "Price + Text (bilinear) + Fundamentals",
+    "backend": "VADER",
+    "accuracy": 0.5161290322580645,
+    "f1": 0.6630475477349307,
+    "mcc": 0.019562742144354696,
+    "auc": 0.523675149596679
+  }
+}

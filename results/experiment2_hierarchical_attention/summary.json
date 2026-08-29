@@ -1,0 +1,242 @@
+{
+  "Logistic Regression | FS1_Price": {
+    "accuracy": 0.5271505376344086,
+    "f1": 0.6126403875798282,
+    "mcc": 0.0479254414980849,
+    "auc": 0.5363714880068122,
+    "n_samples": 3720,
+    "feature_set": "FS1_Price",
+    "backend": null,
+    "model": "Logistic Regression"
+  },
+  "LSTM | FS1_Price": {
+    "accuracy": 0.5123655913978494,
+    "f1": 0.6736236056135301,
+    "mcc": -0.00038303527079760287,
+    "auc": 0.48359165660099684,
+    "n_samples": 3720,
+    "feature_set": "FS1_Price",
+    "backend": null,
+    "model": "LSTM"
+  },
+  "MLP | FS1_Price": {
+    "accuracy": 0.5145161290322581,
+    "f1": 0.6750629722921915,
+    "mcc": 0.015449089255503316,
+    "auc": 0.47769456245574576,
+    "n_samples": 3720,
+    "feature_set": "FS1_Price",
+    "backend": null,
+    "model": "MLP"
+  },
+  "Logistic Regression | FS2_Price_Fundamentals": {
+    "accuracy": 0.5365591397849462,
+    "f1": 0.5947343676539727,
+    "mcc": 0.0687870613318987,
+    "auc": 0.5321453529000698,
+    "n_samples": 3720,
+    "feature_set": "FS2_Price_Fundamentals",
+    "backend": null,
+    "model": "Logistic Regression"
+  },
+  "LSTM | FS2_Price_Fundamentals": {
+    "accuracy": 0.5236559139784946,
+    "f1": 0.645174209050861,
+    "mcc": 0.040307234290342005,
+    "auc": 0.5233135953647012,
+    "n_samples": 3720,
+    "feature_set": "FS2_Price_Fundamentals",
+    "backend": null,
+    "model": "LSTM"
+  },
+  "MLP | FS2_Price_Fundamentals": {
+    "accuracy": 0.5228494623655914,
+    "f1": 0.6711135816194181,
+    "mcc": 0.047870228930037305,
+    "auc": 0.5245589327613256,
+    "n_samples": 3720,
+    "feature_set": "FS2_Price_Fundamentals",
+    "backend": null,
+    "model": "MLP"
+  },
+  "Logistic Regression | FS3_Price_HierAttnTweets [USE]": {
+    "accuracy": 0.5233870967741936,
+    "f1": 0.5687180734614449,
+    "mcc": 0.04276265313715705,
+    "auc": 0.529299487229326,
+    "n_samples": 3720,
+    "feature_set": "FS3_Price_HierAttnTweets",
+    "backend": "USE",
+    "model": "Logistic Regression"
+  },
+  "LSTM | FS3_Price_HierAttnTweets [USE]": {
+    "accuracy": 0.5056451612903226,
+    "f1": 0.3549631708172571,
+    "mcc": 0.027609815820665462,
+    "auc": 0.5316777909672762,
+    "n_samples": 3720,
+    "feature_set": "FS3_Price_HierAttnTweets",
+    "backend": "USE",
+    "model": "LSTM"
+  },
+  "MLP | FS3_Price_HierAttnTweets [USE]": {
+    "accuracy": 0.48736559139784946,
+    "f1": 0.5572324123519852,
+    "mcc": -0.03422665277684592,
+    "auc": 0.5029969953397105,
+    "n_samples": 3720,
+    "feature_set": "FS3_Price_HierAttnTweets",
+    "backend": "USE",
+    "model": "MLP"
+  },
+  "Logistic Regression | FS4_Price_Fundamentals_HierAttnTweets [USE]": {
+    "accuracy": 0.5180107526881721,
+    "f1": 0.5491576565250189,
+    "mcc": 0.033343952266465124,
+    "auc": 0.5233887986449526,
+    "n_samples": 3720,
+    "feature_set": "FS4_Price_Fundamentals_HierAttnTweets",
+    "backend": "USE",
+    "model": "Logistic Regression"
+  },
+  "LSTM | FS4_Price_Fundamentals_HierAttnTweets [USE]": {
+    "accuracy": 0.5118279569892473,
+    "f1": 0.36370007007708477,
+    "mcc": 0.041735887914313784,
+    "auc": 0.5326302694359986,
+    "n_samples": 3720,
+    "feature_set": "FS4_Price_Fundamentals_HierAttnTweets",
+    "backend": "USE",
+    "model": "LSTM"
+  },
+  "MLP | FS4_Price_Fundamentals_HierAttnTweets [USE]": {
+    "accuracy": 0.4954301075268817,
+    "f1": 0.40769958977595455,
+    "mcc": -0.0008759393919644517,
+    "auc": 0.5114511456352016,
+    "n_samples": 3720,
+    "feature_set": "FS4_Price_Fundamentals_HierAttnTweets",
+    "backend": "USE",
+    "model": "MLP"
+  },
+  "Logistic Regression | FS3_Price_HierAttnTweets [FinBERT]": {
+    "accuracy": 0.5172043010752688,
+    "f1": 0.5593719332679097,
+    "mcc": 0.0305673140569566,
+    "auc": 0.5246669651658405,
+    "n_samples": 3720,
+    "feature_set": "FS3_Price_HierAttnTweets",
+    "backend": "FinBERT",
+    "model": "Logistic Regression"
+  },
+  "LSTM | FS3_Price_HierAttnTweets [FinBERT]": {
+    "accuracy": 0.5177419354838709,
+    "f1": 0.5442073170731707,
+    "mcc": 0.03330012284984213,
+    "auc": 0.5193983968974597,
+    "n_samples": 3720,
+    "feature_set": "FS3_Price_HierAttnTweets",
+    "backend": "FinBERT",
+    "model": "LSTM"
+  },
+  "MLP | FS3_Price_HierAttnTweets [FinBERT]": {
+    "accuracy": 0.5094086021505376,
+    "f1": 0.5201156981330528,
+    "mcc": 0.01834095368964683,
+    "auc": 0.5200778296101926,
+    "n_samples": 3720,
+    "feature_set": "FS3_Price_HierAttnTweets",
+    "backend": "FinBERT",
+    "model": "MLP"
+  },
+  "Logistic Regression | FS4_Price_Fundamentals_HierAttnTweets [FinBERT]": {
+    "accuracy": 0.5153225806451613,
+    "f1": 0.5575460122699386,
+    "mcc": 0.026761545885805177,
+    "auc": 0.5199444884094391,
+    "n_samples": 3720,
+    "feature_set": "FS4_Price_Fundamentals_HierAttnTweets",
+    "backend": "FinBERT",
+    "model": "Logistic Regression"
+  },
+  "LSTM | FS4_Price_Fundamentals_HierAttnTweets [FinBERT]": {
+    "accuracy": 0.5223118279569893,
+    "f1": 0.5078925505400166,
+    "mcc": 0.046985214240429965,
+    "auc": 0.5271680527209704,
+    "n_samples": 3720,
+    "feature_set": "FS4_Price_Fundamentals_HierAttnTweets",
+    "backend": "FinBERT",
+    "model": "LSTM"
+  },
+  "MLP | FS4_Price_Fundamentals_HierAttnTweets [FinBERT]": {
+    "accuracy": 0.5169354838709678,
+    "f1": 0.668266568211187,
+    "mcc": 0.023768528284503706,
+    "auc": 0.4919745084019419,
+    "n_samples": 3720,
+    "feature_set": "FS4_Price_Fundamentals_HierAttnTweets",
+    "backend": "FinBERT",
+    "model": "MLP"
+  },
+  "Logistic Regression | FS3_Price_HierAttnTweets [VADER]": {
+    "accuracy": 0.5274193548387097,
+    "f1": 0.6047661870503597,
+    "mcc": 0.04879718269986163,
+    "auc": 0.5473543486007562,
+    "n_samples": 3720,
+    "feature_set": "FS3_Price_HierAttnTweets",
+    "backend": "VADER",
+    "model": "Logistic Regression"
+  },
+  "LSTM | FS3_Price_HierAttnTweets [VADER]": {
+    "accuracy": 0.5091397849462366,
+    "f1": 0.5567961165048544,
+    "mcc": 0.013646836913756209,
+    "auc": 0.5177223760997034,
+    "n_samples": 3720,
+    "feature_set": "FS3_Price_HierAttnTweets",
+    "backend": "VADER",
+    "model": "LSTM"
+  },
+  "MLP | FS3_Price_HierAttnTweets [VADER]": {
+    "accuracy": 0.5037634408602151,
+    "f1": 0.6549532710280374,
+    "mcc": -0.027432767214937134,
+    "auc": 0.5203095135620439,
+    "n_samples": 3720,
+    "feature_set": "FS3_Price_HierAttnTweets",
+    "backend": "VADER",
+    "model": "MLP"
+  },
+  "Logistic Regression | FS4_Price_Fundamentals_HierAttnTweets [VADER]": {
+    "accuracy": 0.5419354838709678,
+    "f1": 0.6001877053026748,
+    "mcc": 0.07991266311806389,
+    "auc": 0.540458207801704,
+    "n_samples": 3720,
+    "feature_set": "FS4_Price_Fundamentals_HierAttnTweets",
+    "backend": "VADER",
+    "model": "Logistic Regression"
+  },
+  "LSTM | FS4_Price_Fundamentals_HierAttnTweets [VADER]": {
+    "accuracy": 0.5008064516129033,
+    "f1": 0.5057226510513708,
+    "mcc": 0.0017661411002113053,
+    "auc": 0.49671838916887645,
+    "n_samples": 3720,
+    "feature_set": "FS4_Price_Fundamentals_HierAttnTweets",
+    "backend": "VADER",
+    "model": "LSTM"
+  },
+  "MLP | FS4_Price_Fundamentals_HierAttnTweets [VADER]": {
+    "accuracy": 0.514247311827957,
+    "f1": 0.6412547151081993,
+    "mcc": 0.014897306663436609,
+    "auc": 0.49624938101915483,
+    "n_samples": 3720,
+    "feature_set": "FS4_Price_Fundamentals_HierAttnTweets",
+    "backend": "VADER",
+    "model": "MLP"
+  }
+}
