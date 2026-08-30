@@ -11,6 +11,7 @@ docs/superpowers/specs/2026-08-30-sector-graph-gat-neo4j-design.md.
 
 import json
 import os
+import random
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -20,7 +21,7 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score, f1_score, matthews_corrcoef, roc_auc_score
 
-from src.data.graph_dataset import build_daily_snapshots
+from src.data.graph_dataset import build_daily_snapshots, normalize_price_snapshots
 from src.models.graph_model import StockGAT, build_sector_graph, edge_index_for_tickers
 from src.utils.seed import set_seed
 
@@ -35,6 +36,13 @@ LR = 1e-3
 def run_epoch(model, snapshots, graph, optimizer=None):
     is_train = optimizer is not None
     model.train(is_train)
+    if is_train:
+        # Shuffle the day-list order each training epoch (not the tickers
+        # within a day) so gradient steps aren't seen in the same
+        # chronological order every epoch. Dev/test order is left as-is --
+        # order doesn't affect evaluation.
+        snapshots = list(snapshots)
+        random.shuffle(snapshots)
     all_probs, all_targets = [], []
     total_loss = 0.0
     for snap in snapshots:
@@ -44,6 +52,7 @@ def run_epoch(model, snapshots, graph, optimizer=None):
         if is_train:
             optimizer.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
         total_loss += loss.item() * len(snap.tickers)
         all_probs.append(torch.softmax(logits, dim=-1)[:, 1].detach())
@@ -67,11 +76,14 @@ def main():
     train_snaps = build_daily_snapshots(df, "train")
     dev_snaps = build_daily_snapshots(df, "dev")
     test_snaps = build_daily_snapshots(df, "test")
+    normalize_price_snapshots(train_snaps, dev_snaps, test_snaps)
+    n_samples = sum(len(s.tickers) for s in test_snaps)
 
     model = StockGAT()
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=1e-4)
 
     best_val_mcc = -1.0
+    best_epoch = -1
     best_state = None
     epochs_without_improvement = 0
 
@@ -82,6 +94,7 @@ def main():
               f"train_mcc={train_metrics['mcc']:.4f} val_mcc={val_metrics['mcc']:.4f}")
         if val_metrics["mcc"] > best_val_mcc:
             best_val_mcc = val_metrics["mcc"]
+            best_epoch = epoch
             best_state = {k: v.clone() for k, v in model.state_dict().items()}
             epochs_without_improvement = 0
         else:
@@ -97,7 +110,14 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     with open(os.path.join(OUT_DIR, "metrics.json"), "w") as f:
         json.dump(
-            {"test": {"label": "Sector-graph GAT (price only)", "backend": None, **test_metrics}},
+            {"test": {
+                "label": "Sector-graph GAT (price only)",
+                "backend": None,
+                **test_metrics,
+                "n_samples": n_samples,
+                "best_epoch": best_epoch,
+                "best_val_mcc": best_val_mcc,
+            }},
             f, indent=2,
         )
     print(f"Saved {OUT_DIR}/metrics.json")

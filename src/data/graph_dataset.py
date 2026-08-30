@@ -33,6 +33,23 @@ def _window_mask(window_length: int) -> torch.Tensor:
     return mask
 
 
+def normalize_price_snapshots(train_snapshots: list, *other_snapshot_lists: list) -> None:
+    """Z-scores price_seq in place across a list of DaySnapshot lists, using
+    mean/std computed only from `train_snapshots` (flattened across all
+    nodes and days per one of the 3 price features), matching Experiment 3's
+    `normalize_price` (preprocessing_notebooks/MMGTFFF_mansf_joint_bilinear.ipynb,
+    cell 16): train statistics only, applied to train and every list in
+    `other_snapshot_lists` (e.g. dev, test)."""
+    flat = torch.cat([snap.price_seq.reshape(-1, 3) for snap in train_snapshots], dim=0)
+    mean = flat.mean(dim=0)
+    std = flat.std(dim=0, unbiased=False)
+    std = torch.where(std == 0, torch.ones_like(std), std)
+
+    for snap_list in (train_snapshots, *other_snapshot_lists):
+        for snap in snap_list:
+            snap.price_seq = (snap.price_seq - mean) / std
+
+
 def build_daily_snapshots(df: pd.DataFrame, split: str) -> list:
     """Groups rows of `df` where Split == split by Target_Date, sorted
     chronologically, returning one DaySnapshot per date."""
