@@ -74,10 +74,12 @@ check Experiment 5 against the two trivial constant classifiers directly:
 
 Experiment 5's test accuracy (0.4870967741935484) is bit-for-bit identical
 to the always-predict-DOWN constant classifier's accuracy on this split.
-Back-solving from the reported F1 (0.0021) implies the trained model made
-essentially 2 positive predictions out of 3720 test examples -- this is
-not "near-collapse," it *is* the always-DOWN constant predictor plus
-negligible noise. That is much stronger, directly verifiable evidence that
+Back-solving the confusion matrix from accuracy/F1/MCC gives the unique
+integer solution TP=2, FP=2, TN=1810, FN=1906: the model made only ~4
+positive ("UP") predictions total across 3720 test examples (2 correct, 2
+incorrect) -- this is not "near-collapse," it *is* the always-DOWN
+constant predictor plus negligible noise. That is much stronger, directly
+verifiable evidence that
 the model degenerated to a near-constant predictor than the F1-vs-Experiment-4
 comparison above.
 
