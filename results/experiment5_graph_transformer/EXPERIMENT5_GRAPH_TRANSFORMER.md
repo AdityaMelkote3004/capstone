@@ -66,14 +66,26 @@ the second one negatively.
 
 ## What this experiment does and doesn't establish
 
-Establishes: whether global attention (with the over-smoothing mechanism
-architecturally avoided) can find useful signal in same-sector structure
-that local GAT message-passing could not, once GAT's own bug is fixed.
-The answer here is no: with the over-smoothing mechanism sidestepped by
-construction, the sector-graph transformer still failed to learn a useful
-decision boundary (MCC ~0, degenerate near-constant predictions), which
-points at the sector-only graph itself, not the local-vs-global attention
-mechanism, as the binding constraint.
+Establishes: whether this training run, as configured, produces a useful
+sector-graph transformer. It does not. `best_epoch` was 0 -- validation
+MCC never improved past its very first, essentially-untrained checkpoint
+in 10+ subsequent epochs, train loss barely moved (0.7013 -> 0.6943), and
+train MCC oscillated around zero the whole time rather than trending
+upward. That is an optimization/architecture failure: the model never
+reached a useful trained state, as distinct from reaching one and finding
+no signal there. The AUC (0.5249) is actually above Experiment 4's
+(0.4953), i.e. some ranking signal exists in the model's raw scores even
+though the thresholded predictions collapsed to a single class -- more
+consistent with a collapsed decision head / stuck optimization than with
+"zero signal anywhere in the graph."
+
+This run does *not* establish that the sector-only graph itself carries no
+signal for global attention to exploit. That would require a run that
+actually trained past initialization and still failed -- this one didn't
+get that far. Whether the sector-only graph, the transformer architecture,
+or the optimization setup (learning rate, the single scalar sector-bias
+parameterization, lack of a warmup/schedule) is the binding constraint
+remains genuinely open and is not settled by this run.
 
 Does not establish: whether a sparser or different graph (correlation
 edges, dynamic tweet-co-occurrence edges, or MAN-SF's own Wikidata
@@ -85,17 +97,23 @@ not the graph.
 ## How we should move forward
 
 Experiment 5 does not improve on Experiment 4, and both remain well below
-Experiments 1 and 3. Since fixing the attention mechanism (local -> global,
-with over-smoothing architecturally ruled out) did not help, the evidence
-now points at the sector-only graph itself, not the choice of attention
-mechanism, as the limiting factor. The next step should be building a
-richer edge type -- 20-day rolling return correlation edges or dynamic
-tweet-co-occurrence edges -- per `results/experiment4_gat/RELATED_WORK.md`,
-rather than further attention-mechanism tuning on the same sector graph.
-Price-only signal without a graph (Experiment 3) and tweet-count signal
-(Experiment 1) both still outperform either graph variant tried so far,
-so any future graph-based model should be judged against those two
-baselines, not against Experiment 4 or 5.
+Experiments 1 and 3. But because this run shows an optimization/architecture
+failure (best_epoch 0, no training progress) rather than a converged model
+that found no signal, it would be premature to conclude the sector-only
+graph is the limiting factor from this run alone. Two things are worth
+trying before drawing that conclusion: (1) re-run this exact architecture
+with a lower learning rate, a warmup schedule, and/or more capacity on the
+single-scalar sector-bias term, to see if it can actually reach a trained
+state; if it still lands at MCC ~0 with real training progress, that would
+be much stronger evidence against the sector-only graph. (2) In parallel,
+build a richer edge type -- 20-day rolling return correlation edges or
+dynamic tweet-co-occurrence edges -- per
+`results/experiment4_gat/RELATED_WORK.md`, since that question (does a
+different graph help) is independent of whether this particular training
+run converges. Price-only signal without a graph (Experiment 3) and
+tweet-count signal (Experiment 1) both still outperform either graph
+variant tried so far, so any future graph-based model should be judged
+against those two baselines, not against Experiment 4 or 5.
 
 ## Reproducing this experiment
 
