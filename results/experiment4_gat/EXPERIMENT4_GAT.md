@@ -192,3 +192,7 @@ python scripts/export_graph_to_neo4j.py
 Pushes the static 87-node sector graph to Neo4j Aura for browsing (one-time,
 visualization only -- never read during training). Requires `NEO4J_URI`,
 `NEO4J_USER`, `NEO4J_PASSWORD` in a local `.env` (see `.env.example`).
+
+Full setup instructions (creating a free Aura instance, configuring
+credentials, and example Cypher queries to actually explore the graph
+once it's pushed) are in `results/experiment4_gat/NEO4J_GUIDE.md`.
