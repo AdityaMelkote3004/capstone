@@ -1,11 +1,23 @@
 """Trains the graph transformer (Experiment 5): PriceEncoder + 2-layer
-global self-attention with a learned same-sector bias, one gradient step
-per trading-day snapshot. Reports Accuracy/F1/MCC/AUC on the exact-
-reproduction test split, in the same schema as Experiments 1, 3, and 4.
+global self-attention with a learned same-sector bias. Reports
+Accuracy/F1/MCC/AUC on the exact-reproduction test split, in the same
+schema as Experiments 1, 3, and 4.
 
 Reminder before citing results: this remains a sector-based proxy graph,
 not MAN-SF's Wikidata-relation graph, regardless of attention mechanism --
 see docs/superpowers/specs/2026-08-30-graph-transformer-design.md.
+
+GRAD_ACCUM_DAYS: root-cause fix for a training collapse diagnosed via
+systematic debugging. A controlled ablation showed one gradient step per
+single trading day collapses training identically regardless of model
+architecture (GAT, this Transformer, or even a plain PriceEncoder +
+classifier with no graph at all) -- because every ticker active on a
+given day shares that day's market-wide conditions, giving the optimizer
+near-zero gradient diversity per step, unlike Experiment 3's randomly-
+shuffled batch_size=64 sampling across unrelated tickers/dates.
+Accumulating gradients over GRAD_ACCUM_DAYS days before each optimizer
+step (still respecting per-day snapshot/graph boundaries) restored real,
+non-collapsing learning in that ablation before this fix was applied here.
 """
 
 import json
@@ -31,6 +43,7 @@ OUT_DIR = "results/experiment5_graph_transformer"
 PATIENCE = 10
 MAX_EPOCHS = 100
 LR = 1e-3
+GRAD_ACCUM_DAYS = 16
 
 
 def run_epoch(model, snapshots, graph, optimizer=None):
@@ -41,15 +54,18 @@ def run_epoch(model, snapshots, graph, optimizer=None):
         random.shuffle(snapshots)
     all_probs, all_targets = [], []
     total_loss = 0.0
-    for snap in snapshots:
+    if is_train:
+        optimizer.zero_grad()
+    for i, snap in enumerate(snapshots):
         same_sector_mask = build_sector_bias(snap.tickers, graph)
         logits = model(snap.price_seq, snap.price_mask, same_sector_mask)
         loss = nn.functional.cross_entropy(logits, snap.target)
         if is_train:
-            optimizer.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimizer.step()
+            (loss / GRAD_ACCUM_DAYS).backward()
+            if (i + 1) % GRAD_ACCUM_DAYS == 0 or i == len(snapshots) - 1:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                optimizer.step()
+                optimizer.zero_grad()
         total_loss += loss.item() * len(snap.tickers)
         all_probs.append(torch.softmax(logits, dim=-1)[:, 1].detach())
         all_targets.append(snap.target)

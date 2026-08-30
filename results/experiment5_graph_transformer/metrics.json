@@ -3,11 +3,11 @@
     "label": "Graph transformer, global attention (price only)",
     "backend": null,
     "accuracy": 0.4870967741935484,
-    "f1": 0.0020920502092050207,
-    "mcc": -0.0008469642874278548,
-    "auc": 0.5249107973398865,
+    "f1": 0.018518518518518517,
+    "mcc": -0.0025519043672312084,
+    "auc": 0.5458439196412457,
     "n_samples": 3720,
-    "best_epoch": 0,
-    "best_val_mcc": 0.02155921393634007
+    "best_epoch": 5,
+    "best_val_mcc": 0.07639651523429
   }
 }

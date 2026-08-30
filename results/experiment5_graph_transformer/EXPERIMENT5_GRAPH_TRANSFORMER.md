@@ -35,31 +35,64 @@ Per-ticker classifier head
 UP / DOWN
 ```
 
+## Diagnosed bug: training collapse from one-gradient-step-per-day batching
+
+The results below supersede an earlier run (MCC -0.0008, F1 0.0021,
+best_epoch 0) whose "Establishes" section originally called this run's own
+failure "genuinely open" as to cause. It is no longer open: root-cause
+investigation (systematic ablation, one variable at a time, prompted by
+the same underlying question as this document's earlier "How we should
+move forward" section) found the failure had nothing to do with the graph,
+the attention mechanism, LayerNorm placement, or hyperparameters. A plain
+`PriceEncoder` + linear classifier, with **no graph or attention layer at
+all**, trained under this experiment's same one-gradient-step-per-trading-day
+loop, collapsed identically (validation MCC exactly 0.0 from epoch 5
+onward). Pre-LN normalization, a learning-rate warmup schedule, and a
+lower learning rate (all tested here, per this document's own prior
+recommendation) each failed to fix it too.
+
+The actual cause: one gradient step per single trading day gives the
+optimizer almost no gradient diversity per step, since every ticker active
+on a given day shares that day's market-wide conditions. Experiment 3, by
+contrast, used `DataLoader(..., batch_size=64, shuffle=True)` -- randomly
+mixing unrelated tickers and dates into each batch. Accumulating gradients
+over `GRAD_ACCUM_DAYS = 16` trading days before each optimizer step (still
+respecting each day's own graph/attention-mask boundaries -- only the
+optimizer step frequency changes) fixed the collapse in a fresh ablation
+before being rolled into `scripts/train_graph_transformer.py` for the real
+run below. The same fix was applied to Experiment 4's `train_gat.py`,
+where it produced that experiment's first genuinely positive result
+(+0.0278 MCC) -- see `results/experiment4_gat/EXPERIMENT4_GAT.md`.
+
 ## Results
 
 | Model | Accuracy | F1 | MCC | AUC |
 |---|---:|---:|---:|---:|
 | Experiment 1 (LSTM, raw tweet count, FS3) | 0.5468 | 0.6363 | +0.0922 | 0.5666 |
 | Experiment 3 price-only (GRU + temporal attention, no graph) | 0.5140 | 0.6720 | +0.0108 | 0.5425 |
-| Experiment 4 sector-graph GAT (price only, post over-smoothing fix) | 0.5099 | 0.6618 | -0.0054 | 0.4953 |
-| **Experiment 5 graph transformer (price only)** | 0.4871 | 0.0021 | -0.0008 | 0.5249 |
+| Experiment 4 sector-graph GAT (price only, post both fixes) | 0.5177 | 0.6699 | +0.0278 | 0.5026 |
+| **Experiment 5 graph transformer (price only, post training-loop fix)** | 0.4871 | 0.0185 | -0.0026 | 0.5458 |
 
-Experiment 5 does not improve on Experiment 4 in any way that matters, and
-in one respect it is worse. The MCC (-0.0008) is nominally closer to zero
-than Experiment 4's (-0.0054), but both are statistically indistinguishable
-from a coin flip -- neither result carries real predictive signal. More
-tellingly, the F1 score collapsed to 0.0021, versus 0.6618 for Experiment 4
-and 0.6720 for Experiment 3: the trained model almost never predicts the
-positive class, meaning it converged to (near-)always predicting "down"
-rather than learning any decision boundary. Training itself corroborates
-this -- `best_epoch` was 0, i.e. validation MCC never improved past its
-very first-epoch value before the patience counter expired at epoch 10, and
-train MCC oscillated around zero for the entire run rather than trending
-upward. Global attention did not close the gap to Experiment 3's
-price-only, no-graph baseline (+0.0108 MCC), let alone Experiment 1's
-tweet-count baseline (+0.0922 MCC); if anything, replacing GAT's local
-attention with global attention made the model harder to train usefully on
-this graph, not easier.
+The literal collapse is gone: the model made a real spread of predictions
+during training (best validation MCC +0.0764 at epoch 5, `metrics.json`),
+not a bit-identical constant one. But the fix did not turn this into a
+working model the way it did for Experiment 4. Validation MCC oscillated
+between roughly -0.11 and +0.076 across 16 epochs with no clear upward
+trend (`results/experiment5_graph_transformer/training_log.txt`), and the
+checkpoint selected by early stopping (epoch 5's validation peak) did not
+generalize: test MCC is -0.0026, and F1 (0.0185) is still close to the
+always-predict-DOWN constant classifier, though no longer bit-identical to
+it (see "Constant-predictor comparison" below).
+
+**Honest reading:** this is a different, more ordinary failure than
+before -- an overfitting/instability pattern (validation signal appears,
+doesn't hold up on test) rather than the earlier literal training
+collapse. Experiment 4's simpler residual-GAT block reached a real,
+generalizing positive result under the identical training-loop fix;
+Experiment 5's larger post-LN Transformer block (two LayerNorms and a
+feedforward sublayer per layer, no learning-rate warmup) did not, which is
+consistent with the architectural differences already disclosed below
+mattering independently of local-vs-global attention.
 
 ### Constant-predictor comparison
 
@@ -70,58 +103,30 @@ check Experiment 5 against the two trivial constant classifiers directly:
 |---|---:|---:|---:|
 | Always predict DOWN (constant) | 0.4871 | 0.0000 | 0.0000 |
 | Always predict UP (constant) | 0.5129 | 0.6780 | 0.0000 |
-| Experiment 5 (actual model) | 0.4871 | 0.0021 | -0.0008 |
+| Experiment 5 (actual model, post-fix) | 0.4871 | 0.0185 | -0.0026 |
 
-Experiment 5's test accuracy (0.4870967741935484) is bit-for-bit identical
-to the always-predict-DOWN constant classifier's accuracy on this split.
-Back-solving the confusion matrix from accuracy/F1/MCC gives the unique
-integer solution TP=2, FP=2, TN=1810, FN=1906: the model made only ~4
-positive ("UP") predictions total across 3720 test examples (2 correct, 2
-incorrect) -- this is not "near-collapse," it *is* the always-DOWN
-constant predictor plus negligible noise. That is much stronger, directly
-verifiable evidence that
-the model degenerated to a near-constant predictor than the F1-vs-Experiment-4
-comparison above.
+Test accuracy is still bit-for-bit identical to the always-DOWN constant
+classifier (0.4870967741935484), but F1 (0.0185, up from 0.0021 pre-fix)
+shows the model now makes noticeably more than ~4 positive predictions
+total -- it is closer to, but no longer indistinguishable from, a pure
+constant predictor.
 
 Worth noting separately: the always-UP constant predictor alone (F1 0.6780,
-MCC 0.0000) beats Experiments 3, 4, *and* 5 on both accuracy and F1 (though
-of course not on MCC, where a constant predictor is definitionally zero).
-That is useful context for how weak all three graph/price-only results are
-in absolute terms -- the comparisons in this document are relative to each
-other and to Experiment 1, not to a trivial baseline that any of them could
-be checked against.
+MCC 0.0000) still beats Experiments 3, 4, *and* 5 on both accuracy and F1
+(though not on MCC, where a constant predictor is definitionally zero) --
+useful context for how weak all of these price-only results remain in
+absolute terms.
 
 ## What this experiment does and doesn't establish
 
-Establishes: whether this training run, as configured, produces a useful
-sector-graph transformer. It does not. `best_epoch` was 0, but that does
-not mean the model barely trained: training takes one gradient step per
-trading-day snapshot, there are 398 unique training dates, so epoch 0
-alone is 398 optimizer steps, and the full run (11 epochs, 0 through 10,
-before early stopping at patience=10) is ~4,378 optimizer steps in total
-(confirmed by re-running and capturing `results/experiment5_graph_transformer/training_log.txt`).
-The optimizer ran plenty of steps -- it just never made progress: train
-loss only ever reached 0.6943 (essentially chance-level cross-entropy,
-ln(2)≈0.6931), and validation MCC never exceeded its epoch-0 value
-(0.0216) across all 11 epochs, oscillating between roughly -0.015 and
-+0.022 with no trend. That is an optimization/architecture failure: the
-model ran for thousands of steps without ever reaching a useful trained
-state, as distinct from reaching one and finding no signal there. The AUC
-(0.5249) is actually above Experiment 4's (0.4953), i.e. some ranking
-signal exists in the model's raw scores even though the thresholded
-predictions collapsed to a single class -- more consistent with a
-collapsed decision head / stuck optimization than with "zero signal
-anywhere in the graph."
-
-This run does *not* establish that the sector-only graph itself carries no
-signal for global attention to exploit. That would require a run whose
-loss actually moved off chance level and still failed to generalize --
-this one didn't get that far (loss bottomed out at chance-level ln(2),
-despite thousands of optimizer steps). Whether the sector-only graph, the
-transformer architecture, or the optimization setup (learning rate, the
-single scalar sector-bias parameterization, lack of a warmup/schedule) is
-the binding constraint remains genuinely open and is not settled by this
-run.
+Establishes: the earlier run's failure was a training-loop bug (fixed),
+not evidence about the sector-only graph or global attention specifically
+-- confirmed by the fact that a graph-free model failed identically under
+the old loop. With that bug fixed, this experiment now establishes that
+*this particular* Transformer block (post-LN, no warmup, two LayerNorms +
+feedforward per layer) still does not generalize on this graph, even
+though it did produce real (non-constant) predictions and some validation
+signal.
 
 Does not establish: whether a sparser or different graph (correlation
 edges, dynamic tweet-co-occurrence edges, or MAN-SF's own Wikidata
@@ -130,7 +135,8 @@ the edge definition (same-sector) is held constant across Experiments 4
 and 5 specifically so the comparison holds the graph constant. This does
 *not* mean the comparison isolates the attention mechanism alone -- see
 "Disclosure" below for the other architectural differences between the
-two models.
+two models, which now look like the more likely explanation for Exp4 vs
+Exp5's diverging results under the identical, now-fixed training loop.
 
 ### Disclosure: architectural differences beyond attention mechanism
 
@@ -155,32 +161,37 @@ attention:
   `MAX_EPOCHS=100` (same setting as Experiment 4), so the epoch budget is
   matched to Experiment 4 but not to Experiment 3.
 
-None of this changes the run's bottom line (it failed to learn), but it
-does mean "global vs local attention" is not the only thing that changed
-between Experiments 4 and 5, and any future attempt to isolate the
-attention mechanism specifically would need to equalize these too.
+This is now the more likely explanation for Experiment 5's continued
+underperformance relative to Experiment 4, since the training-loop bug
+that previously confounded the comparison is fixed in both.
 
 ## How we should move forward
 
-Experiment 5 does not improve on Experiment 4, and both remain well below
-Experiments 1 and 3. But because this run shows an optimization/architecture
-failure (best_epoch 0, thousands of optimizer steps but loss stuck at
-chance level) rather than a converged model that found no signal, it would
-be premature to conclude the sector-only graph is the limiting factor from
-this run alone. Two things are worth trying before drawing that
-conclusion: (1) re-run this exact architecture with a lower learning rate,
-a warmup schedule, and/or more capacity on the single-scalar sector-bias
-term, to see if it can actually reach a trained state; if it still lands
-at MCC ~0 with train loss that has actually moved off chance level, that would
-be much stronger evidence against the sector-only graph. (2) In parallel,
-build a richer edge type -- 20-day rolling return correlation edges or
-dynamic tweet-co-occurrence edges -- per
-`results/experiment4_gat/RELATED_WORK.md`, since that question (does a
-different graph help) is independent of whether this particular training
-run converges. Price-only signal without a graph (Experiment 3) and
-tweet-count signal (Experiment 1) both still outperform either graph
-variant tried so far, so any future graph-based model should be judged
-against those two baselines, not against Experiment 4 or 5.
+With the training-loop bug fixed, Experiment 4's simpler residual-GAT
+block produced this project's first genuinely positive graph result
+(+0.0278 MCC) while this Transformer block did not (-0.0026 MCC) --
+under an identical graph and an identical (now-correct) training loop.
+That points at the architectural differences disclosed above (LayerNorm
+placement, feedforward sublayer, no learning-rate warmup on a post-LN
+block) as the more likely explanation now, rather than local-vs-global
+attention itself. Two concrete next steps, in priority order:
+
+1. **Add a learning-rate warmup schedule and/or switch to pre-LN
+   (`norm_first=True`)** for this Transformer block specifically -- both
+   are standard, well-documented fixes for exactly the post-LN
+   instability pattern disclosed above, and neither requires touching the
+   graph or the global-attention mechanism this experiment exists to test.
+2. **Build a richer edge type** -- 20-day rolling return correlation edges
+   or dynamic tweet-co-occurrence edges, per
+   `results/experiment4_gat/RELATED_WORK.md` -- now that Experiment 4 has
+   shown the sector graph *can* carry real signal once trained correctly,
+   this question is more meaningful than it was before today's fix.
+
+Experiment 4's price-only baseline (+0.0278) is now this project's
+best price-only graph result and the bar any future graph-based model
+(including a re-tuned version of this Transformer) should be judged
+against, alongside Experiment 3 (+0.0108, no graph) and Experiment 1
+(+0.0922, tweet count).
 
 ## Reproducing this experiment
 
@@ -190,7 +201,7 @@ python scripts/train_graph_transformer.py
 
 Runs locally on CPU (no GPU required) -- dense attention over at most ~90
 tickers/day is inexpensive, completes in minutes. `set_seed(42)` is called
-at the start of `main()`, so this is deterministic: a re-run for this fix
-pass reproduced the committed `metrics.json` and per-epoch numbers cited
-above bit-for-bit. Full per-epoch stdout from that re-run is captured in
+at the start of `main()`, so this is deterministic: a re-run reproduced
+the committed `metrics.json` and per-epoch numbers cited above bit-for-bit.
+Full per-epoch stdout is captured in
 `results/experiment5_graph_transformer/training_log.txt`.

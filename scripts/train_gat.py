@@ -1,12 +1,22 @@
 """Trains the sector-graph GAT (Experiment 4): PriceEncoder + 2-layer GAT
-over same-sector edges, one gradient step per trading-day snapshot.
-Reports Accuracy/F1/MCC/AUC on the exact-reproduction test split, in the
-same schema as Experiments 1 and 3.
+over same-sector edges. Reports Accuracy/F1/MCC/AUC on the exact-
+reproduction test split, in the same schema as Experiments 1 and 3.
 
 Reminder before citing results: this is a labeled proxy for MAN-SF's
 GAT+price component (sector edges, not their Wikidata company-relation
 graph) -- see
 docs/superpowers/specs/2026-08-30-sector-graph-gat-neo4j-design.md.
+
+GRAD_ACCUM_DAYS: root-cause fix for a training collapse diagnosed via
+systematic debugging (controlled ablation across GAT/Transformer/no-graph
+variants -- all collapsed identically regardless of architecture). One
+gradient step per single trading day gives the optimizer near-zero
+diversity per step, since every ticker active on a given day shares that
+day's market-wide conditions -- unlike Experiment 3's randomly-shuffled
+batch_size=64 sampling across unrelated tickers/dates. Accumulating
+gradients over GRAD_ACCUM_DAYS days before each optimizer step (still
+respecting per-day snapshot/graph boundaries) restored real, non-collapsing
+learning in a minimal ablation before this fix was applied here.
 """
 
 import json
@@ -31,6 +41,7 @@ OUT_DIR = "results/experiment4_gat"
 PATIENCE = 10
 MAX_EPOCHS = 100
 LR = 1e-3
+GRAD_ACCUM_DAYS = 16
 
 
 def run_epoch(model, snapshots, graph, optimizer=None):
@@ -45,15 +56,18 @@ def run_epoch(model, snapshots, graph, optimizer=None):
         random.shuffle(snapshots)
     all_probs, all_targets = [], []
     total_loss = 0.0
-    for snap in snapshots:
+    if is_train:
+        optimizer.zero_grad()
+    for i, snap in enumerate(snapshots):
         edge_index = edge_index_for_tickers(graph, snap.tickers)
         logits = model(snap.price_seq, snap.price_mask, edge_index)
         loss = nn.functional.cross_entropy(logits, snap.target)
         if is_train:
-            optimizer.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimizer.step()
+            (loss / GRAD_ACCUM_DAYS).backward()
+            if (i + 1) % GRAD_ACCUM_DAYS == 0 or i == len(snapshots) - 1:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                optimizer.step()
+                optimizer.zero_grad()
         total_loss += loss.item() * len(snap.tickers)
         all_probs.append(torch.softmax(logits, dim=-1)[:, 1].detach())
         all_targets.append(snap.target)

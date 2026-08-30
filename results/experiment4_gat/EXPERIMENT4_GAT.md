@@ -69,6 +69,38 @@ trains briefly on a synthetic complete-clique graph and asserts node
 outputs don't collapse to a shared constant; it fails on the pre-fix code
 and passes after the fix.
 
+## Diagnosed bug #2: training collapse from one-gradient-step-per-day batching
+
+After the over-smoothing fix above, this experiment still scored MCC
+-0.0054 — barely different from chance. Root-cause investigation
+(systematic ablation, one variable at a time) found this was **not**
+about the graph or the GAT architecture at all: a plain `PriceEncoder` +
+linear classifier, with no graph structure whatsoever, trained under this
+same per-day loop, collapsed identically (validation MCC exactly 0.0 from
+epoch 5 onward, never recovering). Swapping in the reference GAT paper's
+hyperparameters, using pre-LN instead of post-LN normalization, and adding
+a learning-rate warmup schedule (tested on the graph-transformer
+architecture in Experiment 5, which shares this same training loop) all
+failed to fix it — ruling out architecture and hyperparameters entirely.
+
+The actual cause: one gradient step per single trading day gives the
+optimizer almost no gradient diversity per step, because every ticker
+active on a given day shares that day's market-wide conditions (systemic
+moves, not independent per-ticker signal). Experiment 3, by contrast, used
+`DataLoader(..., batch_size=64, shuffle=True)` — randomly mixing unrelated
+tickers and dates into each batch, which this per-day loop structurally
+could not do. Accumulating gradients over `GRAD_ACCUM_DAYS = 16` trading
+days before each optimizer step (still respecting each day's own
+graph/snapshot boundaries — only the optimizer step frequency changes, not
+what each forward pass sees) fixed it: validation MCC stopped collapsing
+to exactly 0.0 and started showing real, non-degenerate positive signal
+across most epochs in a fresh ablation, before this fix was rolled into
+`scripts/train_gat.py` for a real run.
+
+This resolves lever #2 from this document's own prior "How we should move
+forward" section, which had flagged the per-day training regime as
+untested.
+
 ## Results
 
 All numbers below are on the same 3,720-row exact-reproduction test split
@@ -79,41 +111,36 @@ three `metrics.json` files).
 |---|---:|---:|---:|---:|
 | Experiment 1 (LSTM, raw tweet count, FS3) | 0.5468 | 0.6363 | +0.0922 | 0.5666 |
 | Experiment 3 price-only (GRU + temporal attention, no graph) | 0.5140 | 0.6720 | +0.0108 | 0.5425 |
-| **Experiment 4 sector-graph GAT (price only, post-fix)** | 0.5099 | 0.6618 | -0.0054 | 0.4953 |
+| **Experiment 4 sector-graph GAT (price only, post both fixes)** | 0.5177 | 0.6699 | +0.0278 | 0.5026 |
 
-The collapse is fixed: F1 (0.6618) and AUC (0.4953) show the model is
-making varied, input-dependent predictions again, not a constant output.
-But the result itself is still not a win — test MCC is slightly *negative*
-(-0.0054), essentially indistinguishable from chance, and AUC sits just
-below 0.5. Best validation MCC during training was +0.0556 at epoch 3
-(`best_epoch`/`best_val_mcc` in `metrics.json`), meaning some signal was
-found during training but it did not generalize to the test split.
+With both the over-smoothing fix (residual connections) and the training-loop
+fix (gradient accumulation) applied, this run reaches a genuinely positive
+MCC (+0.0278) for the first time — better than Experiment 3's price-only
+result (+0.0108), though still below Experiment 1's tweet-count baseline
+(+0.0922). Training took 44 epochs to converge before early stopping
+(best validation MCC +0.0892 at epoch 34, per `metrics.json`) — roughly
+4x longer than the pre-fix run's early stopping point, consistent with
+each epoch now containing ~25 optimizer steps (398 training days /
+16 days per accumulated step) instead of 398.
 
-**Honest reading:** fixing the over-smoothing bug turned a completely
-broken model into a working-but-uninformative one. This sector-graph GAT
-does not currently demonstrate a benefit over Experiment 3's price-only
-baseline (+0.0108) or Experiment 1's tweet-count baseline (+0.0922) on
-this dataset/split. Whether that's because sector membership genuinely
-carries little price-prediction signal, or because the training regime
-(one gradient step per day, on graphs that are maximally dense complete
-cliques) still needs further tuning, is not yet resolved — see "How we
-should move forward."
+**Honest reading:** the sector graph, once both bugs are fixed, does show
+a real (if modest) improvement over the no-graph price-only baseline —
+the first positive result any graph-based model in this project has
+produced. It still doesn't beat Experiment 1's raw-tweet-count signal.
+Whether a sparser graph (correlation or dynamic edges) would do better
+than this same-sector graph remains an open, now more meaningful,
+question — see "How we should move forward."
 
 ### Disclosure: remaining differences from Experiment 3
 
-This run's training now uses train-statistic price normalization
-(z-scored using train-split mean/std, applied to dev/test with the same
-statistics) and gradient clipping (max norm 1.0), matching Experiment 3.
-Two differences remain uncontrolled and are worth keeping in mind when
-interpreting the gap to Experiment 3:
-- **Epoch budget**: Experiment 3 used a 50-epoch budget; Experiment 4
-  here still uses `MAX_EPOCHS=100` (unchanged, per plan).
-- **Batching strategy**: Experiment 4 takes one gradient step per
-  trading-day snapshot (all tickers active that day, in whatever order
-  the snapshot list is shuffled to that epoch); Experiment 3 uses
-  shuffled `batch_size=64` sampling over individual training examples.
-  These are structurally different optimization regimes and are not
-  equalized by this fix pass.
+This run's training uses train-statistic price normalization (z-scored
+using train-split mean/std, applied to dev/test with the same statistics),
+gradient clipping (max norm 1.0), and gradient-accumulated batching (see
+"Diagnosed bug #2" above) — all now much closer to Experiment 3's setup
+than the original per-day-step version. One difference remains
+uncontrolled: **epoch budget** — Experiment 3 used a 50-epoch budget;
+Experiment 4 here uses `MAX_EPOCHS=100` (unchanged, per plan), and this
+run used 44 of them.
 
 ## What this experiment does and doesn't establish
 
@@ -126,31 +153,24 @@ Wikidata-relation graph, which is out of scope here.
 
 ## How we should move forward
 
-Two independent levers remain untried, and either could plausibly move
-this result:
+The training-regime lever (gradient accumulation) is now resolved and
+produced this document's first positive result. One lever remains
+untried: **the graph structure itself.** The sector graph's complete-clique
+density is still what caused the over-smoothing bug in the first place,
+and even with residual connections, a maximally dense graph gives the GAT
+the least useful structure to learn from (every node's neighborhood is
+identical: "everyone else in the sector"). Correlation edges (20-day
+rolling return correlation, |corr| > 0.5) or tweet-co-occurrence dynamic
+edges would both be sparser and more selective than "same sector" --
+and, per the project's `docs/superpowers/specs/2026-08-30-sector-graph-gat-neo4j-design.md`
+"Reproduction vs. Contribution" section, are also genuinely absent from
+MAN-SF's own design, which is where this project's actual novelty claim
+over MAN-SF lives.
 
-1. **The graph structure itself.** The sector graph's complete-clique
-   density is what caused the over-smoothing bug in the first place, and
-   even with residual connections, a maximally dense graph gives the GAT
-   the least useful structure to learn from (every node's neighborhood is
-   identical: "everyone else in the sector"). Correlation edges (20-day
-   rolling return correlation, |corr| > 0.5) or tweet-co-occurrence dynamic
-   edges would both be sparser and more selective than "same sector" --
-   and, per the project's `docs/superpowers/specs/2026-08-30-sector-graph-gat-neo4j-design.md`
-   "Reproduction vs. Contribution" section, are also genuinely absent from
-   MAN-SF's own design, which is where this project's actual novelty claim
-   over MAN-SF lives.
-2. **The training regime.** One gradient step per trading-day snapshot is
-   a structurally different (and likely noisier, less iid) optimization
-   regime than Experiment 3's shuffled `batch_size=64` sampling over
-   individual examples -- disclosed as an uncontrolled difference below.
-   Whether batching multiple days together per step (e.g. via
-   `torch_geometric.data.Batch`) changes this result is untested.
-
-Recommend trying a sparser edge type (correlation or dynamic) before
-concluding graph structure doesn't help here at all -- the complete-clique
-sector graph is close to a worst case for GNN message passing, not a
-representative one.
+With the training loop now behaving correctly, a sparser edge type is a
+fair test for the first time -- earlier results (including this one, before
+today's fix) were confounded by an optimizer that couldn't learn from any
+graph, dense or sparse.
 
 ## Reproducing this experiment
 
@@ -159,7 +179,9 @@ python scripts/train_gat.py
 ```
 
 Runs locally on CPU (no GPU required) -- 87 nodes/day, ~500 trading days,
-completes in minutes, not hours.
+completes in minutes, not hours. `set_seed(42)` makes this deterministic;
+full per-epoch stdout is captured in
+`results/experiment4_gat/training_log.txt`.
 
 ## Visualizing the graph
 

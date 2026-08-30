@@ -1,14 +1,19 @@
-Epoch 0: train_loss=0.7013 train_mcc=0.0402 val_mcc=0.0216
-Epoch 1: train_loss=0.6980 train_mcc=-0.0212 val_mcc=0.0216
-Epoch 2: train_loss=0.6975 train_mcc=-0.0182 val_mcc=-0.0026
-Epoch 3: train_loss=0.6993 train_mcc=-0.0167 val_mcc=-0.0071
-Epoch 4: train_loss=0.6958 train_mcc=-0.0399 val_mcc=0.0000
-Epoch 5: train_loss=0.6958 train_mcc=0.0031 val_mcc=-0.0153
-Epoch 6: train_loss=0.6950 train_mcc=-0.0499 val_mcc=0.0000
-Epoch 7: train_loss=0.6948 train_mcc=-0.0215 val_mcc=0.0000
-Epoch 8: train_loss=0.6945 train_mcc=-0.0410 val_mcc=0.0000
-Epoch 9: train_loss=0.6946 train_mcc=-0.0162 val_mcc=0.0000
-Epoch 10: train_loss=0.6943 train_mcc=-0.0239 val_mcc=0.0000
-Early stopping at epoch 10
-Test metrics: {'accuracy': 0.4870967741935484, 'f1': 0.0020920502092050207, 'mcc': -0.0008469642874278548, 'auc': 0.5249107973398865}
+Epoch 0: train_loss=0.7051 train_mcc=-0.0317 val_mcc=0.0249
+Epoch 1: train_loss=0.6974 train_mcc=-0.0265 val_mcc=0.0061
+Epoch 2: train_loss=0.6957 train_mcc=-0.0150 val_mcc=-0.0434
+Epoch 3: train_loss=0.6972 train_mcc=-0.0336 val_mcc=0.0136
+Epoch 4: train_loss=0.6944 train_mcc=0.0022 val_mcc=0.0291
+Epoch 5: train_loss=0.6956 train_mcc=0.0006 val_mcc=0.0764
+Epoch 6: train_loss=0.6951 train_mcc=-0.0235 val_mcc=-0.0550
+Epoch 7: train_loss=0.6938 train_mcc=0.0101 val_mcc=0.0050
+Epoch 8: train_loss=0.6942 train_mcc=-0.0032 val_mcc=-0.0808
+Epoch 9: train_loss=0.6964 train_mcc=0.0001 val_mcc=0.0140
+Epoch 10: train_loss=0.6955 train_mcc=-0.0244 val_mcc=0.0071
+Epoch 11: train_loss=0.6935 train_mcc=0.0077 val_mcc=-0.0470
+Epoch 12: train_loss=0.6958 train_mcc=-0.0081 val_mcc=-0.1073
+Epoch 13: train_loss=0.6938 train_mcc=-0.0007 val_mcc=-0.0879
+Epoch 14: train_loss=0.6939 train_mcc=0.0135 val_mcc=-0.0752
+Epoch 15: train_loss=0.6940 train_mcc=0.0018 val_mcc=-0.0002
+Early stopping at epoch 15
+Test metrics: {'accuracy': 0.4870967741935484, 'f1': 0.018518518518518517, 'mcc': -0.0025519043672312084, 'auc': 0.5458439196412457}
 Saved results/experiment5_graph_transformer/metrics.json
