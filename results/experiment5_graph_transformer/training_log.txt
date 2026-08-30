@@ -1,0 +1,14 @@
+Epoch 0: train_loss=0.7013 train_mcc=0.0402 val_mcc=0.0216
+Epoch 1: train_loss=0.6980 train_mcc=-0.0212 val_mcc=0.0216
+Epoch 2: train_loss=0.6975 train_mcc=-0.0182 val_mcc=-0.0026
+Epoch 3: train_loss=0.6993 train_mcc=-0.0167 val_mcc=-0.0071
+Epoch 4: train_loss=0.6958 train_mcc=-0.0399 val_mcc=0.0000
+Epoch 5: train_loss=0.6958 train_mcc=0.0031 val_mcc=-0.0153
+Epoch 6: train_loss=0.6950 train_mcc=-0.0499 val_mcc=0.0000
+Epoch 7: train_loss=0.6948 train_mcc=-0.0215 val_mcc=0.0000
+Epoch 8: train_loss=0.6945 train_mcc=-0.0410 val_mcc=0.0000
+Epoch 9: train_loss=0.6946 train_mcc=-0.0162 val_mcc=0.0000
+Epoch 10: train_loss=0.6943 train_mcc=-0.0239 val_mcc=0.0000
+Early stopping at epoch 10
+Test metrics: {'accuracy': 0.4870967741935484, 'f1': 0.0020920502092050207, 'mcc': -0.0008469642874278548, 'auc': 0.5249107973398865}
+Saved results/experiment5_graph_transformer/metrics.json

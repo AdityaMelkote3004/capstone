@@ -92,3 +92,8 @@ def test_stock_graph_transformer_does_not_collapse_after_training():
     with torch.no_grad():
         logits = model(price_seq, price_mask, same_sector_mask)
     assert logits.std(dim=0).mean().item() > 1e-4
+    # Nonzero logit variance alone isn't enough: the real Experiment 5 run
+    # collapsed to predicting one class ~99.95% of the time while presumably
+    # still having nonzero logit variance, so also assert the model actually
+    # uses both classes on this balanced synthetic target.
+    assert len(torch.unique(logits.argmax(dim=-1))) == 2
