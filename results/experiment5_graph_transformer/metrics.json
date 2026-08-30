@@ -1,0 +1,13 @@
+{
+  "test": {
+    "label": "Graph transformer, global attention (price only)",
+    "backend": null,
+    "accuracy": 0.4870967741935484,
+    "f1": 0.0020920502092050207,
+    "mcc": -0.0008469642874278548,
+    "auc": 0.5249107973398865,
+    "n_samples": 3720,
+    "best_epoch": 0,
+    "best_val_mcc": 0.02155921393634007
+  }
+}
