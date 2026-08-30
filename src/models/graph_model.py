@@ -51,7 +51,19 @@ def edge_index_for_tickers(graph: nx.Graph, tickers: list) -> torch.Tensor:
 
 class StockGAT(nn.Module):
     """Price-only sector-graph GAT: PriceEncoder per ticker -> 2-layer
-    GATConv over the sector graph -> per-ticker binary classifier."""
+    GATConv over the sector graph -> per-ticker binary classifier.
+
+    Each GAT layer is wrapped in a residual connection (h = h + GATConv(h)).
+    This is not optional polish: the sector graph is a set of disjoint
+    complete cliques (every ticker connected to every other ticker in its
+    sector), and message passing over a complete graph over-smooths very
+    fast -- diagnosed empirically (see git history / EXPERIMENT4_GAT.md)
+    by finding that two plain (non-residual) GATConv layers collapsed every
+    node's output to a bit-identical constant regardless of its own input,
+    independent of hyperparameters. The residual path preserves each
+    ticker's own price signal alongside the sector-averaged one instead of
+    fully replacing it.
+    """
 
     def __init__(self, price_input_dim: int = 3, hidden_dim: int = 64,
                  heads: int = 4, dropout: float = 0.2):
@@ -70,7 +82,7 @@ class StockGAT(nn.Module):
     def forward(self, price_seq: torch.Tensor, price_mask: torch.Tensor,
                 edge_index: torch.Tensor) -> torch.Tensor:
         node_features = self.price_encoder(price_seq, price_mask)
-        h = torch.relu(self.gat1(node_features, edge_index))
+        h = node_features + torch.relu(self.gat1(node_features, edge_index))
         h = self.dropout(h)
-        h = torch.relu(self.gat2(h, edge_index))
+        h = h + torch.relu(self.gat2(h, edge_index))
         return self.classifier(h)

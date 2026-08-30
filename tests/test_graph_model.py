@@ -1,3 +1,5 @@
+from itertools import combinations
+
 import torch
 
 from src.models.graph_model import StockGAT, build_sector_graph, edge_index_for_tickers
@@ -49,3 +51,47 @@ def test_stock_gat_forward_with_no_edges():
     logits = model(price_seq, price_mask, edge_index)
     assert logits.shape == (3, 2)
     assert torch.isfinite(logits).all()
+
+
+def test_stock_gat_does_not_collapse_nodes_on_a_complete_clique_after_training():
+    """Regression test for a diagnosed over-smoothing bug: on the sector
+    graph (a set of disjoint complete cliques -- every ticker connected to
+    every other ticker in its sector), two plain (non-residual) GATConv
+    layers were empirically found to collapse every node's output to a
+    bit-identical constant regardless of its own distinct input, after a
+    few epochs of training, independent of hyperparameters (an untrained,
+    freshly-initialized model does not show the collapse -- it only
+    emerges once gradient descent has run, so this test trains briefly
+    before checking, mirroring how the bug was actually found). The
+    residual connections in StockGAT.forward (h = h + GATConv(h)) exist
+    specifically to prevent this. This test fails if that regression
+    reappears."""
+    torch.manual_seed(0)
+    n = 8
+    model = StockGAT(price_input_dim=3, hidden_dim=16, heads=2)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+    price_seq = torch.randn(n, 4, 3)
+    price_mask = torch.ones(n, 4)
+    target = torch.tensor([0, 1, 0, 1, 0, 1, 0, 1])
+    src, dst = [], []
+    for a, b in combinations(range(n), 2):
+        src.extend([a, b])
+        dst.extend([b, a])
+    edge_index = torch.tensor([src, dst], dtype=torch.long)
+
+    for _ in range(30):
+        logits = model(price_seq, price_mask, edge_index)
+        loss = torch.nn.functional.cross_entropy(logits, target)
+        optimizer.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        optimizer.step()
+
+    model.eval()
+    with torch.no_grad():
+        logits = model(price_seq, price_mask, edge_index)
+    # Different tickers with genuinely different price histories must not
+    # produce bit-identical logits after training on a complete-clique
+    # graph -- that exact symptom (std == 0.0 across nodes) is what over-
+    # smoothing produced before the residual fix.
+    assert logits.std(dim=0).mean().item() > 1e-4
