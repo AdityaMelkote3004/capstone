@@ -7,7 +7,9 @@ Requires NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD in a local .env (see
 environment only -- never hardcoded, never logged, never committed.
 """
 
-import os
+import sys, os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
