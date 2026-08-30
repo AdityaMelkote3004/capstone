@@ -34,23 +34,63 @@ UP / DOWN
 
 ## Results
 
+All numbers below are on the same 3,720-row exact-reproduction test split
+used by Experiments 1 and 3 (`n_samples` confirmed to match across all
+three `metrics.json` files).
+
 | Model | Accuracy | F1 | MCC | AUC |
 |---|---:|---:|---:|---:|
-| Sector-graph GAT (price only) | 0.5091 | 0.1700 | +0.0745 | 0.5079 |
+| Experiment 1 (LSTM, raw tweet count, FS3) | 0.5468 | 0.6363 | +0.0922 | 0.5666 |
+| Experiment 3 price-only (GRU + temporal attention, no graph) | 0.5140 | 0.6720 | +0.0108 | 0.5425 |
+| **Experiment 4 sector-graph GAT (price only)** | 0.4871 | 0.0000 | 0.0000 | 0.4628 |
 
-Compared against:
-- Experiment 1 baseline (LSTM, raw tweet count): MCC +0.092
-- Experiment 3 price-only (GRU + temporal attention, no graph): MCC +0.036
+(Experiment 3's real price-only number is MCC +0.0108, not the +0.036
+previously and incorrectly cited in this document — that figure does not
+appear anywhere in this repo's results. Source:
+`results/experiment3_mansf_bilinear/final_run/Price_Only/metrics.json`.)
 
-The sector-graph GAT (MCC +0.0745) improves meaningfully over Experiment
-3's price-only result (+0.036) — roughly double the MCC — suggesting that
-letting a ticker's representation attend to its same-sector neighbors adds
-real signal beyond treating each stock independently. It still falls short
-of Experiment 1's LSTM/raw-tweet-count baseline (+0.092), so adding the
-sector graph closes part of, but not all of, the gap to that baseline.
-Training also stopped early (epoch 14 of a possible 100, patience 10),
-which caps how much the model was able to exploit the graph structure
-before validation MCC plateaued.
+This run (post price-normalization fix, see disclosure below) trained for
+11 epochs before early stopping (patience 10), with the best validation
+MCC recorded at **epoch 0** (best_val_mcc = 0.0). In other words, model
+selection never found an epoch past initialization-level training where
+the model did anything other than collapse to predicting a single class:
+F1 = 0.0 means the model never predicts the positive class on the test
+set at all, and AUC = 0.4628 is *below* 0.5 — the model's ranking of
+examples by predicted probability is anti-informative, not merely
+uninformative. Accuracy (0.4871) sits below what a majority-class
+classifier would achieve if the test set's positive rate exceeds ~48.7%.
+
+None of this supports "adds real signal." On every one of the four
+metrics, this run is worse than Experiment 3's price-only baseline (which
+itself is only barely above chance), and it is also worse than the
+previous, incorrect version of this experiment's own number
+(accuracy 0.5091, F1 0.1700, MCC +0.0745, AUC 0.5079) — which was itself
+already a near-degenerate classifier being trained on unnormalized inputs
+with an outlier price feature reaching |values| > 6500. The honest reading
+is that the previously reported "improvement" was most likely an artifact
+of how the unnormalized data happened to interact with GRU gating and
+training dynamics in that specific (uncontrolled) run, not evidence that
+sector-neighbor attention adds predictive signal. With price inputs
+properly z-scored and the optimizer brought in line with Experiment 3,
+this sector-graph GAT does not demonstrate any benefit over a price-only,
+non-graph baseline on this dataset/split, and in this run it fails to
+learn a non-degenerate classifier at all.
+
+### Disclosure: remaining differences from Experiment 3
+
+This run's training now uses train-statistic price normalization
+(z-scored using train-split mean/std, applied to dev/test with the same
+statistics) and gradient clipping (max norm 1.0), matching Experiment 3.
+Two differences remain uncontrolled and are worth keeping in mind when
+interpreting the gap to Experiment 3:
+- **Epoch budget**: Experiment 3 used a 50-epoch budget; Experiment 4
+  here still uses `MAX_EPOCHS=100` (unchanged, per plan).
+- **Batching strategy**: Experiment 4 takes one gradient step per
+  trading-day snapshot (all tickers active that day, in whatever order
+  the snapshot list is shuffled to that epoch); Experiment 3 uses
+  shuffled `batch_size=64` sampling over individual training examples.
+  These are structurally different optimization regimes and are not
+  equalized by this fix pass.
 
 ## What this experiment does and doesn't establish
 

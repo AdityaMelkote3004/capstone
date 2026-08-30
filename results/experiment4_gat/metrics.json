@@ -2,9 +2,12 @@
   "test": {
     "label": "Sector-graph GAT (price only)",
     "backend": null,
-    "accuracy": 0.5091397849462366,
-    "f1": 0.17,
-    "mcc": 0.0744529999943403,
-    "auc": 0.5079139882729161
+    "accuracy": 0.4870967741935484,
+    "f1": 0.0,
+    "mcc": 0.0,
+    "auc": 0.46275080293963844,
+    "n_samples": 3720,
+    "best_epoch": 0,
+    "best_val_mcc": 0.0
   }
 }
