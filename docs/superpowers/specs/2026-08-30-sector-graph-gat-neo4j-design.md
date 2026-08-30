@@ -104,18 +104,25 @@ Loss computed over all tickers present that day, summed/averaged per batch
 Separately, once (not per-epoch): the full static 88-node sector graph is
 pushed to Neo4j for browsing — this path never touches the training loop.
 
-## Neo4j Setup (local)
+## Neo4j Setup (Aura, cloud free tier)
 
-- User runs Neo4j Desktop (or Docker) locally, provides bolt URI / user /
-  password (default `bolt://localhost:7687`, `neo4j`/user-chosen password).
+- User provisions a free instance at https://console.neo4j.io (Google SSO
+  login to the console; the Bolt driver itself authenticates separately via
+  a generated connection URI + password, not the Google credentials).
 - `scripts/export_graph_to_neo4j.py` reads credentials from environment
-  variables (`NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`) — never hardcoded.
+  variables (`NEO4J_URI` — `neo4j+s://xxxxxxxx.databases.neo4j.io`,
+  `NEO4J_USER` — default `neo4j`, `NEO4J_PASSWORD`) — never hardcoded, never
+  committed. A `.env.example` (no real values) documents the three variables;
+  the real `.env` stays gitignored.
 - Schema: `(:Ticker {symbol, sector, name})-[:SAME_SECTOR]-(:Ticker)`. Script
   is idempotent (`MERGE`, not `CREATE`) so re-running it doesn't duplicate
   nodes/edges.
 - Node count 88, sector edges within a 5-13-ticker sector are a small
   complete subgraph each — total edges are modest (well under 1,000),
-  no performance concerns for local Neo4j.
+  comfortably within Aura Free's node/relationship limits.
+- Only ticker symbols, names, and sector labels are pushed — no price data,
+  no tweet text, no fundamentals — so there's no sensitive-data concern in
+  sending this to a cloud-hosted instance.
 
 ## Model Details
 
