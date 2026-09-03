@@ -17,6 +17,7 @@ class DaySnapshot:
     price_seq: torch.Tensor   # (N, 4, 3)
     price_mask: torch.Tensor  # (N, 4)
     target: torch.Tensor      # (N,)
+    date: str = ""            # "YYYY-MM-DD"; used by Experiment 6 to look up that day's edges
 
 
 def _row_to_price_seq(row: pd.Series) -> torch.Tensor:
@@ -55,11 +56,12 @@ def build_daily_snapshots(df: pd.DataFrame, split: str) -> list:
     chronologically, returning one DaySnapshot per date."""
     subset = df[df["Split"] == split].sort_values("Target_Date")
     snapshots = []
-    for _, day_df in subset.groupby("Target_Date", sort=True):
+    for day_value, day_df in subset.groupby("Target_Date", sort=True):
         tickers = day_df["Ticker"].tolist()
         price_seq = torch.stack([_row_to_price_seq(row) for _, row in day_df.iterrows()])
         price_mask = torch.stack([_window_mask(wl) for wl in day_df["Window_Length"]])
         target = torch.tensor(day_df["Target"].values, dtype=torch.long)
         snapshots.append(DaySnapshot(tickers=tickers, price_seq=price_seq,
-                                      price_mask=price_mask, target=target))
+                                      price_mask=price_mask, target=target,
+                                      date=str(day_value)[:10]))
     return snapshots
