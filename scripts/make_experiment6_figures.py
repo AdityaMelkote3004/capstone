@@ -19,7 +19,7 @@ SECTOR_CSV = "dataset/final/sector_mapping.csv"
 BASELINES = {"Exp1 LSTM+tweets": 0.0922, "Exp3 price-only": 0.0108, "Exp4 sector GAT": 0.0278}
 
 
-def draw_graph(pairs, sectors, title, path):
+def draw_graph(pairs, sectors: dict, title: str, path: str) -> None:
     g = nx.Graph()
     g.add_nodes_from(sectors)
     g.add_edges_from(pairs)
@@ -37,7 +37,7 @@ def draw_graph(pairs, sectors, title, path):
     plt.close()
 
 
-def main():
+def main() -> None:
     os.makedirs(FIG_DIR, exist_ok=True)
     sectors = pd.read_csv(SECTOR_CSV).set_index("Ticker")["Sector"].to_dict()
     cache = load_edge_cache(os.path.join(OUT_DIR, "edge_cache.pkl"))
