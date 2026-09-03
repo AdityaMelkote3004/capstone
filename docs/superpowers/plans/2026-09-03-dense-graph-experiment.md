@@ -1542,60 +1542,97 @@ git commit -m "Add Experiment 6 Colab notebook"
 
 ---
 
-## Task 10: Local Pass-1 validation run
+## Task 10: Local smoke validation (NOT the full grid)
 
 **Files:**
-- None created; this validates Tasks 1-8 end-to-end on real data before the
-  notebook is handed over, following this project's established
-  "validate locally before shipping" practice.
+- None created.
 
-- [ ] **Step 1: Run Pass 1 locally**
+The full grid runs on Colab's GPU, not here. This task's only job is to
+prove the wiring works end-to-end on real data before the user spends GPU
+time on it — this project's established "validate locally before shipping"
+practice, scoped down to minutes rather than hours.
 
-Run: `python scripts/run_dense_graph_grid.py --pass 1`
+- [ ] **Step 1: Run the whole test suite**
 
-Expected: builds the edge cache once, then trains 14 cells, printing an MCC
-line per cell and writing `results/experiment6_dense_graph/results.csv`.
-This is CPU-bound and may take 1-3 hours; that is expected.
+Run: `pytest tests/ -v`
+Expected: every test passes, including the leakage tests from Tasks 1-3 and
+the anti-collapse regressions from Task 4.
 
-- [ ] **Step 2: Check the results for the leakage tripwire**
+- [ ] **Step 2: Train exactly two cells end-to-end on real data**
 
-Run:
+This exercises the full path — edge cache, snapshot loading, edge
+combination, model forward/backward, early stopping, result recording — on
+the two models most likely to break (the adapter-wrapped GAT, and R-GCN,
+the only model consuming `edge_type`).
+
 ```bash
 python -c "
+import sys, os, time; sys.path.insert(0,'.')
 import pandas as pd
-df = pd.read_csv('results/experiment6_dense_graph/results.csv')
-print(df[['model','edges','mcc','f1','auc']].sort_values('mcc', ascending=False).to_string(index=False))
-hi = df[df['mcc'] > 0.15]
-if len(hi):
-    print('\n*** LEAKAGE TRIPWIRE: cells above MCC 0.15 ***')
-    print(hi.to_string(index=False))
-    print('Re-audit the edge builders cutoffs before reporting these.')
-else:
-    print('\nNo cell exceeds MCC 0.15 -- no leakage tripwire raised.')
+from scripts.run_dense_graph_grid import (train_one, record, MODELS, EXACT,
+                                          FINAL, SECTOR_CSV, EDGE_CACHE, OUT_DIR)
+from src.data.edge_cache import build_edge_cache, load_edge_cache
+from src.data.graph_dataset import build_daily_snapshots, normalize_price_snapshots
+
+os.makedirs(OUT_DIR, exist_ok=True)
+cache = load_edge_cache(EDGE_CACHE) if os.path.exists(EDGE_CACHE) else build_edge_cache(EXACT, FINAL, SECTOR_CSV, EDGE_CACHE)
+print('edge cache days:', len(cache))
+
+df = pd.read_parquet(EXACT)
+tr = build_daily_snapshots(df,'train'); dv = build_daily_snapshots(df,'dev'); te = build_daily_snapshots(df,'test')
+normalize_price_snapshots(tr, dv, te)
+print('snapshots:', len(tr), len(dv), len(te))
+
+for model_name in ['GAT','RGCN']:
+    t0 = time.time()
+    res = train_one(model_name, ['sector','correlation'], 0, (tr,dv,te), cache)
+    print(f\"{model_name}: MCC={res['mcc']:+.4f} F1={res['f1']:.4f} AUC={res['auc']:.4f} n={res['n_samples']} ({time.time()-t0:.0f}s)\")
+    assert res['n_samples'] == 3720, 'test split must stay comparable to Experiments 1/3/4/5'
+print('OK: full pipeline runs end to end')
 "
 ```
 
-Per the spec, any cell above ~0.15 MCC must be treated as suspected leakage
-and re-audited, not reported as success.
+Expected: prints an MCC/F1/AUC line for each of GAT and RGCN, asserts
+`n_samples == 3720`, and ends with `OK: full pipeline runs end to end`.
+
+**If either cell exceeds MCC 0.15, stop and report it** — per the spec's
+leakage tripwire, that is a suspected-leakage signal to be re-audited, not
+a success to celebrate.
 
 - [ ] **Step 3: Generate figures and confirm they render**
 
 Run: `python scripts/make_experiment6_figures.py`
-Expected: five PNGs exist under `results/experiment6_dense_graph/figures/`.
+Expected: `graph_sector.png`, `graph_correlation.png`, `graph_comention.png`,
+and `edge_density_over_time.png` exist under
+`results/experiment6_dense_graph/figures/`. Confirm the three graph renders
+show visibly different structure — sector as dense blobs, correlation and
+co-mention as sparser — since that visual difference is the point of the
+whole experiment.
 
-- [ ] **Step 4: Commit the Pass-1 results**
+- [ ] **Step 4: Commit the figures and edge cache metadata**
 
 ```bash
-git add results/experiment6_dense_graph/
-git commit -m "Add Experiment 6 Pass 1 results (14 cells) and figures"
+git add results/experiment6_dense_graph/figures/
+git commit -m "Add Experiment 6 graph structure figures from smoke validation"
 ```
+
+Do NOT commit `results.csv` or `edge_cache.pkl` from this smoke run — the
+real grid runs on Colab, and a partial local results file would cause the
+runner to skip those cells there.
 
 ---
 
-## Task 11: Results write-up
+## Task 11: Results write-up — BLOCKED until Colab results return
 
 **Files:**
 - Create: `results/experiment6_dense_graph/EXPERIMENT6_DENSE_GRAPH.md`
+
+**This task cannot start until the user has run the notebook on Colab and
+brought back `results.csv`.** The grid runs on Colab's GPU, not locally, so
+there are no real numbers to write up before then. An implementer reaching
+this task with no `results/experiment6_dense_graph/results.csv` present
+should stop and report that the task is blocked, rather than writing a
+document with placeholder or invented numbers.
 
 - [ ] **Step 1: Write the results document**
 
