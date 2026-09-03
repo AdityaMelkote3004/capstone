@@ -73,26 +73,58 @@ Static. Two tickers are connected iff they share a `Sector`. 87 nodes,
 sector-only cells of this grid are a direct re-run of Experiment 4 and
 serve as the multi-seed sanity check on its `+0.0278` result.
 
-### 2. Correlation edges — `build_correlation_edges(returns, target_date, window=20, k=5, min_periods=10)`
-For target date `t`: take the **20 trading days strictly before `t`**
+### 2. Correlation edges — `build_correlation_edges(returns, target_date, window=60, k=5, min_periods=10)`
+For target date `t`: take the **60 trading days strictly before `t`**
 (i.e. ending at `t-1`), compute the pairwise Pearson correlation of daily
 returns, and connect each ticker to its **top-`k` most correlated
 partners by |ρ|**.
 
 **Top-k, not a global threshold.** Measured during design: a `|ρ| > 0.5`
-threshold on a 20-day window yields **2,130 edges — 5.6x denser than the
-sector graph's 381**, covering 57% of all possible pairs. Graph density is
-precisely what caused Experiment 4's over-smoothing collapse, so a
-threshold-based correlation graph would reproduce that failure mode by
-construction. Top-k gives direct density control (~435 edges at k=5),
-guarantees no isolated nodes, and makes density a tunable axis rather than
-an emergent accident. `k` is a parameter; `k=5` is the default.
+threshold yields **2,130 edges — 5.6x denser than the sector graph's
+381**, covering 57% of all possible pairs. Graph density is precisely what
+caused Experiment 4's over-smoothing collapse, so a threshold-based
+correlation graph would reproduce that failure mode by construction.
+Top-k gives direct density control, guarantees no isolated nodes, and
+makes density a tunable axis rather than an emergent accident. Measured at
+`window=60, k=5`: **~330 edges** steady-state, comparable to the sector
+graph's 381 and 8.8% density. `k` is a parameter; `k=5` is the default.
 
-**`min_periods=10`**: the return matrix is **39% NaN** (tickers listing
-mid-period — e.g. AGFS from 2015-01-07 — and non-overlapping trading
-days). Without a minimum-overlap requirement, pandas will happily compute
-a correlation of 1.0 from two overlapping observations. Pairs with fewer
-than 10 overlapping return observations in the window produce no edge.
+**Window is 60 days, not 20, because of the sparsity of the return
+matrix.** The matrix is **39% NaN**, and this is *not* mid-period
+listings: **all 87 tickers have gaps inside their own active range**, and
+no ticker exceeds 404 of 504 trading days (worst: AGFS at 145). Each
+ticker is missing roughly 40% of days, scattered.
+
+The practical consequence, measured across the full date range:
+
+| Window | Ticker pairs with >=10 overlapping days | Avg valid partners per ticker |
+|---|---|---|
+| 20 days | 28.7% of 3741 | 24.9 of 86 |
+| 40 days | 93.2% | 75.0 |
+| **60 days** | **97.7%** | **82.9** |
+| 90 days | 97.7% | 84.2 |
+
+At a 20-day window, top-k selection would be drawn from a candidate set
+restricted to whichever tickers happened to trade on the same days — the
+resulting "most correlated partners" would encode **data availability, not
+market behaviour**, a confound invisible in the results table. 60 days is
+the point where coverage saturates (90 days buys nothing further), so it
+is the default.
+
+**`min_periods=10`**: pairs with fewer than 10 overlapping return
+observations in the window produce no edge. Without this, pandas computes
+a correlation of 1.0 from two shared observations. At `window=60` this
+guard now rejects only ~2.3% of pairs rather than the 71% it would reject
+at `window=20`.
+
+**Warm-up behaviour (documented, not a bug)**: the first trading days of
+the dataset have insufficient history for a full window. Measured:
+day 5 yields 0 correlation edges, day 15 yields 63, and the graph reaches
+its steady ~330 by roughly day 40. This affects only ~30 of the 398
+training days (7.5%); the dev and test splits begin far later and are
+entirely unaffected. Days with insufficient history return an **empty
+correlation neighbourhood**, never an error — nodes fall back to whatever
+other edge types the combination includes, or to self-loops alone.
 
 **Leakage guard**: the window is `[t-window, t-1]` — it never includes `t`
 or anything after. Unit-tested by constructing a returns series where the
