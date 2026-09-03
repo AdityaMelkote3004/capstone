@@ -97,3 +97,59 @@ def test_load_returns_matrix_shape_on_real_data():
     df = load_returns_matrix("dataset/final/stocknet_final_modeling_set.parquet")
     assert df.shape == (504, 87)
     assert df.notna().sum().sum() == 26603
+
+
+from src.data.graph_edges import (build_comention_edges, extract_cashtags,
+                                  load_event_texts)
+
+UNIVERSE = {"AAPL", "MSFT", "GOOG", "BAC"}
+
+
+def test_extract_cashtags_handles_the_corpus_space_format():
+    # The corpus writes cashtags as "$ aapl", with a space after the dollar.
+    got = extract_cashtags("$ aapl - online retail sales up -> URL $ msft", UNIVERSE)
+    assert got == {"AAPL", "MSFT"}
+
+
+def test_extract_cashtags_ignores_tickers_outside_the_universe():
+    got = extract_cashtags("$ aapl and $ tsla and $ zzzz", UNIVERSE)
+    assert got == {"AAPL"}
+
+
+def test_comention_pairs_every_mentioned_ticker():
+    texts = {pd.Timestamp("2020-01-06"): ["$ aapl beats $ msft and $ goog today"]}
+    edges = build_comention_edges(texts, pd.Timestamp("2020-01-07"), UNIVERSE, lookback=5)
+    assert edges == {("AAPL", "GOOG"), ("AAPL", "MSFT"), ("GOOG", "MSFT")}
+
+
+def test_single_ticker_mention_creates_no_edge():
+    texts = {pd.Timestamp("2020-01-06"): ["$ aapl going up"]}
+    edges = build_comention_edges(texts, pd.Timestamp("2020-01-07"), UNIVERSE, lookback=5)
+    assert edges == set()
+
+
+def test_leakage_target_day_tweets_are_excluded():
+    """Tweets dated on the target day itself must never inform that day."""
+    texts = {
+        pd.Timestamp("2020-01-06"): ["$ aapl with $ msft"],
+        pd.Timestamp("2020-01-07"): ["$ goog with $ bac"],   # the target day
+    }
+    edges = build_comention_edges(texts, pd.Timestamp("2020-01-07"), UNIVERSE, lookback=5)
+    assert ("AAPL", "MSFT") in edges
+    assert ("BAC", "GOOG") not in edges, "target-day tweets must be excluded"
+
+
+def test_lookback_window_is_respected():
+    texts = {
+        pd.Timestamp("2020-01-01"): ["$ aapl with $ msft"],   # far in the past
+        pd.Timestamp("2020-01-20"): ["$ goog with $ bac"],    # just before target
+    }
+    edges = build_comention_edges(texts, pd.Timestamp("2020-01-21"), UNIVERSE, lookback=3)
+    assert ("BAC", "GOOG") in edges
+    assert ("AAPL", "MSFT") not in edges, "outside the lookback window"
+
+
+def test_load_event_texts_on_real_data():
+    texts = load_event_texts("dataset/final/stocknet_final_modeling_set.parquet")
+    assert len(texts) > 300
+    assert all(isinstance(v, list) for v in texts.values())
