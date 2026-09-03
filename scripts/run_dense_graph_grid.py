@@ -52,7 +52,8 @@ class GATAdapter(nn.Module):
         super().__init__()
         self.inner = StockGAT()
 
-    def forward(self, price_seq, price_mask, edge_index, edge_type=None):
+    def forward(self, price_seq: torch.Tensor, price_mask: torch.Tensor,
+                edge_index: torch.Tensor, edge_type: torch.Tensor = None) -> torch.Tensor:
         return self.inner(price_seq, price_mask, edge_index)
 
 
@@ -69,7 +70,7 @@ PASS_SPEC = {
 }
 
 
-def edge_combos():
+def edge_combos() -> list:
     """All 7 non-empty subsets of the three relations, shortest first."""
     out = []
     for r in (1, 2, 3):
@@ -78,7 +79,8 @@ def edge_combos():
     return out
 
 
-def run_epoch(model, snapshots, cache, combo, optimizer=None):
+def run_epoch(model: nn.Module, snapshots: list, cache: dict, combo: list,
+              optimizer: torch.optim.Optimizer = None) -> tuple:
     is_train = optimizer is not None
     model.train(is_train)
     if is_train:
@@ -114,7 +116,7 @@ def run_epoch(model, snapshots, cache, combo, optimizer=None):
     }
 
 
-def train_one(model_name, combo, seed, snaps, cache):
+def train_one(model_name: str, combo: list, seed: int, snaps: tuple, cache: dict) -> dict:
     set_seed(seed)
     train_snaps, dev_snaps, test_snaps = snaps
     model = MODELS[model_name]()
@@ -140,15 +142,23 @@ def train_one(model_name, combo, seed, snaps, cache):
     return test
 
 
-def already_done(model_name, combo, seed):
+def already_done(model_name: str, combo: list, seed: int) -> bool:
     if not os.path.exists(RESULTS_CSV):
         return False
-    df = pd.read_csv(RESULTS_CSV)
+    try:
+        df = pd.read_csv(RESULTS_CSV)
+    except (pd.errors.EmptyDataError, pd.errors.ParserError):
+        # A crash mid-write (Colab session death, OOM kill) can leave the
+        # results file zero bytes or with a truncated last line. Treat that
+        # as "nothing recorded yet" and re-run the cell rather than dying on
+        # resume -- which is the exact scenario this skip logic exists for.
+        return False
+    df = df.dropna(subset=["model", "edges", "seed"])
     key = (df["model"] == model_name) & (df["edges"] == "+".join(combo)) & (df["seed"] == seed)
     return bool(key.any())
 
 
-def record(model_name, combo, seed, test):
+def record(model_name: str, combo: list, seed: int, test: dict) -> None:
     label = f"{model_name} [{'+'.join(combo)}] seed={seed}"
     run_dir = os.path.join(OUT_DIR, f"{model_name}__{'_'.join(combo)}__seed{seed}")
     os.makedirs(run_dir, exist_ok=True)
@@ -160,7 +170,7 @@ def record(model_name, combo, seed, test):
     df.to_csv(RESULTS_CSV, mode="a", header=not os.path.exists(RESULTS_CSV), index=False)
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--pass", dest="pass_num", type=int, default=1, choices=[1, 2, 3])
     args = ap.parse_args()
