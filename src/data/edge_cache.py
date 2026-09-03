@@ -25,7 +25,11 @@ def build_edge_cache(exact_parquet: str, final_parquet: str, sector_csv: str,
     returns = load_returns_matrix(final_parquet)
     texts = load_event_texts(final_parquet)
     universe = set(returns.columns)
-    sector = build_sector_edges(sector_csv)
+    # Sector edges are static (no per-day variance). Compute once and freeze to make
+    # immutability structural: this prevents accidental per-day mutations from silently
+    # corrupting all 504 cache entries. The same frozenset object is intentionally
+    # aliased across all dates (memory and identity preserving on pickle reload).
+    sector = frozenset(build_sector_edges(sector_csv))
 
     cache = {}
     for date in dates:
