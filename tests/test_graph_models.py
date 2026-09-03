@@ -87,3 +87,22 @@ def test_rgcn_does_not_collapse_on_a_clique_after_training():
     with torch.no_grad():
         logits = model(x, mask, ei, et)
     assert logits.std(dim=0).mean().item() > 1e-4
+
+
+def test_rgcn_synthesizes_edge_type_when_omitted():
+    """The brief requires StockRGCN to synthesize a zero edge_type when the
+    caller omits it, so every model can be called with one signature."""
+    model = StockRGCN(hidden_dim=16)
+    ei = _clique(5)
+    logits = model(torch.randn(5, 4, 3), torch.ones(5, 4), ei)  # no edge_type
+    assert logits.shape == (5, 2)
+    assert torch.isfinite(logits).all()
+
+
+def test_rgcn_synthesizes_edge_type_when_omitted_with_empty_edges():
+    """Edge case: empty edge_index with omitted edge_type still synthesizes correctly."""
+    model = StockRGCN(hidden_dim=16)
+    ei = torch.empty((2, 0), dtype=torch.long)
+    logits = model(torch.randn(3, 4, 3), torch.ones(3, 4), ei)  # no edge_type
+    assert logits.shape == (3, 2)
+    assert torch.isfinite(logits).all()
