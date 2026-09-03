@@ -153,3 +153,58 @@ def test_load_event_texts_on_real_data():
     texts = load_event_texts("dataset/final/stocknet_final_modeling_set.parquet")
     assert len(texts) > 300
     assert all(isinstance(v, list) for v in texts.values())
+
+
+import torch
+
+from src.data.graph_edges import build_sector_edges, combine_edges
+
+RELATION = {"sector": 0, "correlation": 1, "comention": 2}
+
+
+def test_build_sector_edges_matches_experiment_4_graph():
+    edges = build_sector_edges("dataset/final/sector_mapping.csv")
+    assert len(edges) == 381
+    assert all(a < b for a, b in edges)
+
+
+def test_combine_edges_uses_local_indices_and_both_directions():
+    tickers = ["AAA", "BBB", "CCC"]
+    ei, et = combine_edges({"sector": {("AAA", "BBB")}}, tickers)
+    pairs = set(map(tuple, ei.t().tolist()))
+    assert pairs == {(0, 1), (1, 0)}
+    assert et.tolist() == [0, 0]
+
+
+def test_combine_edges_tags_each_relation():
+    tickers = ["AAA", "BBB", "CCC"]
+    ei, et = combine_edges(
+        {"sector": {("AAA", "BBB")}, "comention": {("BBB", "CCC")}}, tickers
+    )
+    by_pair = {tuple(p): t for p, t in zip(ei.t().tolist(), et.tolist())}
+    assert by_pair[(0, 1)] == RELATION["sector"]
+    assert by_pair[(1, 2)] == RELATION["comention"]
+
+
+def test_overlapping_pair_takes_lowest_relation_id():
+    """A pair present in two relations appears once, tagged with the
+    lowest-numbered relation (documented tie-break)."""
+    tickers = ["AAA", "BBB"]
+    ei, et = combine_edges(
+        {"correlation": {("AAA", "BBB")}, "sector": {("AAA", "BBB")}}, tickers
+    )
+    assert ei.shape == (2, 2)                 # one undirected edge, both directions
+    assert set(et.tolist()) == {RELATION["sector"]}
+
+
+def test_combine_edges_drops_tickers_not_in_the_snapshot():
+    tickers = ["AAA", "BBB"]
+    ei, et = combine_edges({"sector": {("AAA", "ZZZ")}}, tickers)
+    assert ei.shape == (2, 0)
+    assert et.shape == (0,)
+
+
+def test_combine_edges_empty_input_is_well_formed():
+    ei, et = combine_edges({}, ["AAA", "BBB"])
+    assert ei.shape == (2, 0) and ei.dtype == torch.long
+    assert et.shape == (0,) and et.dtype == torch.long

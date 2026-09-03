@@ -9,8 +9,10 @@ leakage tests in tests/test_graph_edges.py.
 """
 
 import re
+from itertools import combinations
 
 import pandas as pd
+import torch
 
 _CASHTAG = re.compile(r"\$\s*([A-Za-z]{1,5})")
 
@@ -95,3 +97,51 @@ def build_comention_edges(texts_by_date: dict, target_date, universe: set,
                 for j in range(i + 1, len(mentioned)):
                     edges.add((mentioned[i], mentioned[j]))
     return edges
+
+
+RELATION_IDS = {"sector": 0, "correlation": 1, "comention": 2}
+
+
+def build_sector_edges(sector_csv_path: str) -> set:
+    """Static edges: two tickers connect iff they share a Sector. Produces
+    the same 381 edges as Experiment 4's graph (9 disjoint complete
+    cliques), so sector-only cells of this grid re-run that experiment."""
+    df = pd.read_csv(sector_csv_path)
+    edges = set()
+    for _, group in df.groupby("Sector"):
+        for a, b in combinations(sorted(group["Ticker"]), 2):
+            edges.add((a, b))
+    return edges
+
+
+def combine_edges(edge_sets: dict, tickers: list):
+    """Merges named edge sets into a (2,E) edge_index plus an (E,) edge_type,
+    using each ticker's position in `tickers` as its node index.
+
+    Pairs whose endpoints are not both in `tickers` are dropped. A pair
+    present in several relations is emitted once, tagged with the
+    lowest-numbered relation (sector < correlation < comention).
+    """
+    index_of = {t: i for i, t in enumerate(tickers)}
+
+    relation_of_pair: dict = {}
+    for name, pairs in edge_sets.items():
+        rel = RELATION_IDS[name]
+        for a, b in pairs:
+            if a not in index_of or b not in index_of:
+                continue
+            key = (a, b) if a < b else (b, a)
+            if rel < relation_of_pair.get(key, 99):
+                relation_of_pair[key] = rel
+
+    if not relation_of_pair:
+        return torch.empty((2, 0), dtype=torch.long), torch.empty((0,), dtype=torch.long)
+
+    src, dst, types = [], [], []
+    for (a, b), rel in relation_of_pair.items():
+        ia, ib = index_of[a], index_of[b]
+        src.extend([ia, ib])
+        dst.extend([ib, ia])
+        types.extend([rel, rel])
+    return (torch.tensor([src, dst], dtype=torch.long),
+            torch.tensor(types, dtype=torch.long))
