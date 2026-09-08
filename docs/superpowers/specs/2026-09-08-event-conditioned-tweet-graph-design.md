@@ -60,6 +60,45 @@ not macroeconomics proper. The genuinely macroeconomic component is the
 release calendar. The write-up names both accurately and never presents the
 pooled-news channel as a macroeconomic indicator.
 
+## The between-day / within-day problem
+
+**This is the most important methodological constraint in the experiment,
+and it was measured, not assumed.** Variance decomposition of the binary
+target on the protocol-A splits:
+
+| Split | Days | Between-day variance share | Days >80% one-directional | Oracle market-direction-only |
+|---|---|---|---|---|
+| train | 398 | 40.7% | 167/398 | acc 0.7811, MCC +0.5622 |
+| dev | 42 | 56.8% | 24/42 | acc 0.8454, MCC +0.6863 |
+| **test** | **64** | **48.3%** | **32/64** | **acc 0.8116, MCC +0.6248** |
+
+On any given day the ~58 tickers in the cross-section mostly move together.
+Roughly half the label variance is therefore *market direction*, not
+*which stock outperforms which*. A predictor that knows only the day's
+market direction and cannot discriminate between stocks at all scores
+**MCC +0.6248** on the test set — far above every published number on this
+benchmark (StockNet 0.081, MAN-SF 0.195).
+
+Two consequences:
+
+1. **Pooled MCC conflates two different abilities.** A model that partly
+   learns market direction gains a lot of pooled MCC while discriminating
+   between stocks not at all. The graph exists to do the second thing.
+   Macro news conditioning is *precisely* the kind of signal that could
+   improve the first, so Experiment 7 is the experiment most exposed to
+   this confusion.
+2. **Within-day performance must be reported.** For every row of the
+   ablation ladder, alongside pooled metrics, report **within-day MCC**:
+   compute MCC within each day's cross-section and average across days
+   (skipping days with a single class present, and reporting how many were
+   skipped). That number, not pooled MCC, is what says whether the graph
+   discriminates stocks.
+
+This is not leakage — market direction is legitimately part of the task as
+StockNet defines it, and all published numbers are pooled. It is a
+measurement-validity issue: the write-up must not present a pooled-MCC gain
+driven by market-direction learning as evidence that the graph works.
+
 ## Scope
 
 **In scope:** macro and micro news acquisition and caching; a
@@ -187,6 +226,21 @@ channels before any model work depends on them. **Macro-channel day coverage
 below 70% of the 504 trading days triggers a redesign of the macro channel**
 rather than silently proceeding.
 
+### Per-day headline cap — required, not optional
+
+The probe projects roughly **7.0M in-window rows**, of which ~55% are
+symbol-less: on the order of **3.9M macro headlines, ~7,600 per trading
+day**. FinBERT is BERT-base; at the 30–50 segments/sec obtainable from 16
+CPU cores, embedding that corpus is **tens of hours** — it would outrun the
+entire experiment.
+
+Both channels are therefore capped per (day, channel) before any FinBERT
+call: keep at most **N headlines per trading day**, selected by recency
+relative to the cutoff, with `N = 64` as the starting default. The cap is
+set for real against Component 1's coverage report, and the chosen value
+plus the resulting total segment count are recorded in the write-up. Cap
+selection must not consult labels.
+
 ### Macro calendar
 
 A small hand-entered table of 2014–2015 **FOMC meeting dates, CPI release
@@ -227,11 +281,20 @@ crash and never a dropped sample.
 For each (ticker `i`, trading day `t`):
 
 ```
-micro_i,t = FinBERT_mean( ticker i's tweets   in a 5-trading-day window
-                          ending at t-1
-                        + ticker i's FNSPID headlines before t's open )
-            -> 768 -> 32 projection
+tweet_i,t = FinBERT_mean( ticker i's tweets in a 5-trading-day window
+                          ending at t-1 )                    # 768-d
+news_i,t  = FinBERT_mean( ticker i's FNSPID headlines
+                          published before t's market open ) # 768-d
+
+micro_i,t = proj( concat(tweet_i,t , news_i,t) )             # -> 32-d
 ```
+
+**Interface requirement:** the encoder must expose `tweet_i,t`
+**separately** from the pooled `micro_i,t`. Component 4 builds the graph
+from the tweet half alone, so that graph structure and news content stay
+separately attributable; if only the pooled vector is exposed, the graph
+builder cannot honor that and the ablation ladder silently stops isolating
+what it claims to.
 
 Tweet text comes from `dataset/final/stocknet_final_modeling_set.parquet`
 (`Company_Texts`, `Event_Texts`), joined on `(Ticker, Date)`. Corpus size,
@@ -316,11 +379,13 @@ Design notes:
 
 ## Component 6 — Ablation ladder
 
-Every row is 5 seeds. This ladder, not any single number, is the
-experiment's actual output. 7 rows × 5 seeds = 35 runs.
+Every row is 5 seeds, and every row reports **pooled and within-day metrics
+side by side**. This ladder, not any single number, is the experiment's
+actual output. 8 rows × 5 seeds = 40 runs.
 
 | # | Variant | Isolates |
 |---|---|---|
+| 0 | **macro-only: `m_t`, no micro, no graph** | **is this just market-direction prediction?** |
 | 1 | price-only, no graph | Experiment 6 control, re-run post-Task-0 |
 | 2 | + micro features (tweets+news), no graph | does per-ticker text help at all? |
 | 3 | + tweet graph, no conditioning | does the learned graph help? |
@@ -328,6 +393,19 @@ experiment's actual output. 7 rows × 5 seeds = 35 runs.
 | 5 | **shuffled-macro control** | **is it the events, or just parameters?** |
 | 6 | macro→attention FiLM instead | is micro the right conditioning site? |
 | 7 | sector graph + full conditioning | does conditioning help *any* graph? |
+
+**Row 0 is mandatory**, and it is the cheapest row in the ladder. It has no
+per-ticker input whatsoever, so it *cannot* discriminate between stocks —
+every ticker on a given day receives an identical prediction. If row 0
+captures most of row 4's pooled gain, then the finding is "macro news
+predicts market direction," the graph contribution is nil regardless of
+pooled MCC, and the write-up says so. Row 5 cannot detect this, because
+shuffling the macro vector destroys both abilities at once.
+
+Note the shared-`β_t` mechanism makes this concrete rather than
+hypothetical: because `β_t` is identical across every ticker on day `t`, it
+functions as a per-day intercept after the classifier, which is exactly a
+market-direction control.
 
 **Row 5 is mandatory and is the experiment's most important control.**
 It re-runs row 4 with macro vectors randomly permuted across the calendar —
@@ -372,9 +450,17 @@ correlates with events.
 ## Evaluation and reporting
 
 - Protocol A splits, `n_samples == 3720`, verified per run.
-- Metrics: accuracy, F1, MCC, AUC. **Lead with AUC** in the honest reading —
-  Experiment 6 demonstrated that MCC alone flatters cells sitting near a
-  lucky threshold while their AUC is at or below chance.
+- Metrics, **pooled and within-day, reported side by side for every row**:
+  accuracy, F1, MCC, AUC. Within-day MCC is computed per trading-day
+  cross-section and averaged, reporting how many days were skipped for
+  having a single class present. **Lead with AUC and within-day MCC** in the
+  honest reading — Experiment 6 demonstrated that pooled MCC alone flatters
+  cells sitting near a lucky threshold while their AUC is at or below
+  chance, and the variance decomposition above shows pooled MCC additionally
+  rewards market-direction learning that the graph is not responsible for.
+- The market-direction oracle (**pooled MCC +0.6248, acc 0.8116**, zero
+  stock discrimination) is reported in the results table as a reference
+  row, so the reader can see what pooled MCC is capable of rewarding.
 - Reference points carried into the results table: Experiment 1 (+0.0922),
   Experiment 6 best (+0.0677 ± 0.0255, RGCN sector+correlation),
   Experiment 6 GAT sector (+0.0160 ± 0.0161), always-UP constant
@@ -413,6 +499,15 @@ correlates with events.
    effect therefore has to come through the interaction with the graph and
    with per-ticker micro magnitude. If rows 4 and 3 are indistinguishable,
    this is the first explanation to test.
+6. **The pooled metric rewards the wrong ability** (see "The between-day /
+   within-day problem"). Mitigated by mandatory row 0, within-day metrics on
+   every row, and the oracle reference row — but it remains the failure mode
+   most likely to produce a result that looks good and means little.
+7. **FinBERT cost scales with the news channels, not the tweets.** The
+   per-day cap in Component 1 is what keeps this bounded; without it the
+   embedding job is tens of hours. If the cap has to be set very low to stay
+   tractable, the macro channel gets correspondingly noisier, and that
+   trade-off is reported rather than hidden.
 
 ## Deferred
 
