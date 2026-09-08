@@ -88,3 +88,31 @@ def test_cache_misses_degrade_to_the_zero_default_not_a_crash():
     vectors = build_macro_vectors(heads, CALENDAR, DAYS, MissingCache())
     assert torch.allclose(vectors["2014-06-02"][:768], torch.zeros(768))
     assert vectors["2014-06-02"][-3:].tolist() == [1.0, 0.0, 0.0]
+
+
+def test_leakage_a_headline_exactly_at_market_open_is_excluded():
+    """Pins the boundary itself: the cutoff must be strictly-before (<), not <=.
+    A headline timestamped exactly at the opening bell is a real scenario for a
+    scheduled release, and a <= bug would silently admit it."""
+    at_open = market_open_utc("2014-06-02")          # 13:30:00 UTC
+    before = _headlines([("2014-06-02 10:00:00", "before open")])
+    with_boundary = before + [{"timestamp": at_open, "headline": "EXACTLY AT OPEN"}]
+
+    a = build_macro_vectors(before, CALENDAR, DAYS, FakeCache())
+    b = build_macro_vectors(with_boundary, CALENDAR, DAYS, FakeCache())
+    assert torch.allclose(a["2014-06-02"], b["2014-06-02"]), (
+        "a headline exactly at the opening bell must be excluded"
+    )
+
+
+def test_partial_cache_misses_average_only_the_hits():
+    """Realistic case: the per-day cap means some headlines are embedded and some
+    are not. The mean must be taken over the hits alone, not poisoned by misses."""
+    class PartialCache(EmbeddingCache):
+        def get(self, key):
+            return torch.ones(768) * 3.0 if key == "hit" else None
+
+    heads = _headlines([("2014-06-02 10:00:00", "hit"),
+                        ("2014-06-02 11:00:00", "miss")])
+    vectors = build_macro_vectors(heads, CALENDAR, DAYS, PartialCache())
+    assert torch.allclose(vectors["2014-06-02"][:768], torch.ones(768) * 3.0)

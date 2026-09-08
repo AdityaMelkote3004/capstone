@@ -14,7 +14,6 @@ import torch
 from src.models.finbert_cache import cap_per_day
 
 MACRO_DIM = 768
-CALENDAR_DIM = 3
 
 
 def market_open_utc(day: str) -> pd.Timestamp:
