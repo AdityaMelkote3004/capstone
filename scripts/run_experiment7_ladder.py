@@ -82,7 +82,7 @@ def build_everything():
     return splits, macro_vectors, micro_embeddings, tweet_edges, sector_graph
 
 
-def edges_for(kind: str, snap, tweet_edges, sector_graph) -> torch.Tensor:
+def edges_for(kind: str, snap, tweet_edges: dict, sector_graph) -> torch.Tensor:
     if kind == "none":
         return torch.empty((2, 0), dtype=torch.long)
     if kind == "sector":
@@ -96,7 +96,7 @@ def edges_for(kind: str, snap, tweet_edges, sector_graph) -> torch.Tensor:
     return edge_index
 
 
-def micro_tensor(snap, micro_embeddings) -> torch.Tensor:
+def micro_tensor(snap, micro_embeddings: dict) -> torch.Tensor:
     """Concatenates each ticker's tweet and news vectors into the 1536-d micro input.
 
     Concatenated rather than averaged so the model can weight news against tweets
@@ -146,7 +146,8 @@ def run_epoch(model, snapshots, ctx, optimizer=None):
     return total_loss / len(targets), metrics
 
 
-def train_one(row_name: str, kwargs, kind: str, shuffle: bool, seed: int, splits, shared):
+def train_one(row_name: str, kwargs: dict, kind: str, shuffle: bool, seed: int,
+              splits: tuple, shared: tuple) -> dict:
     set_seed(seed)
     macro_vectors, micro_embeddings, tweet_edges, sector_graph = shared
     train_snaps, dev_snaps, test_snaps = splits
@@ -194,7 +195,7 @@ def already_done(row_name: str, seed: int) -> bool:
     return bool(((df["row"] == row_name) & (df["seed"] == seed)).any())
 
 
-def record(row_name: str, seed: int, test) -> None:
+def record(row_name: str, seed: int, test: dict) -> None:
     run_dir = os.path.join(OUT_DIR, f"{row_name}__seed{seed}")
     os.makedirs(run_dir, exist_ok=True)
     with open(os.path.join(run_dir, "metrics.json"), "w") as fh:

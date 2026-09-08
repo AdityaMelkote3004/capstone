@@ -83,8 +83,13 @@ class EmbeddingCache:
         return len(self._store)
 
     def save(self, path: str) -> None:
+        """Writes atomically: a crash mid-write leaves the previous good file intact.
+        torch.save is not atomic, and a truncated cache is unreadable in its entirety,
+        so a naive write turns any interruption into total loss of the run."""
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-        torch.save(self._store, path)
+        tmp = f"{path}.tmp"
+        torch.save(self._store, tmp)
+        os.replace(tmp, path)
 
     @classmethod
     def load(cls, path: str) -> "EmbeddingCache":

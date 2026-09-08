@@ -53,11 +53,13 @@ def main() -> None:
     print(f"already cached: {len(texts) - len(pending):,} | to embed: {len(pending):,}")
 
     batch = 256
-    for start in range(0, len(pending), batch):
+    total_batches = (len(pending) + batch - 1) // batch
+    for index, start in enumerate(range(0, len(pending), batch)):
         chunk = pending[start:start + batch]
         for text, vector in zip(chunk, embed_texts(chunk)):
             cache.put(text, vector)
-        cache.save(CACHE_PATH)          # checkpoint every batch; safe to resume
+        if (index + 1) % 10 == 0 or (index + 1) == total_batches:
+            cache.save(CACHE_PATH)      # atomic; every 10th batch and at the end
         print(f"  {min(start + batch, len(pending)):,}/{len(pending):,}", flush=True)
 
     print(f"done. cache holds {len(cache)} vectors at {CACHE_PATH}")
