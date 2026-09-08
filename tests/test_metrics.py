@@ -59,3 +59,20 @@ def test_market_direction_oracle_matches_the_measured_test_value():
     m = market_direction_oracle(targets, days)
     # d1 majority UP (3/3 correct); d2 majority DOWN (2/3 correct)
     assert m["accuracy"] == 5 / 6
+
+
+def test_median_threshold_is_not_a_fixed_half():
+    """Pins the module's central design choice. Thresholding per-day at the median
+    is what stops a model from scoring by shifting a whole day in one direction.
+    With an asymmetric day, a fixed 0.5 and the day's median disagree, so this
+    test fails if the median is ever swapped for a constant."""
+    targets = np.array([1, 0, 0])
+    probs = np.array([0.9, 0.1, 0.2])          # median is 0.2, not 0.5
+    days = np.array(["d1", "d1", "d1"])
+    m = within_day_metrics(targets, probs, days)
+    assert m["days_scored"] == 1
+    # median threshold 0.2 -> preds [1, 0, 1] -> MCC 0.5
+    # a fixed 0.5 would give preds [1, 0, 0] -> MCC 1.0
+    assert abs(m["within_day_mcc"] - 0.5) < 1e-9, (
+        "within-day MCC must use the day's median, not a fixed 0.5"
+    )
