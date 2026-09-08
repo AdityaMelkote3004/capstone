@@ -16,7 +16,12 @@ from src.data.edge_cache import load_edge_cache
 OUT_DIR = "results/experiment6_dense_graph"
 FIG_DIR = os.path.join(OUT_DIR, "figures")
 SECTOR_CSV = "dataset/final/sector_mapping.csv"
-BASELINES = {"Exp1 LSTM+tweets": 0.0922, "Exp3 price-only": 0.0108, "Exp4 sector GAT": 0.0278}
+# Exp4's sector GAT is quoted at its Experiment 6 multi-seed value (+0.0160,
+# mean of 3 seeds), NOT its published single-seed +0.0278. That single seed
+# sits inside this experiment's seed spread and is not carried forward -- see
+# results/experiment6_dense_graph/EXPERIMENT6_DENSE_GRAPH.md section 5.
+BASELINES = {"Exp1 LSTM+tweets": 0.0922, "Exp3 price-only": 0.0108,
+             "Exp4 sector GAT (3-seed)": 0.0160}
 
 
 def draw_graph(pairs, sectors: dict, title: str, path: str) -> None:

@@ -1622,7 +1622,13 @@ runner to skip those cells there.
 
 ---
 
-## Task 11: Results write-up — BLOCKED until Colab results return
+## Task 11: Results write-up — DONE (2026-09-08)
+
+> **Unblocked and completed.** The grid was run **locally on CPU**
+> (`scripts/run_dense_graph_grid.py --pass 3`, all 84 cells, ~2 days
+> wall-clock) rather than on Colab, so the block below is moot — there is
+> no pending Colab run to wait for. Real `results.csv` and the write-up are
+> committed; see `results/experiment6_dense_graph/EXPERIMENT6_DENSE_GRAPH.md`.
 
 **Files:**
 - Create: `results/experiment6_dense_graph/EXPERIMENT6_DENSE_GRAPH.md`
