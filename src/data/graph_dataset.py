@@ -34,13 +34,25 @@ def _window_mask(window_length: int) -> torch.Tensor:
     return mask
 
 
-def normalize_price_snapshots(train_snapshots: list, *other_snapshot_lists: list) -> None:
+def normalize_price_snapshots(train_snapshots: list, *other_snapshot_lists: list,
+                              winsorize_limit: float | None = None) -> None:
     """Z-scores price_seq in place across a list of DaySnapshot lists, using
     mean/std computed only from `train_snapshots` (flattened across all
     nodes and days per one of the 3 price features), matching Experiment 3's
     `normalize_price` (preprocessing_notebooks/MMGTFFF_mansf_joint_bilinear.ipynb,
     cell 16): train statistics only, applied to train and every list in
-    `other_snapshot_lists` (e.g. dev, test)."""
+    `other_snapshot_lists` (e.g. dev, test).
+
+    When `winsorize_limit` is given, every price feature is clipped into
+    [-limit, +limit] before train statistics are computed -- see
+    src/data/price_fix.py for why the third feature needs this. The default of
+    None preserves Experiments 4/5/6 behaviour exactly.
+    """
+    if winsorize_limit is not None:
+        from src.data.price_fix import winsorize_price_snapshots
+        winsorize_price_snapshots([train_snapshots, *other_snapshot_lists],
+                                  limit=winsorize_limit)
+
     flat = torch.cat([snap.price_seq.reshape(-1, 3) for snap in train_snapshots], dim=0)
     mean = flat.mean(dim=0)
     std = flat.std(dim=0, unbiased=False)
