@@ -1,6 +1,6 @@
-# Experiment 7 — Event-Conditioned Tweet Graph — Design Spec
+# Experiment 7 — Macro-Conditioned Micro Signal over a Tweet Graph — Design Spec
 
-**Status:** design approved 2026-09-08, not yet implemented.
+**Status:** design approved 2026-09-08, revised same day, not yet implemented.
 **Predecessor:** `2026-09-03-dense-graph-experiment-design.md` (Experiment 6).
 
 ## Purpose
@@ -12,17 +12,22 @@ graph: mean within-cell seed spread was 0.0247, larger than the gap between
 the first- and third-ranked cells, and 8 of 28 (model, edge) cells sat at
 AUC below 0.51.
 
-Experiment 7 changes two things Experiment 6 held fixed, and nothing else:
+Experiment 7 changes three things Experiment 6 held fixed:
 
 1. **The graph is learned from tweet semantics** rather than hand-designed
    from sector membership or price correlation.
-2. **The graph's attention is conditioned on macro events** — a daily
-   news-derived vector modulates attention day by day, so the effective
-   graph is not static across the test period.
+2. **Node features carry text.** Experiments 4, 5, and 6 were all
+   price-only — a fact that materially weakens their negative findings
+   about graphs, and which is stated as such in the write-up.
+3. **Macro events condition the micro signal.** A daily market-level
+   event vector modulates each ticker's own text representation, so the
+   same headline or tweet is read differently against a different
+   macroeconomic backdrop.
 
-The question it answers: *does a graph built from what people say, and
-reshaped by what is happening in the market, carry signal that sector
-cliques and price correlation do not?*
+The question it answers: *does a graph built from what people say, whose
+per-ticker signal is interpreted in light of what is happening to the
+market as a whole, carry signal that sector cliques and price correlation
+do not?*
 
 ### Why the previous graphs plausibly failed
 
@@ -38,16 +43,33 @@ cliques and price correlation do not?*
 Tweet-similarity edges are the first graph in this project derived from
 information that is **neither price-derived nor static**.
 
+## The macro / micro split
+
+This distinction is architectural, not just terminology:
+
+| Channel | Contents | Granularity |
+|---|---|---|
+| **Macro** | FNSPID headlines with **no** `Stock_symbol` (market-wide) + FOMC/CPI/NFP release calendar | One vector per trading day, shared by all tickers |
+| **Micro** | Per-ticker tweets (`Company_Texts`, `Event_Texts`) + FNSPID headlines **tagged** with a universe ticker | One vector per (ticker, day) |
+
+**Macro conditions micro.** The macro vector generates FiLM parameters that
+transform each ticker's micro representation before it enters the graph.
+
+Naming honesty: pooled market-wide financial news is **market-level news**,
+not macroeconomics proper. The genuinely macroeconomic component is the
+release calendar. The write-up names both accurately and never presents the
+pooled-news channel as a macroeconomic indicator.
+
 ## Scope
 
-**In scope:** macro news acquisition and caching; a tweet-similarity edge
-builder; a FiLM-conditioned GAT; the ablation ladder that attributes any
-gain to the right component; the explainability readout.
+**In scope:** macro and micro news acquisition and caching; a
+tweet-similarity edge builder; a macro-conditioned micro encoder; a GAT
+over the learned graph; the ablation ladder that attributes any gain to the
+right component; the explainability readout.
 
-**Out of scope (deliberately):** the Wikidata company-relation graph (a
-separate control, tracked independently); cross-day recurrence over graph
-embeddings (deferred — see "Deferred"); federated learning; per-ticker news
-features from FNSPID (acquired but unused in this experiment).
+**Out of scope (deliberately):** the Wikidata company-relation graph;
+cross-day recurrence over graph embeddings; federated learning. See
+"Deferred".
 
 ## Global constraints
 
@@ -60,11 +82,15 @@ features from FNSPID (acquired but unused in this experiment).
 - **5 seeds minimum**, not 3. Experiment 6 measured a 0.0247 noise floor and
   the effect being hunted is ~0.025. Report mean ± std always; a difference
   smaller than seed spread is "indistinguishable", never "an improvement".
+  Every results table reports seed spread beside the mean.
 - **Leakage is a tested property**, not an assumption. Every builder takes
   an explicit cutoff and has a test asserting that corrupting data at or
   after the target date cannot change that date's output.
 - The MCC **> 0.15 tripwire** stays armed: any cell exceeding it is treated
   as suspected leakage to be re-audited, not a success.
+- **English-only text.** All headlines are language-filtered before FinBERT;
+  FinBERT is English-only and FNSPID contains non-English content (Russian
+  observed in probing). The filter's reject rate is reported.
 - Existing files are read-only except where a task says otherwise:
   `src/models/graph_model.py`, `src/models/graph_transformer.py`,
   `src/models/graph_models.py`, `src/data/graph_edges.py`, and all
@@ -104,7 +130,7 @@ broken node features measures nothing.
 
 ---
 
-## Component 1 — Macro event data (`src/data/macro_news.py`)
+## Component 1 — News acquisition (`src/data/fnspid.py`)
 
 ### Source
 
@@ -126,17 +152,13 @@ sample, so these are estimates, not census figures**):
 - `Date` carries **time-of-day in UTC** (`2014-04-23 14:31:02 UTC`).
 - `Article_title` is reliably populated; `Article` and the four summary
   columns are usually empty.
-- **~55%** of rows have an empty `Stock_symbol` — general market news.
+- **~55%** of rows have an empty `Stock_symbol` — these become the macro
+  channel. The remainder, where the symbol is in the 87-ticker universe,
+  become the micro news channel.
 - **~45%** of sampled rows fall in 2014–2015.
 - Observed market-level headlines in-window: *"Market Wrap For April 23:
   S&P 500 Ends Winning Streak"*, *"Mid-Afternoon Market Update: Markets
   Trade in Choppy Session"*.
-
-### Naming honesty
-
-Pooled financial news is **market-level news**, not macroeconomics. The
-write-up must call it that. Genuine macroeconomic events enter through a
-separate channel (below), and the two are never conflated.
 
 ### Acquisition
 
@@ -147,10 +169,11 @@ nothing to seek to — any filter reads the whole file.
 Single streaming pass, raw file never stored:
 
 ```
-stream 5.34 GB  →  filter to 2014-01-01..2015-12-31,
-                   keep rows with empty Stock_symbol (market-wide)
-                   plus rows matching the 87-ticker universe
-                →  data/processed/fnspid_headlines.parquet  (a few MB)
+stream 5.34 GB  →  filter: 2014-01-01..2015-12-31, English only
+                →  split by Stock_symbol:
+                     empty          -> macro headlines parquet
+                     in universe    -> micro (per-ticker) headlines parquet
+                →  data/processed/fnspid_{macro,micro}.parquet   (a few MB)
 ```
 
 Measured throughput 2.7 MB/s → **~34 minutes**. I/O-bound, so it runs in
@@ -159,58 +182,77 @@ fixtures. It is not a blocking prerequisite.
 
 Must be resumable and must not require the full file on disk at any point.
 
+**Coverage gate:** the task reports per-trading-day headline counts for both
+channels before any model work depends on them. **Macro-channel day coverage
+below 70% of the 504 trading days triggers a redesign of the macro channel**
+rather than silently proceeding.
+
 ### Macro calendar
 
 A small hand-entered table of 2014–2015 **FOMC meeting dates, CPI release
 dates, and non-farm-payroll release dates** — public, unambiguous, and
 genuinely macroeconomic. Stored as `dataset/macro_calendar.csv`, checked
-into the repo (it is a few hundred rows).
+into the repo.
 
-### Daily macro vector
+---
+
+## Component 2 — Macro event vector (`src/data/macro_encoder.py`)
 
 For trading day `t`:
 
 ```
 m_t = concat(
-    FinBERT_mean( headlines published strictly before t's market open,
-                  within a lookback of 3 calendar days ),  # 768 -> 32 learned proj
-    calendar_flags(t)                                      # FOMC/CPI/NFP, 3 binary
-)                                                          # => m_t is 35-d
+    FinBERT_mean( macro headlines published strictly before t's market
+                  open, within a 3-calendar-day lookback ),  # 768 -> 32 proj
+    calendar_flags(t)                                        # FOMC/CPI/NFP
+)                                                            # => m_t is 35-d
 ```
 
 The 3-day lookback is a starting default, not a measured optimum; it is the
-one macro hyperparameter, and the acquisition task reports per-day headline
-counts so it can be set against real density rather than guessed.
+one macro hyperparameter, and Component 1's coverage report sets it against
+real density rather than a guess.
 
-**Leakage rule:** a headline counts toward day `t` only if its UTC
-timestamp precedes `t`'s 09:30 ET market open. This is why the time-of-day
-field matters, and it is unit-tested: corrupting all headlines at or after
-the cutoff must not change `m_t`.
+**Leakage rule:** a headline counts toward day `t` only if its UTC timestamp
+precedes `t`'s 09:30 ET market open. This is why the time-of-day field
+matters, and it is unit-tested: corrupting all headlines at or after the
+cutoff must not change `m_t`.
 
 Days with no qualifying headlines yield a learned default vector, never a
 crash and never a dropped sample.
 
 ---
 
-## Component 2 — Tweet-similarity graph (`src/data/tweet_graph.py`)
+## Component 3 — Micro signal (`src/data/micro_encoder.py`)
+
+For each (ticker `i`, trading day `t`):
+
+```
+micro_i,t = FinBERT_mean( ticker i's tweets   in a 5-trading-day window
+                          ending at t-1
+                        + ticker i's FNSPID headlines before t's open )
+            -> 768 -> 32 projection
+```
 
 Tweet text comes from `dataset/final/stocknet_final_modeling_set.parquet`
 (`Company_Texts`, `Event_Texts`), joined on `(Ticker, Date)`. Corpus size,
 measured: **64,097 company-tweet segments** across 12,571 rows (47.3%) and
 **5,353 event-tweet segments** across 3,095 rows (11.6%). FinBERT over
-~69,450 segments on CPU is a one-time cost of roughly 40–60 minutes,
-cached to disk.
+~69,450 segments on CPU is a one-time cost of roughly 40–60 minutes, cached
+to disk, plus the micro-news headlines from Component 1.
 
 The **17 of 26,619** protocol-A samples uncovered by this join (carried
-forward from Experiment 6) must degrade to empty neighbourhoods — never
-crash, never be dropped.
+forward from Experiment 6) must degrade to an empty micro vector — never
+crash, never be dropped. Tickers with neither tweets nor news in the window
+receive a learned default vector.
 
-### Edge construction
+---
+
+## Component 4 — Tweet-similarity graph (`src/data/tweet_graph.py`)
 
 For target date `t`:
 
-1. For each ticker `i`, mean-pool FinBERT embeddings of its tweets in a
-   window ending at **t−1** (default lookback 5 trading days) → `v_i`.
+1. For each ticker `i`, take its tweet-derived embedding over a window
+   ending at **t−1** (Component 3's tweet half, before macro conditioning).
 2. Edge `(i, j)` if `cos(v_i, v_j)` is among ticker `i`'s **top-k**
    (default `k = 5`).
 3. Undirected, alphabetically-sorted tuples, no self-edges — the same
@@ -222,25 +264,37 @@ documented: a threshold produced 57% density and rebuilt the over-smoothing
 collapse diagnosed in Experiment 4. Top-k makes density a controlled
 parameter.
 
+The graph is built from **unconditioned** tweet embeddings, so that graph
+structure and macro conditioning remain separately attributable in the
+ablation ladder.
+
 Tickers with no tweets in the window contribute no edges that day. Early
 dates degrade to an empty graph rather than raising.
 
 ---
 
-## Component 3 — `EventConditionedGAT` (`src/models/event_conditioned_gat.py`)
+## Component 5 — `MacroConditionedGraphNet` (`src/models/macro_conditioned.py`)
 
 ```
-price (4x3, Task-0 corrected) ──PriceEncoder──┐
-                                              ├─→ node features h_i
-ticker tweet embedding (FinBERT → 32-d) ──────┘
-                                    │
-                                    ▼
-        GAT over the tweet graph, attention logits FiLM-modulated:
-            γ, β = MLP(m_t)                    # per attention head
-            attn'_ij = γ ⊙ attn_ij + β
-                                    │
-                                    ▼
-                        per-ticker up/down logits (N, 2)
+              m_t (35-d macro vector, shared across all tickers on day t)
+                              │
+                              ▼
+                    γ, β = MLP(m_t)              FiLM parameters
+                              │
+   micro_i,t (32-d) ──────────┤
+                              ▼
+              micro'_i,t = γ ⊙ micro_i,t + β     ← MACRO CONDITIONS MICRO
+                              │
+   price_i (4x3, Task-0 fixed)│
+        │                     │
+   PriceEncoder               │
+        └──────── concat ─────┘
+                    │
+                    ▼  node features h_i
+        GAT over the tweet-similarity graph (residual, 2 layers)
+                    │
+                    ▼
+          per-ticker up/down logits (N, 2)
 ```
 
 Design notes:
@@ -248,66 +302,70 @@ Design notes:
 - FiLM was chosen over edge-gating (less expressive), regime-conditioning
   (coarse, arbitrary K), and a hypernetwork (unstable to train, unusable at
   a 0.0247 noise floor).
+- **The conditioning point is the micro representation, not the attention
+  logits.** The claim is semantic: an earnings headline means something
+  different during a tightening cycle than during easing. Whether the
+  attention logits are the better conditioning site is an empirical
+  question, tested as row 6 of the ladder rather than assumed either way.
 - Residual connections around each message-passing layer, matching
   `StockGAT` and `StockGraphSAGE`, for the over-smoothing reason documented
   in `results/experiment4_gat/EXPERIMENT4_GAT.md`.
-- This is also the first model in the project whose **node features carry
-  text**. Experiments 4, 5, and 6 were all price-only — a fact that
-  materially weakens their negative findings about graphs and is stated as
-  such in the write-up.
 - Must accept an empty `edge_index` and run.
 
 ---
 
-## Component 4 — Ablation ladder
+## Component 6 — Ablation ladder
 
 Every row is 5 seeds. This ladder, not any single number, is the
-experiment's actual output.
+experiment's actual output. 7 rows × 5 seeds = 35 runs.
 
 | # | Variant | Isolates |
 |---|---|---|
 | 1 | price-only, no graph | Experiment 6 control, re-run post-Task-0 |
-| 2 | + tweet node features, no graph | does text on nodes help? |
+| 2 | + micro features (tweets+news), no graph | does per-ticker text help at all? |
 | 3 | + tweet graph, no conditioning | does the learned graph help? |
-| 4 | + FiLM conditioning (**full model**) | does event-conditioning help? |
-| 5 | **shuffled-news control** | **is it the news, or just parameters?** |
-| 6 | sector graph + FiLM | does conditioning help *any* graph? |
+| 4 | **+ macro→micro FiLM (full model)** | does macro conditioning help? |
+| 5 | **shuffled-macro control** | **is it the events, or just parameters?** |
+| 6 | macro→attention FiLM instead | is micro the right conditioning site? |
+| 7 | sector graph + full conditioning | does conditioning help *any* graph? |
 
 **Row 5 is mandatory and is the experiment's most important control.**
-It re-runs row 4 with news dates randomly permuted across the calendar —
+It re-runs row 4 with macro vectors randomly permuted across the calendar —
 identical parameter count, identical architecture, destroyed
 event-alignment. If row 5 matches row 4, the gain was capacity, not events,
-and the headline claim is withdrawn. Row 5 is run at the same 5 seeds and
+and the headline claim is withdrawn. Row 5 runs at the same 5 seeds and is
 reported beside row 4 in the results table, never omitted.
 
-Row 6 guards the converse error: if FiLM improves the sector graph just as
-much, the contribution is the conditioning mechanism, not the tweet graph,
-and the write-up must say so.
+Row 6 tests the design decision in Component 5 rather than assuming it.
+Row 7 guards the converse error: if conditioning improves the sector graph
+just as much, the contribution is the conditioning mechanism, not the tweet
+graph, and the write-up must say so.
 
 ---
 
-## Component 5 — Explainability readout
+## Component 7 — Explainability readout
 
 The learned FiLM parameters are the interpretable object:
 
 1. Plot `γ_t`, `β_t` across the 504 trading days against the macro calendar.
-   Do FOMC days measurably shift attention modulation?
-2. Rank days by \|γ_t − mean(γ)\| and report the top-10 headlines on those
-   days. Does the model amplify graph attention on days a human would call
-   eventful?
+   Do FOMC days measurably shift how micro signal is transformed?
+2. Rank days by \|γ_t − mean(γ)\| and report the top-10 macro headlines on
+   those days. Does the model reweight micro signal on days a human would
+   call eventful?
 3. Compare the learned tweet graph's edges against sector and correlation
    edges: what fraction does it recover, what does it find that they miss?
 
 **This readout is a deliverable independent of the MCC outcome.** If the
-ablation ladder shows no MCC gain, "attention over a tweet-derived graph
-restructures measurably around macro events, and here is what it attends
-to" remains a reportable finding. This is deliberate risk management: the
-capstone should not depend on beating a benchmark.
+ablation ladder shows no MCC gain, "macro events measurably change how
+per-ticker text is interpreted, and here is what changes" remains a
+reportable finding. This is deliberate risk management: the capstone should
+not depend on beating a benchmark.
 
 Attention weights are **not** claimed as explanations of model reasoning —
 that claim is contested (Jain & Wallace, *Attention is not Explanation*,
 NAACL 2019). The claim made is narrower and defensible: the conditioning
-signal measurably changes attention, and the change correlates with events.
+signal measurably changes the micro representation, and the change
+correlates with events.
 
 ---
 
@@ -327,7 +385,7 @@ signal measurably changes attention, and the change correlates with events.
   is a plausible driver of its 0.0247 seed spread, and widening it would
   forfeit literature comparability — so the fix goes in the selection
   procedure, not the split boundaries.
-- Results in `results/experiment7_event_conditioned/`, `metrics.json`
+- Results in `results/experiment7_macro_conditioned/`, `metrics.json`
   schema matching Experiments 1/3/4/5/6.
 - Realistic target is MAN-SF's **GAT+price ablation at 0.117**, not their
   headline 0.195, which has known reproduction difficulty across the
@@ -337,37 +395,36 @@ signal measurably changes attention, and the change correlates with events.
 
 ## Risks
 
-1. **Three new components at once** (text node features, learned graph,
-   FiLM conditioning). The ablation ladder is the mitigation — without it a
-   positive result would be uninterpretable. The ladder is not optional
-   scope that can be trimmed under time pressure.
+1. **Three new components at once** (micro text features, learned graph,
+   macro→micro conditioning). The ablation ladder is the mitigation —
+   without it a positive result would be uninterpretable. The ladder is not
+   optional scope that can be trimmed under time pressure.
 2. **FNSPID 2014–15 yield is estimated from a clustered sample**, not
-   measured. If the real yield is far lower, the macro channel thins out.
-   The acquisition task must report actual per-day headline counts before
-   any model work depends on them, and a day-coverage figure below ~70% of
-   trading days triggers a redesign of the macro channel rather than
-   silently proceeding.
+   measured. Component 1's coverage gate (70% of trading days) is the
+   tripwire; below it, the macro channel is redesigned rather than patched.
 3. **FiLM may simply not train** at this signal level. Row 3 (graph, no
    conditioning) is the fallback result and is worth reporting on its own.
 4. **CPU-only.** Experiment 6's 84 cells took ~2 days wall-clock. This
-   ladder is 6 rows × 5 seeds = 30 runs, comparable to a third of that, but
-   the FinBERT caching adds a one-time ~40–60 minutes.
-5. **Non-English headlines** are present in FNSPID (Russian observed in a
-   probe). FinBERT is English-only; the filter should either language-gate
-   or document the contamination.
+   ladder is 35 runs, but each is heavier than an Experiment 6 cell because
+   node features are wider. FinBERT caching adds a one-time ~40–60 minutes.
+5. **Macro conditioning is shared across all tickers on a given day**, so it
+   cannot by itself change the *relative* ranking of tickers within a day —
+   only how their micro signal is scaled before the graph mixes them. Its
+   effect therefore has to come through the interaction with the graph and
+   with per-ticker micro magnitude. If rows 4 and 3 are indistinguishable,
+   this is the first explanation to test.
 
 ## Deferred
 
-**Cross-day recurrence.** A GRU/LSTM over the sequence of daily graph
-embeddings per ticker — currently every trading day is modeled
-independently, with no memory across days. This is a genuinely promising
-and distinct contribution (and is *not* what MAN-SF does, which encodes
-price temporally then applies GAT once per day). It is deferred so that
-this experiment stacks one architectural novelty, not two. If Experiment 7
-produces a working conditioned graph, recurrence is the natural
-Experiment 8.
+**Cross-day recurrence (Experiment 8).** A GRU/LSTM over the sequence of
+daily graph embeddings per ticker — currently every trading day is modeled
+independently, with no memory across days. This is a genuinely promising and
+distinct contribution, and is *not* what MAN-SF does (they encode price
+temporally, then apply GAT once per day). Deferred so this experiment stacks
+one architectural novelty rather than two. If Experiment 7 produces a
+working conditioned graph, recurrence is the natural next step.
 
 **Wikidata company-relation graph.** Cheap to obtain (Feng et al. published
-relation encodings) and valuable as a control that anchors the results
-table against a graph independently known to carry signal. Tracked
-separately so it does not entangle with this experiment's novelty.
+relation encodings) and valuable as a control that anchors the results table
+against a graph independently known to carry signal. Tracked separately so
+it does not entangle with this experiment's novelty.
