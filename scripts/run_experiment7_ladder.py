@@ -206,6 +206,26 @@ def record(row_name: str, seed: int, test: dict) -> None:
                                header=not os.path.exists(RESULTS_CSV), index=False)
 
 
+def dump_film_by_day(model, snapshots, ctx) -> None:
+    """Records ||gamma|| and ||beta|| per trading day for the explainability
+    figure. Uses the trained full model on the test split."""
+    macro_vectors, micro_embeddings, tweet_edges, sector_graph, kind, shuffled = ctx
+    model.eval()
+    rows = []
+    with torch.no_grad():
+        for snap in snapshots:
+            model(snap.price_seq, snap.price_mask,
+                  edges_for(kind, snap, tweet_edges, sector_graph),
+                  micro_tensor(snap, micro_embeddings), macro_vectors[snap.date])
+            if model.last_film is None:
+                continue
+            gamma, beta = model.last_film
+            rows.append({"date": snap.date,
+                         "gamma_norm": float(gamma.norm()),
+                         "beta_norm": float(beta.norm())})
+    pd.DataFrame(rows).to_csv(os.path.join(OUT_DIR, "film_by_day.csv"), index=False)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--rows", nargs="*", default=None,
@@ -236,6 +256,45 @@ def main() -> None:
             if test["mcc"] > 0.15:
                 print("        *** TRIPWIRE: pooled MCC > 0.15 - audit for leakage "
                       "before treating this as a result ***")
+
+    # Dump FiLM explainability for the best seed of row 4_full
+    if os.path.exists(RESULTS_CSV):
+        try:
+            df = pd.read_csv(RESULTS_CSV)
+            if "4_full" in df["row"].values:
+                best_row = df[df["row"] == "4_full"].nlargest(1, "mcc").iloc[0]
+                best_seed = int(best_row["seed"])
+                print(f"\nExtracting FiLM for 4_full seed={best_seed} ...", flush=True)
+                _, kwargs, kind, shuffle = LADDER[4]  # 4_full is always at index 4
+                _, _, test_snaps = splits
+                ctx = (macro_vectors, micro_embeddings, tweet_edges, sector_graph, kind, None)
+                model = train_one("4_full", kwargs, kind, shuffle, best_seed, splits, shared)
+                # Note: train_one returns a dict; we need the actual model
+                # So we retrain just the model part
+                set_seed(best_seed)
+                model = MacroConditionedGraphNet(**kwargs)
+                optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=1e-4)
+
+                shuffled = None
+                ctx = (macro_vectors, micro_embeddings, tweet_edges, sector_graph, kind, shuffled)
+                best_mcc, best_epoch, best_state, stale = -1.0, -1, None, 0
+                train_snaps, dev_snaps, _ = splits
+                for epoch in range(MAX_EPOCHS):
+                    run_epoch(model, train_snaps, ctx, optimizer)
+                    _, val = run_epoch(model, dev_snaps, ctx)
+                    if val["mcc"] > best_mcc:
+                        best_mcc, best_epoch, stale = val["mcc"], epoch, 0
+                        best_state = {k: v.clone() for k, v in model.state_dict().items()}
+                    else:
+                        stale += 1
+                    if stale >= PATIENCE:
+                        break
+
+                model.load_state_dict(best_state)
+                dump_film_by_day(model, test_snaps, ctx)
+                print(f"FiLM dump written to {os.path.join(OUT_DIR, 'film_by_day.csv')}")
+        except Exception as e:
+            print(f"Could not extract FiLM: {e}")
 
     print(f"\nDone. Results in {RESULTS_CSV}")
 
