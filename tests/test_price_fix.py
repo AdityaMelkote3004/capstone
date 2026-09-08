@@ -70,8 +70,22 @@ def test_winsorize_restores_dynamic_range_after_normalization():
 
 
 def test_normalize_accepts_winsorize_limit_and_default_is_unchanged():
-    a = _snapshot([_normal_ticker(), _outlier_ticker()])
-    b = _snapshot([_normal_ticker(), _outlier_ticker()])
+    """Three distinct values, so winsorizing actually changes relative spacing.
+    With only two distinct values, z-scoring maps them to +/-1 regardless of
+    scale and the parameter would be unobservable."""
+    def _three():
+        return [
+            [[0.1, 0.1, 0.0]] * 4,
+            [[0.1, 0.1, 1.0]] * 4,
+            [[0.1, 0.1, 6500.0]] * 4,
+        ]
+
+    a = _snapshot(_three())
+    b = _snapshot(_three())
     normalize_price_snapshots([a])                          # default: no winsorizing
     normalize_price_snapshots([b], winsorize_limit=10.0)
     assert not torch.allclose(a.price_seq, b.price_seq)
+    # the two low tickers are indistinguishable without winsorizing and
+    # separated with it
+    assert abs(a.price_seq[0, 0, 2] - a.price_seq[1, 0, 2]) < 1e-3
+    assert abs(b.price_seq[0, 0, 2] - b.price_seq[1, 0, 2]) > 0.1
