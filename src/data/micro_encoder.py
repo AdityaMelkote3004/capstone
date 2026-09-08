@@ -81,7 +81,7 @@ def build_micro_embeddings(tweets_by_key: dict, news_rows: list, tickers: list,
             eligible_news = cap_per_day(eligible_news, n=cap)
 
             out[(ticker, day)] = (
-                _mean_or_zero(texts[-cap:], cache),
+                _mean_or_zero(texts[:cap], cache),
                 _mean_or_zero([n["headline"] for n in eligible_news], cache),
             )
     return out

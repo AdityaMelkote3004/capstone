@@ -80,3 +80,39 @@ def test_load_ticker_tweets_on_real_data():
     key = next(iter(tweets))
     assert isinstance(key, tuple) and len(key) == 2
     assert isinstance(tweets[key], list)
+
+
+def test_tweet_cap_keeps_the_most_recent_days_not_the_oldest():
+    """The window is built most-recent-first (offset=1 is t-1), so the cap must take
+    the HEAD. Slicing the tail would keep the stalest tweets in the window, and it
+    binds on ~2% of real windows -- the highest-volume, most eventful ticker-days."""
+    tweets = {
+        ("AAPL", "2014-06-02"): ["recent"] * 3,     # t-1 relative to 2014-06-03
+        ("AAPL", "2014-05-30"): ["stale"] * 3,      # older in the same window
+    }
+
+    captured = {}
+
+    class RecordingCache(EmbeddingCache):
+        def get(self, key):
+            captured[key] = captured.get(key, 0) + 1
+            return torch.ones(768)
+
+    build_micro_embeddings(tweets, [], ["AAPL"], ["2014-06-03"], RecordingCache(),
+                           tweet_lookback=5, cap=3)
+    assert "recent" in captured, "the cap must retain the most recent day's tweets"
+    assert "stale" not in captured, "the cap must drop the oldest day's tweets first"
+
+
+def test_leakage_news_exactly_at_market_open_is_excluded():
+    """Pins the boundary itself: strictly-before (<), not <=. A headline timestamped
+    exactly at the opening bell is realistic for a scheduled release."""
+    from src.data.macro_encoder import market_open_utc
+
+    at_open = market_open_utc("2014-06-03")
+    before = _news([("2014-06-03 10:00:00", "before open", "AAPL")])
+    with_boundary = before + [{"timestamp": at_open, "headline": "AT OPEN", "symbol": "AAPL"}]
+
+    a = build_micro_embeddings({}, before, TICKERS, DAYS, FakeCache())
+    b = build_micro_embeddings({}, with_boundary, TICKERS, DAYS, FakeCache())
+    assert torch.allclose(a[("AAPL", "2014-06-03")][1], b[("AAPL", "2014-06-03")][1])
