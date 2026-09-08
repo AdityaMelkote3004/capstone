@@ -1,0 +1,13 @@
+{
+  "test": {
+    "label": "RGCN [comention] seed=0",
+    "backend": null,
+    "accuracy": 0.510752688172043,
+    "f1": 0.6658097686375322,
+    "mcc": -0.004117829085957767,
+    "auc": 0.5179184831151281,
+    "n_samples": 3720,
+    "best_epoch": 9,
+    "best_val_mcc": 0.06806237608603129
+  }
+}

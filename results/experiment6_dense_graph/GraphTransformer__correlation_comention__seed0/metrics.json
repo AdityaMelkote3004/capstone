@@ -1,0 +1,13 @@
+{
+  "test": {
+    "label": "GraphTransformer [correlation+comention] seed=0",
+    "backend": null,
+    "accuracy": 0.513978494623656,
+    "f1": 0.6741167988464312,
+    "mcc": 0.011242040162076172,
+    "auc": 0.501466463964902,
+    "n_samples": 3720,
+    "best_epoch": 0,
+    "best_val_mcc": 0.033551105405404694
+  }
+}

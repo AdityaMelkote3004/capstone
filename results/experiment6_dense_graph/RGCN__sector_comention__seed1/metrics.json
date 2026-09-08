@@ -1,0 +1,13 @@
+{
+  "test": {
+    "label": "RGCN [sector+comention] seed=1",
+    "backend": null,
+    "accuracy": 0.5137096774193548,
+    "f1": 0.6631912120647924,
+    "mcc": 0.01021362631875424,
+    "auc": 0.503310390547989,
+    "n_samples": 3720,
+    "best_epoch": 3,
+    "best_val_mcc": 0.054304248811292206
+  }
+}

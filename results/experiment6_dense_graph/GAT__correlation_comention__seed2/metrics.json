@@ -1,0 +1,13 @@
+{
+  "test": {
+    "label": "GAT [correlation+comention] seed=2",
+    "backend": null,
+    "accuracy": 0.5161290322580645,
+    "f1": 0.676491732566499,
+    "mcc": 0.028231603571945055,
+    "auc": 0.5052111534563428,
+    "n_samples": 3720,
+    "best_epoch": 10,
+    "best_val_mcc": 0.032854530149456745
+  }
+}

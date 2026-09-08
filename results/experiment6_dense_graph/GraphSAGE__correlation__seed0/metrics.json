@@ -1,0 +1,13 @@
+{
+  "test": {
+    "label": "GraphSAGE [correlation] seed=0",
+    "backend": null,
+    "accuracy": 0.5223118279569893,
+    "f1": 0.6612011439466158,
+    "mcc": 0.03971526614449449,
+    "auc": 0.5134717999268792,
+    "n_samples": 3720,
+    "best_epoch": 8,
+    "best_val_mcc": 0.07220118650891885
+  }
+}
