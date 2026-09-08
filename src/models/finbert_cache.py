@@ -70,10 +70,10 @@ def embed_texts(texts: list, batch_size: int = 32) -> torch.Tensor:
 class EmbeddingCache:
     """Keyed store of 768-d vectors, persisted with torch.save."""
 
-    def __init__(self, store: dict = None):
+    def __init__(self, store: dict | None = None):
         self._store = store or {}
 
-    def get(self, key: str):
+    def get(self, key: str) -> torch.Tensor | None:
         return self._store.get(key)
 
     def put(self, key: str, tensor: torch.Tensor) -> None:

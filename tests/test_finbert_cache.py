@@ -1,7 +1,8 @@
 import pandas as pd
+import pytest
 import torch
 
-from src.models.finbert_cache import EmbeddingCache, cap_per_day
+from src.models.finbert_cache import EmbeddingCache, cap_per_day, embed_texts
 
 
 def _rows(day: str, n: int) -> list:
@@ -46,3 +47,28 @@ def test_cache_roundtrips(tmp_path):
 def test_cache_load_of_absent_file_is_empty_not_an_error(tmp_path):
     cache = EmbeddingCache.load(str(tmp_path / "nope.pt"))
     assert cache.get("anything") is None
+
+
+def test_padding_does_not_leak_into_the_pooled_embedding():
+    """A short text embedded ALONE must match the same text embedded in a batch
+    beside a much longer one. Batching pads the short text; if the attention mask
+    were wrong, those pad tokens would be averaged in and the two vectors would
+    diverge. This is the property that catches a broken mask."""
+    short = "Apple beats earnings."
+    long_text = (
+        "The Federal Reserve announced a decision today that analysts across the "
+        "market had been anticipating for several weeks, citing inflation data "
+        "and employment figures."
+    )
+    try:
+        alone = embed_texts([short])
+        batched = embed_texts([short, long_text])
+    except Exception as exc:                     # no local FinBERT weights
+        pytest.skip(f"FinBERT unavailable: {exc}")
+
+    assert alone.shape == (1, 768)
+    assert batched.shape == (2, 768)
+    diff = (alone[0] - batched[0]).abs().max().item()
+    assert diff < 1e-4, (
+        f"padding leaked into the mean: max abs diff {diff:.3e}"
+    )
