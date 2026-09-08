@@ -17,8 +17,11 @@ summary columns are usually empty in the source.
 """
 
 import csv
+import re
 
 import pandas as pd
+
+_TIMESTAMP = re.compile(r"^[12]\d{3}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
 
 COVERAGE_GATE = 0.70
 
@@ -33,6 +36,26 @@ def is_english(text: str, min_ascii_ratio: float = 0.9) -> bool:
     return ascii_chars / len(text) >= min_ascii_ratio
 
 
+def _parse_line(line: str) -> tuple:
+    """Parses ONE csv line in isolation. Returns (timestamp_str, title, symbol) or None.
+
+    Deliberately per-line rather than feeding the whole stream to csv.reader: an
+    unterminated quote anywhere in a 15.7M-row scraped corpus makes csv.reader absorb
+    every following line until it finds a stray closing quote, silently destroying
+    arbitrarily many good rows. Anchoring on a leading timestamp also skips the
+    continuation lines of multi-line quoted article bodies, which is what column 6 holds.
+    """
+    if not _TIMESTAMP.match(line):
+        return None
+    try:
+        parts = next(csv.reader([line]))
+    except (csv.Error, StopIteration):
+        return None
+    if len(parts) < 3:
+        return None
+    return parts[0], parts[1], parts[2]
+
+
 def classify_row(symbol: str, universe: set) -> str:
     """Routes a row to the macro channel (no symbol), the micro channel (a
     universe ticker), or discards it (a ticker outside the universe)."""
@@ -42,26 +65,21 @@ def classify_row(symbol: str, universe: set) -> str:
     return "micro" if symbol in universe else "skip"
 
 
-def stream_filter(line_iter, universe: set, start: str, end: str) -> tuple:
+def stream_filter(line_iter, universe: set, start: str, end: str) -> tuple[list, list]:
     """Single pass over FNSPID CSV lines, returning (macro_rows, micro_rows).
 
     Each row is {"timestamp": Timestamp, "headline": str, "symbol": str}.
     Malformed lines are skipped rather than raising -- a 5.34 GB corpus will
-    contain broken rows and one must not abort a 34-minute pass.
+    contain broken rows and one must not abort a ~35 minutes pass.
     """
     start_ts, end_ts = pd.Timestamp(start), pd.Timestamp(end) + pd.Timedelta(days=1)
     macro, micro = [], []
 
-    reader = csv.reader(line_iter)
-    try:
-        next(reader)                      # header
-    except StopIteration:
-        return macro, micro
-
-    for parts in reader:
-        if len(parts) < 3:
+    for line in line_iter:
+        parsed = _parse_line(line)
+        if not parsed:
             continue
-        raw_date, title, symbol = parts[0], parts[1], parts[2]
+        raw_date, title, symbol = parsed
         try:
             timestamp = pd.Timestamp(raw_date.replace(" UTC", ""))
         except (ValueError, TypeError):

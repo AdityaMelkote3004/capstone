@@ -87,3 +87,34 @@ def test_coverage_report_counts_days_and_flags_the_gate():
     assert report["days_total"] == 10
     assert report["coverage_fraction"] == 0.6
     assert report["passes_gate"] is False, "0.6 is below the 0.70 gate"
+
+
+def test_unterminated_quote_does_not_swallow_following_rows():
+    """A single malformed quote must cost at most its own row, never the rows after it."""
+    lines = [HEADER,
+             '2014-06-02 10:00:00 UTC,"unterminated,AAPL,http://u,Pub,Auth,,,,,\n',
+             _row("2014-06-03 10:00:00 UTC", "good one", "AAPL"),
+             _row("2014-06-04 10:00:00 UTC", "good two", "MSFT")]
+    _, micro = stream_filter(iter(lines), UNIVERSE, "2014-01-01", "2015-12-31")
+    assert [r["headline"] for r in micro] == ["good one", "good two"]
+
+
+def test_multiline_article_continuation_lines_are_skipped():
+    """Article bodies span lines; continuation lines have no leading timestamp and
+    must not be mistaken for rows."""
+    lines = [HEADER,
+             _row("2014-06-02 10:00:00 UTC", "real headline", "AAPL"),
+             "this is a continuation line of an article body, with commas\n",
+             "and another one\n",
+             _row("2014-06-03 10:00:00 UTC", "second headline", "MSFT")]
+    _, micro = stream_filter(iter(lines), UNIVERSE, "2014-01-01", "2015-12-31")
+    assert [r["headline"] for r in micro] == ["real headline", "second headline"]
+
+
+def test_quoted_headline_with_commas_still_parses():
+    """Regression: the per-line parse must still honour quoting within the line."""
+    lines = [HEADER,
+             '2014-06-02 10:00:00 UTC,"B of A Maintains Neutral, Raises Target",AAPL,http://u,Pub,Auth,,,,,\n']
+    _, micro = stream_filter(iter(lines), UNIVERSE, "2014-01-01", "2015-12-31")
+    assert micro[0]["headline"] == "B of A Maintains Neutral, Raises Target"
+    assert micro[0]["symbol"] == "AAPL"
