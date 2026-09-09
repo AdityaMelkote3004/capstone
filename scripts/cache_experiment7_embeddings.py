@@ -11,11 +11,33 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
 
+from src.data.macro_encoder import market_open_utc
 from src.data.micro_encoder import load_ticker_tweets
 from src.models.finbert_cache import EmbeddingCache, cap_per_day, embed_texts
 
 CACHE_PATH = "data/processed/experiment7_embeddings.pt"
 CAP = 64
+MACRO_LOOKBACK_DAYS = 3
+
+
+def macro_texts_needed(macro_rows: list, trading_days: list, cap: int) -> set:
+    """The exact set of macro headlines build_macro_vectors will ask for.
+
+    Derived by replicating the encoder's windowing rather than approximating it with a
+    per-calendar-day cap. Those two selections diverge on the target day: a plain per-day
+    cap keeps that day's LAST headlines, which are published after the opening bell, while
+    the encoder wants the last ones published strictly BEFORE it. Approximating here left
+    24% of requested macro embeddings uncached, and a cache miss degrades silently to a
+    zero vector rather than raising.
+    """
+    needed = set()
+    for day in trading_days:
+        cutoff = market_open_utc(day)
+        start = cutoff - pd.Timedelta(days=MACRO_LOOKBACK_DAYS)
+        eligible = [h for h in macro_rows if start <= h["timestamp"] < cutoff]
+        for h in cap_per_day(eligible, n=cap):
+            needed.add(h["headline"])
+    return needed
 
 
 def main() -> None:
@@ -23,26 +45,41 @@ def main() -> None:
     print(f"existing cache: {len(cache)} vectors")
 
     texts = set()
-    for name in ("macro", "micro"):
-        path = f"data/processed/fnspid_{name}.parquet"
-        if not os.path.exists(path):
-            print(f"MISSING {path} - run scripts/fetch_fnspid.py first")
-            sys.exit(1)
-        rows = pd.read_parquet(path).to_dict("records")
 
-        # Apply different capping logic for macro vs micro channels
-        if name == "micro":
-            capped = []
-            by_symbol: dict = {}
-            for r in rows:
-                by_symbol.setdefault(r["symbol"], []).append(r)
-            for symbol_rows in by_symbol.values():
-                capped.extend(cap_per_day(symbol_rows, n=CAP))
-        else:
-            capped = cap_per_day(rows, n=CAP)
+    # Process macro channel with exact encoder windowing
+    macro_path = "data/processed/fnspid_macro.parquet"
+    if not os.path.exists(macro_path):
+        print(f"MISSING {macro_path} - run scripts/fetch_fnspid.py first")
+        sys.exit(1)
+    macro_rows = pd.read_parquet(macro_path).to_dict("records")
 
-        print(f"{name}: {len(rows):,} rows -> {len(capped):,} after per-day cap {CAP}")
-        texts.update(r["headline"] for r in capped)
+    # Load trading days from protocol file
+    protocol_path = "dataset/stocknet_protocol_a_exact.parquet"
+    if not os.path.exists(protocol_path):
+        print(f"MISSING {protocol_path}")
+        sys.exit(1)
+    exact = pd.read_parquet(protocol_path, columns=["Target_Date"])
+    trading_days = sorted(pd.to_datetime(exact["Target_Date"]).dt.strftime("%Y-%m-%d").unique())
+
+    # Get macro texts using exact encoder windowing
+    macro_headlines = macro_texts_needed(macro_rows, trading_days, CAP)
+    print(f"macro: {len(macro_rows):,} rows -> {len(macro_headlines):,} unique headlines (exact encoder windowing)")
+    texts.update(macro_headlines)
+
+    # Process micro channel (unchanged)
+    micro_path = "data/processed/fnspid_micro.parquet"
+    if not os.path.exists(micro_path):
+        print(f"MISSING {micro_path} - run scripts/fetch_fnspid.py first")
+        sys.exit(1)
+    micro_rows = pd.read_parquet(micro_path).to_dict("records")
+    capped_micro = []
+    by_symbol: dict = {}
+    for r in micro_rows:
+        by_symbol.setdefault(r["symbol"], []).append(r)
+    for symbol_rows in by_symbol.values():
+        capped_micro.extend(cap_per_day(symbol_rows, n=CAP))
+    print(f"micro: {len(micro_rows):,} rows -> {len(capped_micro):,} after per-symbol per-day cap {CAP}")
+    texts.update(r["headline"] for r in capped_micro)
 
     tweets = load_ticker_tweets("dataset/final/stocknet_final_modeling_set.parquet")
     for segments in tweets.values():
