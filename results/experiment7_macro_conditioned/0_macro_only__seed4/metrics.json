@@ -1,0 +1,17 @@
+{
+  "test": {
+    "label": "0_macro_only seed=4",
+    "backend": null,
+    "accuracy": 0.5129032258064516,
+    "f1": 0.6780383795309168,
+    "mcc": 0.0,
+    "auc": 0.4510707211647484,
+    "within_day_mcc": 0.0,
+    "within_day_accuracy": 0.48694138714867435,
+    "days_scored": 63,
+    "days_skipped": 1,
+    "n_samples": 3720,
+    "best_epoch": 0,
+    "best_val_mcc": 0.0
+  }
+}

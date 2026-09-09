@@ -1,0 +1,17 @@
+{
+  "test": {
+    "label": "1_price_only seed=1",
+    "backend": null,
+    "accuracy": 0.5118279569892473,
+    "f1": 0.5904375281912494,
+    "mcc": 0.015444351121017743,
+    "auc": 0.5065321279982969,
+    "within_day_mcc": -0.009924301754766577,
+    "within_day_accuracy": 0.49578052969311764,
+    "days_scored": 63,
+    "days_skipped": 1,
+    "n_samples": 3720,
+    "best_epoch": 1,
+    "best_val_mcc": 0.08206310077377274
+  }
+}
