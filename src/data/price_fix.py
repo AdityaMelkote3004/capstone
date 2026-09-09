@@ -7,9 +7,12 @@ universe it ranges [-6495, +6500] with std 154.0, but excluding BRK-A and PCLN
 with std 1.41.
 
 Because `normalize_price_snapshots` computes one global mean/std across all
-tickers, those two tickers inflate std 109x and compress every other ticker's
-post-z-score range from +/-3.53 to +/-0.103. A third of the node features is
-effectively constant zero as a result.
+tickers, those two tickers inflate std 109x and crush every other ticker's
+post-z-score signal. Measured on the real pipeline, excluding BRK-A and PCLN:
+post-z Price3 has std 0.0103 and range [-0.330, +0.677] unfixed, versus std
+0.7550 and range [-6.674, +6.679] after winsorizing -- a 73x recovery of
+dynamic range. At std 0.0103 a third of the node features is effectively a
+constant zero.
 
 Winsorizing rather than dropping the tickers: BRK-A is a legitimate universe
 member, and dropping it would move test n_samples off 3720 and break

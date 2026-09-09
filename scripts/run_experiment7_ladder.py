@@ -267,10 +267,8 @@ def main() -> None:
                 print(f"\nExtracting FiLM for 4_full seed={best_seed} ...", flush=True)
                 _, kwargs, kind, shuffle = LADDER[4]  # 4_full is always at index 4
                 _, _, test_snaps = splits
-                ctx = (macro_vectors, micro_embeddings, tweet_edges, sector_graph, kind, None)
-                model = train_one("4_full", kwargs, kind, shuffle, best_seed, splits, shared)
-                # Note: train_one returns a dict; we need the actual model
-                # So we retrain just the model part
+                # train_one returns metrics, not the model, so the model is
+                # rebuilt here with the same seed to recover its FiLM parameters.
                 set_seed(best_seed)
                 model = MacroConditionedGraphNet(**kwargs)
                 optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=1e-4)
