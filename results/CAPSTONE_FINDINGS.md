@@ -39,7 +39,7 @@ to the best baseline, eight dimensions of FinBERT cost **37% of its MCC**
 
 ---
 
-## 2. Four results that looked real and were not
+## 2. Five results that looked real and were not
 
 The value of this project is concentrated here. In each case the apparent
 finding passed the checks that were being applied at the time, and failed a
@@ -140,7 +140,7 @@ Defensible, with evidence:
   volatility is predictable where direction is not, using identical features.
 - A demonstration that **classical baselines beat deep models** on the one target
   that is predictable.
-- A methodological contribution: **four documented cases of results that passed
+- A methodological contribution: **five documented cases of results that passed
   standard significance machinery and were false**, with the specific cheap
   control that caught each.
 
