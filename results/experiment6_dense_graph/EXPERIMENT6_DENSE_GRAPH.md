@@ -1,5 +1,26 @@
 # Experiment 6 — Dense Stock Graph + Model Grid
 
+> ## ⚠️ Follow-up (added later)
+>
+> The headline cell below (**RGCN sector+correlation, +0.0677**) was re-checked:
+>
+> - **Pooled MCC holds.** Topped up from 3 seeds to 5: **+0.0598**, 5/5 positive,
+>   spread 0.0421. It does not collapse the way Experiment 1's +0.0922 did.
+> - **But within-day MCC is +0.0046** (3/5 positive, t = 0.880, **p = 0.43**) —
+>   indistinguishable from zero and *below* the price-only no-graph baseline
+>   (+0.0088) measured in Experiments 7 and 8.
+>
+> This experiment recorded **pooled MCC only**. Pooled conflates "ranks stocks"
+> with "calls the market": 48.3% of test label variance is between-day, and a
+> day-direction oracle scores +0.6248 with no stock-specific skill at all. On the
+> metric that isolates stock discrimination, **this graph does nothing**.
+>
+> Every conclusion below that rests on pooled MCC should be read with that in
+> mind. Numbers are left unedited as the original record. Re-run results with
+> within-day metrics: `results.csv`; the original pooled-only run is preserved as
+> `results_pooled_only.csv`.
+
+
 **Status:** Complete. 84/84 grid cells trained (4 models × 7 edge combinations × 3 seeds).
 **Run:** local CPU (PyTorch 2.11.0+cpu, no GPU), `scripts/run_dense_graph_grid.py --pass 3`.
 **Raw results:** `results.csv` (84 rows) + one `metrics.json` per run.

@@ -277,7 +277,9 @@ Tweet-only ablation (§7.3) — the same rows with the news half zeroed:
 > replication notice in `results/experiment1_stocknet_exact/`.
 
 Reference points (pooled MCC): Experiment 1 LSTM+tweets **+0.0922**;
-Experiment 6 best (RGCN sector+correlation) **+0.0677 ± 0.0255**; Experiment 6
+Experiment 6 best (RGCN sector+correlation) **+0.0677 ± 0.0255** — since
+re-checked: pooled holds at +0.0598 over 5 seeds, but its within-day MCC is
++0.0046 (p=0.43), i.e. market-direction calling, not stock picking; Experiment 6
 GAT sector **+0.0160 ± 0.0161**; always-UP constant acc 0.5129 / F1 0.6780;
 **market-direction oracle pooled MCC +0.6248 / acc 0.8116**.
 
