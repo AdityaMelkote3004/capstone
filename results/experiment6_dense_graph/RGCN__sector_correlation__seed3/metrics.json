@@ -1,0 +1,17 @@
+{
+  "test": {
+    "label": "RGCN [sector+correlation] seed=3",
+    "backend": null,
+    "accuracy": 0.5225806451612903,
+    "f1": 0.6682853940978708,
+    "mcc": 0.044340069982770534,
+    "auc": 0.5014952436817675,
+    "within_day_mcc": -0.0008643823647001693,
+    "within_day_accuracy": 0.4955024120958633,
+    "days_scored": 63,
+    "days_skipped": 1,
+    "n_samples": 3720,
+    "best_epoch": 8,
+    "best_val_mcc": 0.07734671224687371
+  }
+}

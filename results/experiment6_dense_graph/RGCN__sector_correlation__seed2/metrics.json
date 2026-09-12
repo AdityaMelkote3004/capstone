@@ -2,12 +2,16 @@
   "test": {
     "label": "RGCN [sector+correlation] seed=2",
     "backend": null,
-    "accuracy": 0.5341397849462366,
-    "f1": 0.5734678808761998,
-    "mcc": 0.0650311217542651,
-    "auc": 0.5481457185037093,
+    "accuracy": 0.535752688172043,
+    "f1": 0.577233782129743,
+    "mcc": 0.06812623970648307,
+    "auc": 0.5474790124999421,
+    "within_day_mcc": 0.01800711912409583,
+    "within_day_accuracy": 0.5074632765913851,
+    "days_scored": 63,
+    "days_skipped": 1,
     "n_samples": 3720,
     "best_epoch": 23,
-    "best_val_mcc": 0.11456929483042605
+    "best_val_mcc": 0.1155845806726302
   }
 }

@@ -28,6 +28,7 @@ from src.data.graph_edges import combine_edges
 from src.models.graph_model import StockGAT
 from src.models.graph_models import StockGraphSAGE, StockRGCN
 from src.models.graph_transformer_multi import MultiRelationGraphTransformer
+from src.utils.metrics import within_day_metrics
 from src.utils.seed import set_seed
 
 EXACT = "dataset/stocknet_protocol_a_exact.parquet"
@@ -88,7 +89,7 @@ def run_epoch(model: nn.Module, snapshots: list, cache: dict, combo: list,
         random.shuffle(snapshots)
         optimizer.zero_grad()
 
-    probs_all, targets_all, total_loss = [], [], 0.0
+    probs_all, targets_all, days_all, total_loss = [], [], [], 0.0
     for i, snap in enumerate(snapshots):
         day = cache.get(snap.date, {})
         edge_sets = {r: day.get(r, set()) for r in combo}
@@ -104,16 +105,23 @@ def run_epoch(model: nn.Module, snapshots: list, cache: dict, combo: list,
         total_loss += loss.item() * len(snap.tickers)
         probs_all.append(torch.softmax(logits, dim=-1)[:, 1].detach())
         targets_all.append(snap.target)
+        days_all.extend([snap.date] * len(snap.tickers))
 
     probs = torch.cat(probs_all).numpy()
     targets = torch.cat(targets_all).numpy()
     preds = (probs >= 0.5).astype(int)
-    return total_loss / len(targets), {
+    metrics = {
         "accuracy": accuracy_score(targets, preds),
         "f1": f1_score(targets, preds, zero_division=0),
         "mcc": matthews_corrcoef(targets, preds),
         "auc": roc_auc_score(targets, probs) if len(set(targets)) > 1 else 0.5,
     }
+    # Pooled MCC on this benchmark is ~half market direction (48.3% of test label
+    # variance is between-day; a day-direction oracle scores +0.6248). Experiment 6
+    # originally reported pooled only, so it could not distinguish "picks stocks"
+    # from "calls the market". Within-day closes that gap.
+    metrics.update(within_day_metrics(targets, probs, days_all))
+    return total_loss / len(targets), metrics
 
 
 def train_one(model_name: str, combo: list, seed: int, snaps: tuple, cache: dict) -> dict:
@@ -173,6 +181,15 @@ def record(model_name: str, combo: list, seed: int, test: dict) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--pass", dest="pass_num", type=int, default=1, choices=[1, 2, 3])
+    # Experiment 6 reported its headline (+0.0677, RGCN sector+correlation) on
+    # THREE seeds with a 0.0509 spread. Experiment 1's headline collapsed under a
+    # 5-seed rerun, so these let one cell be topped up to 5 rather than re-running
+    # the whole 84-cell grid.
+    ap.add_argument("--only-model", default=None, help="restrict to one model")
+    ap.add_argument("--only-combo", default=None,
+                    help="restrict to one edge combo, e.g. sector+correlation")
+    ap.add_argument("--seeds", type=int, nargs="*", default=None,
+                    help="override the pass's seed list")
     args = ap.parse_args()
 
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -191,7 +208,18 @@ def main() -> None:
     snaps = (train_snaps, dev_snaps, test_snaps)
 
     model_names, seeds = PASS_SPEC[args.pass_num]
-    todo = [(m, c, s) for m in model_names for c in edge_combos() for s in seeds]
+    if args.seeds is not None:
+        seeds = args.seeds
+    if args.only_model:
+        model_names = [args.only_model]
+    combos = edge_combos()
+    if args.only_combo:
+        wanted = args.only_combo.split("+")
+        combos = [c for c in combos if c == wanted]
+        if not combos:
+            sys.exit(f"no edge combo matches {args.only_combo!r}; "
+                     f"valid relations are {RELATIONS}")
+    todo = [(m, c, s) for m in model_names for c in combos for s in seeds]
     print(f"Pass {args.pass_num}: {len(todo)} cells in grid")
 
     for model_name, combo, seed in todo:
