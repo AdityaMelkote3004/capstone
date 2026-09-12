@@ -84,9 +84,19 @@ ROWS = {
 }
 
 
-def load_frame() -> pd.DataFrame:
+def load_frame(target: str = "direction") -> pd.DataFrame:
     df = pd.read_parquet(EXACT)
     df["day"] = pd.to_datetime(df["Target_Date"]).dt.strftime("%Y-%m-%d")
+    if target == "volatility":
+        # Every experiment in this project found the signal in tweet VOLUME, not
+        # tweet meaning. Volume is a known predictor of how BIG a move is, not
+        # which way it goes -- so direction may simply be the wrong target for
+        # the only feature that works. Label: is |move| above the TRAIN median?
+        # Threshold from train only, so it cannot leak.
+        magnitude = df["Main_MV_Percent"].abs()
+        threshold = magnitude[df["Split"] == "train"].median()
+        df["Target"] = (magnitude > threshold).astype(int)
+        print(f"  target=volatility, |move| > {threshold:.4f} (train median)")
     return df
 
 
@@ -251,6 +261,8 @@ def already_done(row: str, seed: int) -> bool:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--rows", nargs="*", default=None)
+    ap.add_argument("--target", default="direction",
+                    choices=["direction", "volatility"])
     ap.add_argument("--out", default=None,
                     help="alternate results CSV, so two runs can proceed "
                          "concurrently without interleaving appends")
@@ -260,7 +272,7 @@ def main() -> None:
         RESULTS_CSV = args.out
 
     os.makedirs(OUT_DIR, exist_ok=True)
-    df = load_frame()
+    df = load_frame(args.target)
     print(f"protocol A: {len(df)} rows, test n={(df.Split=='test').sum()}")
 
     needs_text = any(ROWS[r]["text"] for r in (args.rows or ROWS))
