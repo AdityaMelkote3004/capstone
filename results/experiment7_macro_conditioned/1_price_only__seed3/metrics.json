@@ -2,16 +2,16 @@
   "test": {
     "label": "1_price_only seed=3",
     "backend": null,
-    "accuracy": 0.514247311827957,
-    "f1": 0.6385277055411083,
-    "mcc": 0.01523231882345448,
-    "auc": 0.5224360309328446,
-    "within_day_mcc": -0.02208045700835562,
-    "within_day_accuracy": 0.4895208355377082,
+    "accuracy": 0.5096774193548387,
+    "f1": 0.6184100418410042,
+    "mcc": 0.006335510070464301,
+    "auc": 0.5320689926462762,
+    "within_day_mcc": 0.0028274990807369686,
+    "within_day_accuracy": 0.5003526988065211,
     "days_scored": 63,
     "days_skipped": 1,
     "n_samples": 3720,
-    "best_epoch": 13,
-    "best_val_mcc": 0.054832761657025886
+    "best_epoch": 29,
+    "best_val_mcc": 0.06590425862515406
   }
 }

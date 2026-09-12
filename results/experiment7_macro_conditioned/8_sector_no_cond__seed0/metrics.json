@@ -1,0 +1,17 @@
+{
+  "test": {
+    "label": "8_sector_no_cond seed=0",
+    "backend": null,
+    "accuracy": 0.5010752688172043,
+    "f1": 0.23934426229508196,
+    "mcc": 0.0293967374793395,
+    "auc": 0.5282158368852421,
+    "within_day_mcc": 0.013444537524184128,
+    "within_day_accuracy": 0.5058278291312558,
+    "days_scored": 63,
+    "days_skipped": 1,
+    "n_samples": 3720,
+    "best_epoch": 36,
+    "best_val_mcc": 0.08637268754762133
+  }
+}

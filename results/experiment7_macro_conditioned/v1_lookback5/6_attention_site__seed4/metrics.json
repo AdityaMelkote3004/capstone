@@ -1,0 +1,17 @@
+{
+  "test": {
+    "label": "6_attention_site seed=4",
+    "backend": null,
+    "accuracy": 0.5228494623655914,
+    "f1": 0.6222600553309214,
+    "mcc": 0.03787938786288307,
+    "auc": 0.5127925118358393,
+    "within_day_mcc": 0.007625875031338998,
+    "within_day_accuracy": 0.5041017167312538,
+    "days_scored": 63,
+    "days_skipped": 1,
+    "n_samples": 3720,
+    "best_epoch": 20,
+    "best_val_mcc": 0.05181694963266459
+  }
+}

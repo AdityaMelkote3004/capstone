@@ -1,0 +1,17 @@
+{
+  "test": {
+    "label": "3_graph_no_cond seed=4",
+    "backend": null,
+    "accuracy": 0.5120967741935484,
+    "f1": 0.5722366250294603,
+    "mcc": 0.018212966200271692,
+    "auc": 0.5096131485415192,
+    "within_day_mcc": 0.013193419992597747,
+    "within_day_accuracy": 0.5083159588245006,
+    "days_scored": 63,
+    "days_skipped": 1,
+    "n_samples": 3720,
+    "best_epoch": 3,
+    "best_val_mcc": 0.05724888245453259
+  }
+}

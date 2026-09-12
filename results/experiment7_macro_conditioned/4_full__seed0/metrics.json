@@ -2,16 +2,16 @@
   "test": {
     "label": "4_full seed=0",
     "backend": null,
-    "accuracy": 0.503494623655914,
-    "f1": 0.6443289042942423,
-    "mcc": -0.01989473418876729,
-    "auc": 0.5208596544814214,
-    "within_day_mcc": 0.042554847128746014,
-    "within_day_accuracy": 0.5206649879806465,
+    "accuracy": 0.5287634408602151,
+    "f1": 0.5799185238437575,
+    "mcc": 0.05320152551284713,
+    "auc": 0.5427011456352016,
+    "within_day_mcc": 0.04904512892205932,
+    "within_day_accuracy": 0.520072466454642,
     "days_scored": 63,
     "days_skipped": 1,
     "n_samples": 3720,
-    "best_epoch": 10,
-    "best_val_mcc": 0.10257372710181868
+    "best_epoch": 27,
+    "best_val_mcc": 0.10878150541572122
   }
 }

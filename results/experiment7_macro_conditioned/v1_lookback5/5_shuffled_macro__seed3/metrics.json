@@ -1,0 +1,17 @@
+{
+  "test": {
+    "label": "5_shuffled_macro seed=3",
+    "backend": null,
+    "accuracy": 0.5045698924731182,
+    "f1": 0.34991181657848325,
+    "mcc": 0.025537153039215683,
+    "auc": 0.5219655765661951,
+    "within_day_mcc": 0.027799894926455734,
+    "within_day_accuracy": 0.5135882119205052,
+    "days_scored": 63,
+    "days_skipped": 1,
+    "n_samples": 3720,
+    "best_epoch": 18,
+    "best_val_mcc": 0.10134109031912658
+  }
+}

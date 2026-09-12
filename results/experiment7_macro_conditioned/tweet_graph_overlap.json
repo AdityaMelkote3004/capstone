@@ -1,0 +1,13 @@
+{
+  "test_days_scored":64.0,
+  "mean_tweet_edges":321.9,
+  "sector_edges":381.0,
+  "mean_corr_edges":339.7,
+  "mean_jaccard_vs_sector":0.0844,
+  "mean_jaccard_vs_correlation":0.062,
+  "mean_frac_tweet_edges_also_sector":0.1701,
+  "mean_frac_tweet_edges_also_corr":0.1199,
+  "possible_pairs":3741.0,
+  "random_baseline_jaccard_vs_sector":0.0489,
+  "random_baseline_jaccard_vs_correlation":0.0462
+}

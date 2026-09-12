@@ -2,16 +2,16 @@
   "test": {
     "label": "6_attention_site seed=3",
     "backend": null,
-    "accuracy": 0.4889784946236559,
-    "f1": 0.5032662660047035,
-    "mcc": -0.02288073293624814,
-    "auc": 0.48288836130895363,
-    "within_day_mcc": 0.02260964947021994,
-    "within_day_accuracy": 0.5098188990959927,
+    "accuracy": 0.5255376344086021,
+    "f1": 0.6625884152169758,
+    "mcc": 0.04985664172716565,
+    "auc": 0.5301038730846304,
+    "within_day_mcc": 0.03496754027819534,
+    "within_day_accuracy": 0.5141811544797285,
     "days_scored": 63,
     "days_skipped": 1,
     "n_samples": 3720,
-    "best_epoch": 16,
-    "best_val_mcc": 0.06793213482569249
+    "best_epoch": 24,
+    "best_val_mcc": 0.04164680153623267
   }
 }
