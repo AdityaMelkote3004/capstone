@@ -39,7 +39,12 @@ CACHE_PATH = "data/processed/experiment7_embeddings.pt"
 OUT_DIR = "results/experiment7_macro_conditioned"
 RESULTS_CSV = os.path.join(OUT_DIR, "results.csv")
 
-PATIENCE, MAX_EPOCHS, LR, GRAD_ACCUM_DAYS = 10, 100, 1e-3, 16
+PATIENCE, MAX_EPOCHS, LR, GRAD_ACCUM_DAYS = 20, 100, 1e-3, 16
+# Early stopping may not fire before this many epochs. In the first run 12 of 40
+# cells stopped below epoch 3 (five at epoch 0), meaning the reported model was
+# barely trained -- a floor prevents a noisy dev set from ending training instantly.
+MIN_EPOCHS = 15
+TWEET_LOOKBACK = 20
 WINSORIZE_LIMIT = 10.0
 SEEDS = [0, 1, 2, 3, 4]
 
@@ -53,6 +58,10 @@ LADDER = [
     ("5_shuffled_macro",  dict(use_micro=True,  use_graph=True,  conditioning="micro"), "tweet", True),
     ("6_attention_site",  dict(use_micro=True,  use_graph=True,  conditioning="attention"), "tweet", False),
     ("7_sector_graph",    dict(use_micro=True,  use_graph=True,  conditioning="micro"), "sector", False),
+    # Row 8 makes the graph-vs-graph comparison clean. Row 7 carries conditioning, so
+    # row 3 vs row 7 confounds graph TYPE with the conditioning penalty. Comparing
+    # row 3 against row 8 isolates learned-tweet-graph vs hand-designed sector cliques.
+    ("8_sector_no_cond",  dict(use_micro=True,  use_graph=True,  conditioning="none"),  "sector", False),
 ]
 
 
@@ -172,7 +181,7 @@ def train_one(row_name: str, kwargs: dict, kind: str, shuffle: bool, seed: int,
             best_state = {k: v.clone() for k, v in model.state_dict().items()}
         else:
             stale += 1
-        if stale >= PATIENCE:
+        if epoch >= MIN_EPOCHS and stale >= PATIENCE:
             break
 
     model.load_state_dict(best_state)
@@ -285,7 +294,7 @@ def main() -> None:
                         best_state = {k: v.clone() for k, v in model.state_dict().items()}
                     else:
                         stale += 1
-                    if stale >= PATIENCE:
+                    if epoch >= MIN_EPOCHS and stale >= PATIENCE:
                         break
 
                 model.load_state_dict(best_state)

@@ -55,14 +55,20 @@ def ladder_figure(df: pd.DataFrame) -> None:
 
 
 def seed_spread_figure(df: pd.DataFrame) -> None:
-    spread = df.groupby("row")["mcc"].apply(lambda g: g.max() - g.min())
+    # within-day, not pooled: within-day MCC is the primary metric, so the noise
+    # floor quoted in the write-up must be the spread of that same quantity.
+    spread = df.groupby("row")["within_day_mcc"].apply(lambda g: g.max() - g.min())
+    floor = spread.mean()
     plt.figure(figsize=(11, 4))
     plt.bar(range(len(spread)), spread.values)
-    plt.axhline(0.0247, linestyle="--", color="red", linewidth=1)
-    plt.text(0, 0.0247, " Exp6 noise floor (0.0247)", va="bottom",
-             fontsize=8, color="red")
+    plt.axhline(floor, linestyle="--", color="red", linewidth=1)
+    plt.text(0, floor, f" Exp7 noise floor, mean spread ({floor:.4f})",
+             va="bottom", fontsize=8, color="red")
+    plt.axhline(0.0425, linestyle=":", color="green", linewidth=1.2)
+    plt.text(0, 0.0425, " graph effect, row3 - row1 (+0.0425)", va="bottom",
+             fontsize=8, color="green")
     plt.xticks(range(len(spread)), spread.index, rotation=25, ha="right", fontsize=8)
-    plt.ylabel("max - min test MCC across seeds")
+    plt.ylabel("max - min within-day MCC across seeds")
     plt.title("Seed spread per ladder row (differences below this are noise)")
     plt.tight_layout()
     plt.savefig(os.path.join(FIG_DIR, "seed_spread.png"), dpi=150)

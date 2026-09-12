@@ -83,7 +83,11 @@ def main() -> None:
 
     tweets = load_ticker_tweets("dataset/final/stocknet_final_modeling_set.parquet")
     for segments in tweets.values():
-        texts.update(segments[-CAP:])
+        # HEAD, not tail: build_micro_embeddings concatenates the window
+        # most-recent-day-first and then takes texts[:cap], so every text it can
+        # request is a PREFIX of some day's list. Caching the tail left 1.23% of
+        # requested tweet texts uncached, and a miss degrades silently to a drop.
+        texts.update(segments[:CAP])
     print(f"unique texts to embed: {len(texts):,}")
 
     pending = [t for t in sorted(texts) if cache.get(t) is None]

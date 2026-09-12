@@ -50,7 +50,7 @@ def _mean_or_zero(texts: list, cache) -> torch.Tensor:
 
 
 def build_micro_embeddings(tweets_by_key: dict, news_rows: list, tickers: list,
-                           trading_days: list, cache, tweet_lookback: int = 5,
+                           trading_days: list, cache, tweet_lookback: int = 20,
                            cap: int = 64) -> dict:
     """Builds {(ticker, day): (tweet_vec, news_vec)} for every pair.
 
