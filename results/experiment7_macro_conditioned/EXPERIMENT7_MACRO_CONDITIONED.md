@@ -1,9 +1,13 @@
 # Experiment 7 — Macro-Conditioned Micro Signal over a Tweet Graph
 
-**Status:** Complete. 45/45 ladder cells trained (9 rows × 5 seeds).
-**Run:** local CPU (PyTorch 2.11.0+cpu, no GPU), `scripts/run_experiment7_ladder.py`.
-**Raw results:** `results.csv` (45 rows) + one `metrics.json` per run.
-**Analysis:** `scripts/analyze_experiment7.py` regenerates every derived number below.
+**Status:** Complete. 60 cells trained — the 9-row ladder × 5 seeds (45), plus a
+15-cell tweet-only ablation (rows 2/3/8 with the news channel zeroed) that
+**overturned the ladder's headline result**. Read §7.3 before citing anything.
+**Run:** local CPU (PyTorch 2.11.0+cpu, no GPU), `scripts/run_experiment7_ladder.py`
+(add `--zero-news` for the ablation).
+**Raw results:** `results.csv` (60 rows) + one `metrics.json` per run.
+**Analysis:** `scripts/analyze_experiment7.py` and
+`scripts/analyze_tweetonly_ablation.py` regenerate every derived number below.
 **Spec:** `docs/superpowers/specs/2026-09-08-event-conditioned-tweet-graph-design.md`
 **Superseded measurement:** `v1_lookback5/` — see §6, which documents the protocol
 change and reports both versions rather than replacing one with the other.
@@ -26,14 +30,36 @@ The question: does a graph built from what people say, whose per-ticker signal
 is read in light of what is happening to the market, carry signal that sector
 cliques and price correlation do not?
 
-**The answer splits.** Putting text on the nodes and running a graph over it
-produces the first effect in this project that clears its own noise floor:
-+0.0425 within-day MCC over price-only, p < 0.0001, surviving Bonferroni
-correction, corroborated by AUC, positive on all five seeds. **Macro
-conditioning contributes nothing** — it is statistically indistinguishable from
-conditioning on *shuffled* macro vectors (+0.0002, p = 0.987). And the claim
-that the *tweet-learned* graph specifically beats sector cliques is **not
-supported** at this sample size (§7.3).
+**The answer is no, and the most useful result here is *why*.**
+
+The graph initially looked like it worked: +0.0425 within-day MCC over
+price-only, p < 0.0001, surviving Bonferroni, corroborated by AUC, positive on
+all five seeds — the first effect in this project to clear its own noise floor.
+A follow-up ablation dissolved it. The node features concatenate a tweet vector
+(strictly ≤ *t−1*) with a news vector windowed to day *t*'s 09:30 open; because
+the label is a **close-to-close** move, that news channel is partly
+**contemporaneous with the label** rather than predictive of it. Zeroing it:
+
+| Graph vs the same text features with no graph | With news | News removed |
+|---|---|---|
+| tweet graph | **+0.0305** (p = 0.010, AUC agrees) | **−0.0032** (p = 0.787) |
+| sector graph | +0.0219 (p = 0.053, AUC agrees) | +0.0051 (p = 0.672) |
+
+**The graph's entire apparent contribution was carried by the one input channel
+that overlaps the label in time.** Same architecture, same graphs, same seeds;
+the only change was removing a channel windowed past the label's start.
+
+Three claims, then, all negative:
+
+1. **Message passing adds nothing** over the same text features once the
+   label-overlapping channel is removed (§7.3).
+2. **The tweet-learned topology is not better than sector cliques** — even
+   before the ablation, the two were indistinguishable (§7.4).
+3. **Macro conditioning contributes nothing** — indistinguishable from
+   conditioning on *shuffled* macro vectors (+0.0002, p = 0.987) (§7.5).
+
+What survives is not a finding: text features beat price-only by +0.0233
+(p = 0.068), below the noise floor and consistent with Experiment 1.
 
 ## 2. The MAN-SF non-reproduction caveat
 
@@ -179,7 +205,10 @@ left everything else alone. It did:
 | 6 attention-site conditioning | +0.0183 | +0.0338 | +0.0155 | yes |
 | 7 sector graph + conditioning | +0.0065 | +0.0160 | +0.0096 | yes |
 
-Three things follow, and together they are hard to get from tuning:
+Three things follow. **Read them as evidence that the isolation fix did
+mechanically what it was supposed to do — not as evidence that the graph helps.**
+§7.3 withdraws that conclusion; what this table establishes is only that the v2
+protocol change was principled and acted through the channel it was aimed at.
 
 1. **The graph rows moved ~5× more than the non-graph rows** (mean Δ +0.0156 vs
    +0.0029). The isolation fix acts *only* through graph membership, so this is
@@ -198,6 +227,10 @@ were made and the control that was supposed to stay null **stayed null**. Tuning
 toward a better story would not have left the paper's own headline mechanism —
 macro conditioning — dead in the water.
 
+In the event, the v2 gain that this section was written to defend turned out not
+to be a graph effect at all (§7.3). The protocol change was still correct; it
+simply made a **cleaner measurement of something that then failed its control**.
+
 ### 6.3 What a reader should still hold against it
 
 The correction family in §7.2 is **declared post hoc**: the spec pre-registered
@@ -211,7 +244,8 @@ offered as the check on that, not as a dismissal of it.
 
 ## 7. Results — the ablation ladder
 
-All rows: 5 seeds, mean ± std. `n_samples = 3720` on every one of the 45 runs.
+The 9 ladder rows: 5 seeds each, mean ± std. `n_samples = 3720` on every one of
+the 60 runs in this experiment (45 ladder + 15 ablation).
 Within-day MCC is computed per trading-day cross-section (thresholded at that
 day's median) and averaged; 63 of 64 test days were scored (1 skipped as
 single-class).
@@ -228,6 +262,14 @@ single-class).
 | 1 | price-only | +0.0010 ± 0.0070 | −0.0013 | 0.5236 | 16.0 |
 | 0 | **macro-only control** | +0.0000 ± 0.0000 | −0.0714 | 0.4889 | 11.2 |
 
+Tweet-only ablation (§7.3) — the same rows with the news half zeroed:
+
+| # | Row | Within-day MCC | Pooled MCC | AUC |
+|---|---|---|---|---|
+| 8t | sector graph, tweets only | +0.0294 ± 0.0153 | +0.0538 | 0.5420 |
+| 2t | text features no graph, tweets only | +0.0243 ± 0.0211 | +0.0459 | 0.5331 |
+| 3t | tweet graph, tweets only | +0.0211 ± 0.0143 | +0.0530 | 0.5361 |
+
 Reference points (pooled MCC): Experiment 1 LSTM+tweets **+0.0922**;
 Experiment 6 best (RGCN sector+correlation) **+0.0677 ± 0.0255**; Experiment 6
 GAT sector **+0.0160 ± 0.0161**; always-UP constant acc 0.5129 / F1 0.6780;
@@ -236,8 +278,10 @@ GAT sector **+0.0160 ± 0.0161**; always-UP constant acc 0.5129 / F1 0.6780;
 **Noise floor (mean seed spread across rows): 0.0304.** Any difference smaller
 than this is not resolvable by this experiment.
 
-**Tripwire:** max pooled MCC across all 45 cells is **+0.0621**, well below the
-0.15 threshold that would have indicated leakage. It did not fire.
+**Tripwire:** max pooled MCC across all 60 cells is **+0.0799**, well below the
+0.15 threshold that would have indicated leakage. It did not fire — and §7.3
+shows that it would not have, even though the headline effect was in fact an
+artefact of feature/label timing. The tripwire tests magnitude, not mechanism.
 
 ### 7.1 The controls behaved
 
@@ -263,22 +307,61 @@ Bonferroni over the **seven** contrasts the ladder was built to make,
 | conditioning vs none (4−3) | −0.0154 | 0.0927 | 0.0638 | no | no | disagrees |
 | attention site vs FiLM (6−3) | −0.0098 | 0.0512 | 0.0404 | no | no | agrees |
 
-### 7.3 The three findings
+### 7.3 The main result — the graph effect was carried by a label-overlapping channel
 
-**1. A graph over text-bearing nodes beats price-only. This one holds.**
+Taken at face value, the ladder says the graph works. Row 3 vs row 1 is +0.0425,
+unpaired p < 0.0001, paired p = 0.0013; it **survives Bonferroni**, **exceeds the
+0.0304 noise floor**, **AUC independently agrees** (p = 0.021), and it is
+**positive on all five seeds**. Row 8 replicates it with a different graph
+(+0.0350, 5/5 positive). Pooled, the two unconditioned graph rows beat price-only
+by **+0.0382, p = 0.000004, 10/10 seeds**.
 
-Row 3 vs row 1 is +0.0425 with unpaired p < 0.0001 and paired p = 0.0013. It
-**survives Bonferroni**, it **exceeds the 0.0304 noise floor** — the first
-effect in this project to do so — **AUC independently agrees** (0.5322 vs
-0.5236, p = 0.021), and it is **positive on all five seeds**
-(+0.0420 / +0.0387 / +0.0469 / +0.0360 / +0.0542) against a price-only row that
-is positive on only two.
+That result does not survive its own control.
 
-Row 8 replicates it with a completely different graph: +0.0350, also 5/5
-positive. Pooling the two unconditioned graph rows against price-only gives
-**+0.0382, p = 0.000004, 10/10 seeds positive**.
+**The control.** Micro node features are a 1536-d concatenation of a tweet
+vector (strictly ≤ *t−1*) and a news vector windowed to day *t*'s 09:30 open.
+The label is StockNet's close-to-close `Main_MV_Percent`, which already contains
+the overnight gap — so the news half is **partly contemporaneous with the label**
+(§8). Rows 2, 3 and 8 were re-run with that half zeroed
+(`--zero-news`, rows suffixed `__tweetonly`, 15 cells):
 
-**2. The learned tweet topology is *not* the source of the gain.**
+| Row | With news | Tweet only | Δ |
+|---|---|---|---|
+| 2 — text features, **no graph** | +0.0131 | **+0.0243** | **+0.0112** |
+| 3 — tweet graph | +0.0436 | +0.0211 | −0.0225 |
+| 8 — sector graph | +0.0350 | +0.0294 | −0.0055 |
+
+And the contrast that matters — **the graph against the same text features
+without a graph**:
+
+| | With news | News removed |
+|---|---|---|
+| tweet graph vs row 2 | **+0.0305** (p = 0.010, AUC agrees) | **−0.0032** (p = 0.787, AUC disagrees) |
+| sector graph vs row 2 | +0.0219 (p = 0.053, AUC agrees) | +0.0051 (p = 0.672) |
+| pooled, both graphs | +0.0262 | **+0.0010 (p = 0.930)** |
+
+**Message passing adds nothing once the label-overlapping channel is removed.**
+
+**Why this is contemporaneity and not just "half the features were deleted."**
+Zeroing 768 of 1536 dimensions also halves the node feature's effective rank, so
+"the ablation broke the model generally" is a live competing explanation. The
+data rules it out: **row 2, which has no graph, went *up* under exactly the same
+removal** (+0.0131 → +0.0243). The text pathway was not degraded — if anything it
+improved. What the removal destroyed was specifically *what the graph was
+propagating*. That asymmetry is the evidence.
+
+Against price-only, the tweet-only graph rows are still positive on 10/10 seeds
+(+0.0242, p = 0.0008) — but since the graph contributes +0.0010 (p = 0.93) of
+that, the margin is attributable to **having text on the nodes at all**, not to
+message passing over them.
+
+**7.3.1 What actually survives, stated plainly.** Text features vs price-only,
+news removed: **+0.0233, p = 0.068**, AUC agrees, 5/5 seeds positive — but
+**below the 0.0304 noise floor** and not significant. This is not a finding. It
+is consistent with Experiment 1's LSTM+tweets and is not resolvable at this
+sample size.
+
+### 7.4 The learned tweet topology is *not* better than sector cliques
 
 This is the claim the experiment was designed to make, and it fails. The tweet
 graph beats the sector graph by **+0.0086 — p = 0.269, far below the noise
@@ -297,12 +380,13 @@ That is not because the graphs are secretly the same object. Measured over the
 
 The tweet graph is only ~1.7× more sector-aligned than a random graph of the
 same density; **83% of its edges are not sector edges**. So two structurally
-very different graphs deliver statistically the same benefit. The natural
-reading is that what helps is **message passing over text features at all**,
-not the particular topology — which is a weaker claim than the experiment set
-out to make, and the honest one.
+very different graphs behaved statistically identically — and, per §7.3, neither
+of them added anything over having no graph at all once the label-overlapping
+channel was removed. The experiment's central thesis is unsupported twice over:
+the learned topology is not better than the hand-designed one, and the topology
+is not doing the work in the first place.
 
-**3. Macro conditioning contributes nothing.**
+### 7.5 Macro conditioning contributes nothing
 
 Row 4 vs row 5 is **+0.0002 (p = 0.987)**. Conditioning on the real macro
 stream is indistinguishable from conditioning on macro vectors shuffled across
@@ -334,24 +418,27 @@ changes nothing at all. All three agree that conditioning is inert; **the exact
 CV should not be quoted as a stable measurement**, because the three runs used
 the same seed and the same data and still differ (see §9.13).
 
-### 7.4 How big is +0.0425, really?
+### 7.6 Scale — how big were these numbers even before the ablation?
 
 Small. A perfect per-day ranker — one that orders every day's cross-section
 correctly — scores within-day MCC **+0.5152** on this test split. Row 3's
-+0.0436 is **8.5% of that ceiling**.
+pre-ablation +0.0436 was **8.5% of that ceiling**; what remains after the
+ablation (text features, +0.0233) is **4.5%** of it.
 
 On pooled MCC, row 4's +0.0459 and row 3's +0.0412 remain **below Experiment 1's
 LSTM+tweets (+0.0922)** and below Experiment 6's best RGCN (+0.0677). Nothing
 here beats the project's own earlier pooled numbers, and nothing here approaches
-published benchmarks. What is new is that this is the first effect measured in
-this project that is **larger than the noise it is measured against** — the
-finding is about *resolvability*, not about magnitude.
+published benchmarks.
+
+For a while this looked like the first effect in this project larger than the
+noise it was measured against. It was not: the part that cleared the noise floor
+was the part the ablation removed.
 
 ## 8. Leakage audit
 
 The spec's tripwire — any cell above pooled MCC 0.15 is treated as suspected
 leakage rather than success — **did not fire**. Maximum pooled MCC across all
-45 runs is **+0.0621**.
+60 runs is **+0.0799**.
 
 Leakage is a tested property throughout, on three separate cutoffs:
 - macro headlines must precede day *t*'s 09:30 ET open;
@@ -370,29 +457,44 @@ than strictly predictive of all of it. The 09:30 cutoff is exactly what the spec
 mandates and is implemented correctly, so this is a property of the task
 definition rather than an implementation leak.
 
-In v1 this could be waved off because the result was null. **It cannot be now.**
-The node features in row 3 concatenate a tweet vector (clean: strictly ≤ *t−1*)
-with a news vector (pre-open day *t*, hence partly contemporaneous). The tweet
-*graph* is built from the clean half only, but message passing then mixes the
-news half across neighbours. So the headline +0.0425 has an untested
-alternative explanation: that the graph is propagating overnight-gap information
-rather than predictive signal.
+In v1 this could be waved off because the result was null. **It could not be for
+v2, and it is the reason v2's headline no longer stands.** The node features in
+row 3 concatenate a tweet vector (clean: strictly ≤ *t−1*) with a news vector
+(pre-open day *t*, hence partly contemporaneous). The tweet *graph* is built from
+the clean half only, but message passing then mixes the news half across
+neighbours — so the graph can propagate overnight-gap information.
 
-Two things bound this, but neither settles it: the news channel is empty for
-**79.8%** of (ticker, day) cells, and row 2 — the same features without a graph
-— is only +0.0131 (n.s.). **The decisive test is row 3 re-run with the news half
-zeroed**, which is the first item in §10 and was not run for this document.
+**This was tested, not argued.** Rows 2, 3 and 8 were re-run with the news half
+zeroed (§7.3). The graph's advantage over the same text features without a graph
+fell from +0.0305 (p = 0.010) to −0.0032 (p = 0.787), while the no-graph row was
+unharmed by the identical removal (+0.0131 → +0.0243). The alternative
+explanation was the correct one.
+
+**A precise statement of what this is and is not.** The 09:30 cutoff is exactly
+what the spec mandates and is implemented correctly; no test fails and the
+tripwire did not fire. This is **not an implementation leak** — it is a property
+of pairing pre-open news with a close-to-close label, and any published result on
+this benchmark that feeds pre-open text to a close-to-close target shares it. The
+honest framing is that the graph learned to exploit a legitimate-by-protocol
+overlap rather than to predict, and that only an ablation — not the leakage
+tests, and not the tripwire — could reveal it.
 
 ## 9. Disclosure — weaknesses and uncontrolled differences
 
-1. **The headline finding has an unrun control** — the news-half ablation in §8.
-   Until it exists, "the graph adds predictive signal" and "the graph propagates
-   overnight-gap information" are not separated.
-2. **The experiment's own thesis is unsupported.** The tweet-learned graph does
-   not beat sector cliques (§7.3). Experiment 7 was designed to show that a
-   graph learned from tweet semantics is a better substrate; it did not.
+1. **Experiment 7 has no surviving positive finding.** The graph thesis failed
+   its ablation (§7.3), the learned-topology thesis failed against sector
+   cliques (§7.4), and the conditioning thesis failed against its shuffled
+   control (§7.5). What remains — text features over price-only, +0.0233
+   (p = 0.068) — is below the noise floor and adds nothing to Experiment 1.
+2. **The tweet-only rows sit outside the declared contrast family.** They were
+   run *after* the with-news results were seen, so they are a post-hoc control
+   and are not covered by the §7.2 Bonferroni correction. This is unavoidable
+   for a control motivated by a result; it is noted because it cuts **against**
+   the conclusion it was testing, which is the direction that needs no defence.
 3. **n = 5 seeds** is a small sample for a t-test, and the Bonferroni family is
    **declared post hoc** (§6.3). The re-run was triggered by a disappointing v1.
+   Several contrasts here rest on differences smaller than the 0.0304 noise
+   floor and should be read as directional, not established.
 4. **Model selection uses the protocol dev set** (42 days), not a train-carved
    fold, inheriting that set's selection noise — a plausible contributor to the
    0.0304 seed spread.
@@ -438,28 +540,50 @@ zeroed**, which is the first item in §10 and was not run for this document.
 
 ## 10. How we should move forward
 
-1. **Run the news-half ablation before citing +0.0425 anywhere.** Re-run rows 1,
-   2, 3 and 8 with the news vector zeroed, leaving only tweet text (strictly
-   ≤ *t−1*). If the graph advantage survives, the finding is clean and
-   defensible. If it collapses, the effect was overnight-gap propagation and
-   must be reported as such. This is 20 cells, ~2 hours of CPU, and it is the
-   single highest-value thing left in this experiment.
-2. **Do not pursue macro→micro FiLM conditioning further.** The shuffled control
-   settles it, and the near-constant γ/β explains why. If it is ever revisited,
-   fix the shared-γ limitation in §9.9 first — a mechanism that cannot reorder
+1. **Treat the label/feature time overlap as a first-class design constraint,
+   not a footnote.** This is the transferable lesson. A close-to-close label
+   paired with pre-open text gives any sufficiently expressive model — and a GNN
+   especially, because it *spreads* the overlapping channel across neighbours —
+   a legitimate-by-protocol way to look like it predicts. Every future experiment
+   should either (a) use an open-to-close label, so pre-open text is strictly
+   prior, or (b) report a features-strictly-prior ablation alongside the headline.
+   Nothing in the leakage tests or the tripwire caught this; only the ablation did.
+2. **If the graph is revisited, the burden of proof is now higher.** The
+   architecture must beat the *no-graph* row on strictly-prior features. It
+   currently does not (+0.0010, p = 0.93). More capacity will not change that;
+   the question is whether cross-sectional structure carries next-day
+   information at all on this universe, and that is a data question, not a
+   modelling one.
+3. **Do not pursue macro→micro FiLM conditioning further.** The shuffled control
+   settles it, and the collapsed γ/β explains why. If it is ever revisited, fix
+   the shared-γ limitation in §9.9 first — a mechanism that cannot reorder
    tickers within a day cannot help a within-day metric except through
    interaction effects.
-3. **Drop the "learned graph is a better substrate" thesis, or test it properly.**
-   Two structurally dissimilar graphs (17% edge overlap) scored the same. Either
-   the topology genuinely does not matter here — in which case the interesting
-   question is why message passing over text helps at all — or five seeds cannot
-   resolve a real difference. Both readings point to more seeds, not more
-   architecture.
-4. **Fix the evaluation before adding capacity.** The noise floor (0.0304) still
-   exceeds most effects measured here. Walk-forward validation, or selection
-   folds carved from train, would buy more than any new module. This experiment
-   is the first in the project where an effect cleared that floor — the way to
-   get more such results is to lower the floor.
-5. **Report within-day, always.** Pooled MCC on this benchmark is dominated by
+4. **Drop the "learned graph is a better substrate" thesis.** Two structurally
+   dissimilar graphs (17% edge overlap) scored the same as each other, and
+   neither beat having no graph on clean features. The interesting residual
+   question is the opposite of the one we asked: not *which* topology, but
+   whether message passing helps here at all.
+5. **Fix the evaluation before adding capacity.** The noise floor (0.0304)
+   exceeds every effect that survives in this document. Walk-forward validation,
+   or selection folds carved from train, would buy more than any new module —
+   and would have made this experiment's headline unrepeatable-looking from the
+   start, which is the point.
+6. **Report within-day, always.** Pooled MCC on this benchmark is dominated by
    market direction; the oracle at +0.6248 shows how much room there is to be
    misled by it.
+
+## 11. Postscript — what this experiment is actually worth
+
+The ladder produced a result that passed every check the spec asked for:
+Bonferroni-corrected significance, AUC corroboration, 5/5 seed consistency, an
+effect above the noise floor, a shuffled-input control, a macro-only control,
+and an unfired leakage tripwire. **It was still wrong.** The one check that
+caught it was an ablation that removed a channel whose *timing*, not whose
+content, was the problem — and that check was not in the spec.
+
+That is the finding worth carrying into the capstone write-up. Not "our graph
+beat the baseline," and not "nothing worked," but: on a benchmark where roughly
+half the label variance is market direction and the label window opens before
+the feature cutoff closes, standard significance machinery is not sufficient to
+establish that a model predicts anything.
