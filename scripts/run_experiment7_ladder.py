@@ -45,6 +45,7 @@ PATIENCE, MAX_EPOCHS, LR, GRAD_ACCUM_DAYS = 20, 100, 1e-3, 16
 # barely trained -- a floor prevents a noisy dev set from ending training instantly.
 MIN_EPOCHS = 15
 TWEET_LOOKBACK = 20
+ZERO_NEWS = False
 WINSORIZE_LIMIT = 10.0
 SEEDS = [0, 1, 2, 3, 4]
 
@@ -110,12 +111,21 @@ def micro_tensor(snap, micro_embeddings: dict) -> torch.Tensor:
 
     Concatenated rather than averaged so the model can weight news against tweets
     independently -- several ablation rows exist to measure exactly that.
+
+    Under ZERO_NEWS the news half is blanked. News is windowed to day t's 09:30
+    open, and the close-to-close label already contains the overnight gap, so the
+    news half is partly CONTEMPORANEOUS with the label rather than predictive of
+    it. Tweets end at t-1 and carry no such overlap. Zeroing the news half is
+    therefore the control that separates a real graph effect from the graph
+    propagating overnight-gap information across neighbours.
     """
     rows = []
     for ticker in snap.tickers:
         entry = micro_embeddings.get((ticker, snap.date))
         if entry is None:
             rows.append(torch.zeros(1536))
+        elif ZERO_NEWS:
+            rows.append(torch.cat([entry[0], torch.zeros(768)]))
         else:
             rows.append(torch.cat([entry[0], entry[1]]))
     return torch.stack(rows)
@@ -239,7 +249,17 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--rows", nargs="*", default=None,
                     help="row names to run; default all")
+    ap.add_argument("--zero-news", action="store_true",
+                    help="blank the news half of every micro vector, leaving only "
+                         "tweets (strictly <= t-1). Separates predictive signal "
+                         "from overnight-gap propagation; results are recorded "
+                         "under a '__tweetonly' row suffix.")
     args = ap.parse_args()
+    global ZERO_NEWS
+    ZERO_NEWS = args.zero_news
+    suffix = "__tweetonly" if ZERO_NEWS else ""
+    if ZERO_NEWS:
+        print("ZERO_NEWS: news half blanked; micro input is tweets only")
 
     os.makedirs(OUT_DIR, exist_ok=True)
     print("building embeddings, vectors and graphs...", flush=True)
@@ -249,9 +269,10 @@ def main() -> None:
     print(f"tweet graph: mean {sum(density)/max(len(density),1):.1f} edges/day, "
           f"max {max(density) if density else 0}")
 
-    for row_name, kwargs, kind, shuffle in LADDER:
-        if args.rows and row_name not in args.rows:
+    for base_name, kwargs, kind, shuffle in LADDER:
+        if args.rows and base_name not in args.rows:
             continue
+        row_name = base_name + suffix
         for seed in SEEDS:
             if already_done(row_name, seed):
                 print(f"  skip  {row_name} seed={seed}")
@@ -266,8 +287,10 @@ def main() -> None:
                 print("        *** TRIPWIRE: pooled MCC > 0.15 - audit for leakage "
                       "before treating this as a result ***")
 
-    # Dump FiLM explainability for the best seed of row 4_full
-    if os.path.exists(RESULTS_CSV):
+    # Dump FiLM explainability for the best seed of row 4_full.
+    # Skipped under --zero-news: that model is fed different inputs, and
+    # writing it here would silently overwrite the readout in the write-up.
+    if os.path.exists(RESULTS_CSV) and not ZERO_NEWS:
         try:
             df = pd.read_csv(RESULTS_CSV)
             if "4_full" in df["row"].values:
