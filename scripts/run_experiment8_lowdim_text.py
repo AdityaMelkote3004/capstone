@@ -72,6 +72,15 @@ ROWS = {
     "I_counts_pca4":    dict(counts=True, text=4),
     "J_counts_pca32":   dict(counts=True, text=32),
     "K_counts_pca64":   dict(counts=True, text=64),
+    # PC1 correlates -0.986 with "this row has an all-zero text vector", i.e. the
+    # leading component is a has-tweets indicator, not a semantic axis. 16.6% of
+    # rows are exactly zero and that discrete cluster dominates the covariance.
+    # L re-runs PCA-2 with those rows set to the TRAIN MEAN instead of zero, which
+    # removes the cluster. M replaces the text entirely with a single explicit
+    # presence flag. If L collapses to B and M matches H, then the whole effect is
+    # tweet presence and none of it is semantics.
+    "L_pca2_meanimpute": dict(counts=True, text=2, impute=True),
+    "M_counts_presence": dict(counts=True, text="presence"),
 }
 
 
@@ -144,8 +153,16 @@ def prepare(df: pd.DataFrame, text_matrix: torch.Tensor, spec: dict):
     seq = ((flat - mu) / sd).reshape(seq.shape)
 
     text = None
-    if spec["text"]:
+    if spec["text"] == "presence":
         matrix = text_matrix.numpy()
+        flag = (np.abs(matrix).sum(axis=1) > 0).astype(np.float32)[:, None]
+        text = torch.tensor(flag, dtype=torch.float32)
+    elif spec["text"]:
+        matrix = text_matrix.numpy().copy()
+        if spec.get("impute"):
+            empty = np.abs(matrix).sum(axis=1) == 0
+            filled = matrix[is_train & ~empty]
+            matrix[empty] = filled.mean(axis=0)
         if spec["text"] == 768:
             projected = matrix
         else:
