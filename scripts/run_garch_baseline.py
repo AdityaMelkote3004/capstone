@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import pandas as pd
+import torch
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, matthews_corrcoef, roc_auc_score
 
@@ -36,6 +37,7 @@ warnings.filterwarnings("ignore")
 EXACT = "dataset/stocknet_protocol_a_exact.parquet"
 FINAL = "dataset/final/stocknet_final_modeling_set.parquet"
 OUT = "results/experiment9_volatility/garch_baseline.json"
+TEXT_CACHE = "data/processed/experiment8_text_matrix.pt"
 TRAIN_END = "2015-08-01"          # protocol-A train boundary
 
 
@@ -118,6 +120,22 @@ def main() -> None:
     df["vol_target"] = (magnitude > threshold).astype(int)
     df["day"] = df["Date"].dt.strftime("%Y-%m-%d")
 
+    # The strongest test of "text adds nothing": bolt it onto the BEST baseline,
+    # not onto our own models (which lose to EWMA). If text cannot improve EWMA,
+    # the negative result holds against the best thing available, not just
+    # against what we built.
+    text_matrix = torch.load(TEXT_CACHE, weights_only=False)["matrix"].numpy()
+    assert len(text_matrix) == len(df), "text matrix must align with the EXACT parquet order"
+    is_train = (df["Split"] == "train").to_numpy()
+    centre = text_matrix[is_train].mean(axis=0)
+    _, _, vt = np.linalg.svd(text_matrix[is_train] - centre, full_matrices=False)
+    projected = (text_matrix - centre) @ vt[:8].T          # PCA fit on train only
+    for i in range(8):
+        df[f"pca{i}"] = projected[:, i]
+    df["tweet_total"] = np.log1p(
+        df[[f"Day{i}_TweetCount" for i in range(1, 5)]].to_numpy().clip(0).sum(axis=1))
+    PCA_COLS = [f"pca{i}" for i in range(8)]
+
     feature_sets = {
         "realised_5": ["realised_5"],
         "realised_10": ["realised_10"],
@@ -125,6 +143,9 @@ def main() -> None:
         "ewma_riskmetrics": ["ewma"],
         "garch11": ["garch11"],
         "all_classical": ["realised_5", "realised_10", "realised_20", "ewma", "garch11"],
+        "ewma + tweet counts": ["ewma", "tweet_total"],
+        "ewma + PCA-8 text": ["ewma"] + PCA_COLS,
+        "ewma + counts + text": ["ewma", "tweet_total"] + PCA_COLS,
     }
 
     rows = []

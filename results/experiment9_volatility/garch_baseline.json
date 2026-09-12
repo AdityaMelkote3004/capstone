@@ -64,5 +64,38 @@
     "within_day_within_day_accuracy":0.5809696159,
     "within_day_days_scored":64,
     "within_day_days_skipped":0
+  },
+  {
+    "baseline":"ewma + tweet counts",
+    "mcc":0.1414941327,
+    "accuracy":0.5919354839,
+    "auc":0.6041387659,
+    "n_samples":3720,
+    "within_day_within_day_mcc":0.1893263314,
+    "within_day_within_day_accuracy":0.5914349217,
+    "within_day_days_scored":64,
+    "within_day_days_skipped":0
+  },
+  {
+    "baseline":"ewma + PCA-8 text",
+    "mcc":0.0924785668,
+    "accuracy":0.5529569892,
+    "auc":0.5697539425,
+    "n_samples":3720,
+    "within_day_within_day_mcc":0.1148484857,
+    "within_day_within_day_accuracy":0.5560427064,
+    "within_day_days_scored":64,
+    "within_day_days_skipped":0
+  },
+  {
+    "baseline":"ewma + counts + text",
+    "mcc":0.0986636561,
+    "accuracy":0.5677419355,
+    "auc":0.571495217,
+    "n_samples":3720,
+    "within_day_within_day_mcc":0.1422918706,
+    "within_day_within_day_accuracy":0.5690580768,
+    "within_day_days_scored":64,
+    "within_day_days_skipped":0
   }
 ]
