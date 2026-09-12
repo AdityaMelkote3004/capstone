@@ -307,6 +307,11 @@ Bonferroni over the **seven** contrasts the ladder was built to make,
 | conditioning vs none (4−3) | −0.0154 | 0.0927 | 0.0638 | no | no | disagrees |
 | attention site vs FiLM (6−3) | −0.0098 | 0.0512 | 0.0404 | no | no | agrees |
 
+> **Do not read the "YES" in row 1 as a result.** Every figure in this table is
+> computed on features that include a channel partly contemporaneous with the
+> label. §7.3 removes that channel and the row-1 effect does not survive. The
+> table is retained because the contrast between it and §7.3 *is* the finding.
+
 ### 7.3 The main result — the graph effect was carried by a label-overlapping channel
 
 Taken at face value, the ladder says the graph works. Row 3 vs row 1 is +0.0425,
