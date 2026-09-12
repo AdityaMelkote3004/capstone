@@ -19,6 +19,11 @@ MAN-SF-style bilinear, GAT, graph transformer, RGCN, GraphSAGE, and a
 macro-conditioned tweet graph. Best honest result: **+0.0338 MCC**, against a
 seed-to-seed noise floor of ~0.030. Nothing survives that clears its own noise.
 
+This holds for the graph work specifically. The best graph result (Exp 6, RGCN,
+pooled +0.0598) is the project's highest neural number and it *replicates* — but
+its within-day MCC is +0.0046 (p=0.43), so it is calling market direction, not
+picking stocks. No graph in this project does cross-sectional work.
+
 **2. Next-day *volatility* is predictable — but not by us.**
 The identical pipeline, pointed at "will tomorrow's absolute move exceed the
 training median", scores **+0.1433 MCC / 58.5% accuracy**. But **EWMA
@@ -46,6 +51,7 @@ check that was added afterwards.
 | Exp 7 | Macro-conditioned tweet graph, **+0.0425** within-day, survived Bonferroni, AUC agreed, 5/5 seeds | News features windowed to *t*'s 09:30 open, but the label is close-to-close, so the channel **overlapped the label in time**. Removing it: graph advantage +0.0305 → **−0.0032** | 2 hours |
 | Exp 8 | PCA-compressed text, **+0.0424** over price-only, significant on all four metrics | PC1 correlated **−0.986** with "row has no tweets". The gain was **missingness encoding**, not semantics. Semantics beyond presence: +0.0088, p=0.13 | 40 min |
 | Exp 9 | Volatility, **+0.1433** MCC, leak-checked, replicated | **EWMA beats it** on every metric | 30 min |
+| Exp 6 | RGCN sector+correlation, **+0.0677** — the best neural number in the project | Survived a 5-seed top-up (+0.0598), then **within-day MCC came in at +0.0046, p=0.43** — below the no-graph baseline. It ranks *days*, not *stocks* | 45 min |
 
 **The pattern.** Every one of these was caught by a *cheap* control that was not
 part of the original protocol. None was caught by significance testing, seed
@@ -72,7 +78,7 @@ Pooled MCC on the fixed 3,720-sample test set.
 | 3 — MAN-SF bilinear | price + fundamentals, **no text** | +0.033 | text made it worse |
 | 4 — GAT | sector graph | +0.0160 | over-smoothing diagnosed and fixed |
 | 5 — Graph transformer | — | ~+0.013 | no improvement |
-| 6 — Dense graph grid | RGCN sector+correlation | +0.0677 | 3 seeds, spread 0.051, **no matched baseline** — unverified |
+| 6 — Dense graph grid | RGCN sector+correlation | +0.0598 | ❌ pooled holds at 5 seeds, but within-day **+0.0046 (p=0.43)** — market-direction calling |
 | 7 — Macro-conditioned tweet graph | tweet graph, no conditioning | +0.0412 | ❌ effect was label-timing overlap |
 | 8 — Low-dimensional text | counts + PCA-2 | +0.0338 | ⚠️ gain is missingness encoding |
 | 9 — **Volatility target** | **EWMA (classical)** | **+0.1475** | ✅ holds; neural models lose to it |
@@ -81,10 +87,19 @@ Reference points: market-direction oracle **+0.6248** (knows only each day's
 direction — shows how much pooled MCC rewards non-stock-specific skill);
 perfect per-day ranker, within-day **+0.5152**.
 
-**Note on Exp 6's +0.0677:** the highest neural number in the project, but 3
-seeds with a 0.051 spread and no price-only control in the same harness. Given
-that Exp 1's +0.0922 evaporated under identical scrutiny, it should be re-run at
-5 seeds before being cited.
+**Note on Exp 6.** Now fully checked. The pooled figure survived a 5-seed top-up
+(+0.0677 → +0.0598, 5/5 positive) — unlike Exp 1's, it does not collapse. But
+Exp 6 only ever logged *pooled* MCC, and adding within-day settles it:
+
+| | mean | positive seeds | vs zero |
+|---|---|---|---|
+| pooled | +0.0598 | 5/5 | — |
+| **within-day** | **+0.0046** | 3/5 | **p = 0.43** |
+
++0.0046 is indistinguishable from zero and *below* the price-only no-graph
+baseline (+0.0088). The model ranks **days**, not **stocks**; the graph does no
+cross-sectional work. This went undetected for the whole project because pooled
+MCC was the only metric recorded.
 
 ---
 
@@ -143,8 +158,8 @@ Not claimable:
    leak-free and replicated, but the per-feature correlation with |next move| is
    *negative* where clustering predicts positive, and `data[3:6]` cannot be
    identified without the raw files. The result stands; the explanation does not.
-2. **Re-run Experiment 6's +0.0677 at 5 seeds** with a matched price-only
-   control. It is the last unverified number in the project.
+2. ~~Re-run Experiment 6's +0.0677 at 5 seeds.~~ **Done — §2, §3. Pooled holds;
+   within-day is zero.**
 3. **Federated learning is 0% built.** It is in the project title and no code
    exists. It will not improve accuracy — federated training typically costs a
    little versus centralised — so it is a completeness deliverable, not a
