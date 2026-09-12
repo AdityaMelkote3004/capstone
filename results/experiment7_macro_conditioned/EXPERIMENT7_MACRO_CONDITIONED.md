@@ -270,6 +270,12 @@ Tweet-only ablation (§7.3) — the same rows with the news half zeroed:
 | 2t | text features no graph, tweets only | +0.0243 ± 0.0211 | +0.0459 | 0.5331 |
 | 3t | tweet graph, tweets only | +0.0211 ± 0.0143 | +0.0530 | 0.5361 |
 
+
+> **Note (Experiment 8):** Experiment 1's +0.0922 does not replicate — a
+> matched-architecture rerun at 5 seeds gives mean **+0.0017**. Comparisons
+> against it below are measuring against a single lucky seed. See the
+> replication notice in `results/experiment1_stocknet_exact/`.
+
 Reference points (pooled MCC): Experiment 1 LSTM+tweets **+0.0922**;
 Experiment 6 best (RGCN sector+correlation) **+0.0677 ± 0.0255**; Experiment 6
 GAT sector **+0.0160 ± 0.0161**; always-UP constant acc 0.5129 / F1 0.6780;

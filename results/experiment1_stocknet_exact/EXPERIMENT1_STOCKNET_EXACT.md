@@ -1,5 +1,29 @@
 # Experiment 1 — Exact StockNet Protocol A Reproduction
 
+> ## ⚠️ Replication notice (added later, Experiment 8)
+>
+> **The +0.0922 headline below is a single unreplicated run and does not
+> reproduce.** Re-running this exact architecture (LSTM, hidden 64, 2 layers,
+> dropout 0.2) at **five seeds** on the same split gives:
+>
+> `+0.0027  −0.0009  +0.0011  +0.0181  −0.0125`  →  **mean +0.0017**
+>
+> The best of five seeds (+0.0181) is not within a factor of five of +0.0922.
+> Seed-to-seed noise on this data was later measured at ~0.03 MCC, so a single
+> run carries almost no information.
+>
+> Caveat on the caveat: the replication matched the *architecture*, not the
+> original training loop bit-for-bit, so this is "does not reproduce under a
+> matched-architecture rerun", not a formal retraction. But a 50x gap is not an
+> optimiser detail.
+>
+> **The numbers below are left unedited as the original record.** Every
+> conclusion elsewhere in this project of the form "nothing beats Experiment 1"
+> is comparing against a number that does not survive replication, and should be
+> re-read accordingly. See `results/experiment8_lowdim_text/` and
+> `results/experiment9_volatility/MECHANISM_NOTES.md`.
+
+
 ## Objective
 
 Per the project roadmap's Priority 1/2 ("Fix StockNet split + labels + trading-day

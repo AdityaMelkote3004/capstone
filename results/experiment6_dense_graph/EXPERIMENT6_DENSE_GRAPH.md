@@ -140,6 +140,12 @@ best graph result. (This is a statement about seed variance, not an audit
 of Experiment 4's configuration; the two were not verified to be
 hyperparameter-identical.)
 
+
+> **Note (Experiment 8):** Experiment 1's +0.0922 does not replicate — a
+> matched-architecture rerun at 5 seeds gives mean **+0.0017**. Comparisons
+> against it below are measuring against a single lucky seed. See the
+> replication notice in `results/experiment1_stocknet_exact/`.
+
 **Nothing here beats Experiment 1.** The LSTM+tweets baseline at +0.0922
 remains the project's best result. Exactly one of 84 runs (a single seed of
 RGCN [sector+correlation], +0.0945) exceeded it, which at this noise level
