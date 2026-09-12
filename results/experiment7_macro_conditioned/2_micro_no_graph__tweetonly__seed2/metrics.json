@@ -1,0 +1,17 @@
+{
+  "test": {
+    "label": "2_micro_no_graph__tweetonly seed=2",
+    "backend": null,
+    "accuracy": 0.5120967741935484,
+    "f1": 0.468209786111925,
+    "mcc": 0.029674167884586707,
+    "auc": 0.5175167240525543,
+    "within_day_mcc": -0.002068779493912509,
+    "within_day_accuracy": 0.4978412521061764,
+    "days_scored": 63,
+    "days_skipped": 1,
+    "n_samples": 3720,
+    "best_epoch": 1,
+    "best_val_mcc": 0.06251334424123837
+  }
+}

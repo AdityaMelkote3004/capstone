@@ -23,6 +23,7 @@ from scipy import stats
 
 RESULTS = "results/experiment7_macro_conditioned/results.csv"
 M = "within_day_mcc"
+ALPHA_BONF = 0.05 / 7   # same declared family as the main ladder
 PAIRS = [
     ("2_micro_no_graph", "micro features, no graph"),
     ("3_graph_no_cond", "tweet graph, no conditioning"),
@@ -38,6 +39,8 @@ def summarise(d: pd.DataFrame, row: str):
 def main() -> None:
     d = pd.read_csv(RESULTS)
     base = d[d.row == "1_price_only"][M]
+    ladder = d[~d.row.str.endswith("__tweetonly")]
+    noise = ladder.groupby("row")[M].agg(lambda x: x.max() - x.min()).mean()
     print(f"baseline 1_price_only: {base.mean():+.4f} (n={len(base)})\n")
 
     hdr = f"{'row':<32}{'with news':>12}{'tweet only':>12}{'delta':>9}{'n':>5}"
@@ -62,9 +65,22 @@ def main() -> None:
             continue
         diff = s.mean() - base.mean()
         p = stats.ttest_ind(s.values, base.values, equal_var=False).pvalue
-        verdict = ("SURVIVES" if p < 0.05 and diff > 0 else "does NOT survive")
-        print(f"  {label:<32} {diff:>+8.4f}  p={p:.4f}  {sum(s > 0)}/{len(s)} seeds +  "
-              f"[{verdict}]")
+        # Held to the same bar as the main ladder, not merely p<0.05: the effect
+        # must also clear the seed-spread noise floor and the Bonferroni alpha.
+        # A nominally significant effect smaller than the noise is not a result.
+        flags = []
+        if p < 0.05 and diff > 0:
+            flags.append("nominally significant")
+        if diff > noise:
+            flags.append("exceeds noise floor")
+        else:
+            flags.append(f"BELOW noise floor ({noise:.4f})")
+        if p < ALPHA_BONF:
+            flags.append("survives Bonferroni")
+        else:
+            flags.append(f"fails Bonferroni (a={ALPHA_BONF:.4f})")
+        print(f"  {label:<32} {diff:>+8.4f}  p={p:.4f}  {sum(s > 0)}/{len(s)} seeds +")
+        print(f"  {'':<32} {' | '.join(flags)}")
 
     print("\nn_samples across all cells:", sorted(d["n_samples"].unique()))
     print("max pooled MCC (tripwire 0.15):", f"{d['mcc'].max():+.4f}")
