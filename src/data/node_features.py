@@ -124,3 +124,85 @@ def standardise(matrix: np.ndarray, is_train: np.ndarray) -> np.ndarray:
     mu = matrix[is_train].mean(axis=0)
     sd = matrix[is_train].std(axis=0) + 1e-8
     return np.clip((matrix - mu) / sd, -10.0, 10.0)
+
+
+# ---------------------------------------------------------------------------
+# Peer features: the graph's information, delivered without message passing.
+#
+# Experiment 10's screen found message passing contributes ~0 on both targets
+# (direction +0.0052, volatility +0.0007) across four conv types. That is a
+# statement about the MECHANISM, not necessarily about the information: a GNN
+# averages neighbours, and averaging is the wrong operation for a task that
+# scores how stocks differ from each other.
+#
+# These features carry the same neighbourhood information explicitly:
+#   - what your peers did yesterday (lead-lag effects between related firms are
+#     documented, and a node has never had access to this -- it knows its OWN
+#     lagged return, never its neighbours')
+#   - how you differ from your peers (the contrast the metric actually rewards)
+#   - sector identity, which until now reached the model ONLY through the graph,
+#     leaving the no-graph control unfairly deprived
+#
+# If these help while message passing does not, the graph carries real signal
+# and the GNN was simply the wrong way to read it.
+# ---------------------------------------------------------------------------
+
+PEER_SOURCE_COLS = ["ret_lag1", "ret_abs_lag1", "vol_ewma"]
+
+
+def build_peer_features(exact_df: pd.DataFrame, vol_df: pd.DataFrame,
+                        edge_cache: dict, sector_csv: str) -> tuple:
+    """Per (ticker, day): neighbour means of prior-day quantities, the node's
+    contrast against them, neighbour count, and a sector one-hot.
+
+    Leakage: every source column is already shifted to t-1 or earlier, and the
+    edges for day t are built from information before t, so neighbour aggregates
+    are strictly prior by construction.
+    """
+    vol = vol_df.copy()
+    vol["day"] = pd.to_datetime(vol["Date"]).dt.strftime("%Y-%m-%d")
+    by_day = {d: g.set_index("Ticker")[PEER_SOURCE_COLS]
+              for d, g in vol.groupby("day")}
+
+    sectors = pd.read_csv(sector_csv)
+    sector_of = dict(zip(sectors["Ticker"], sectors["Sector"]))
+    sector_names = sorted(set(sector_of.values()))
+    sector_index = {s: i for i, s in enumerate(sector_names)}
+
+    days = pd.to_datetime(exact_df["Target_Date"]).dt.strftime("%Y-%m-%d").to_numpy()
+    tickers = exact_df["Ticker"].to_numpy()
+
+    n_peer = 2 * len(PEER_SOURCE_COLS) + 1
+    out = np.zeros((len(exact_df), n_peer + len(sector_names)), dtype=np.float32)
+
+    neighbour_cache: dict = {}
+    for i, (ticker, day) in enumerate(zip(tickers, days)):
+        if day not in neighbour_cache:
+            adjacency: dict = {}
+            for relation_edges in edge_cache.get(day, {}).values():
+                for a, b in relation_edges:
+                    adjacency.setdefault(a, set()).add(b)
+                    adjacency.setdefault(b, set()).add(a)
+            neighbour_cache[day] = adjacency
+        neighbours = neighbour_cache[day].get(ticker, set())
+        frame = by_day.get(day)
+
+        row = np.zeros(n_peer, dtype=np.float32)
+        if frame is not None and neighbours:
+            present = [t for t in neighbours if t in frame.index]
+            if present:
+                peer_mean = frame.loc[present].mean(axis=0).to_numpy(dtype=np.float32)
+                own = (frame.loc[ticker].to_numpy(dtype=np.float32)
+                       if ticker in frame.index else np.zeros(len(PEER_SOURCE_COLS),
+                                                              dtype=np.float32))
+                row[:len(PEER_SOURCE_COLS)] = peer_mean
+                row[len(PEER_SOURCE_COLS):2 * len(PEER_SOURCE_COLS)] = own - peer_mean
+                row[-1] = np.log1p(len(present))
+        out[i, :n_peer] = row
+        out[i, n_peer + sector_index[sector_of[ticker]]] = 1.0
+
+    names = ([f"peer_mean_{c}" for c in PEER_SOURCE_COLS]
+             + [f"peer_contrast_{c}" for c in PEER_SOURCE_COLS]
+             + ["log_peer_count"]
+             + [f"sector_{s}" for s in sector_names])
+    return np.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0), names

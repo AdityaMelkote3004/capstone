@@ -39,7 +39,8 @@ import torch.nn as nn
 from src.data.edge_cache import load_edge_cache
 from src.data.graph_edges import combine_edges
 from src.data.graph_dataset import build_daily_snapshots, normalize_price_snapshots
-from src.data.node_features import assemble, standardise
+from src.data.node_features import (assemble, build_peer_features,
+                                    build_volatility_features, standardise)
 from src.models.multimodal_graph import CONV_TYPES, MultiModalGraphNet
 from src.utils.metrics import pooled_metrics, within_day_metrics
 from src.utils.seed import set_seed
@@ -48,6 +49,7 @@ EXACT = "dataset/stocknet_protocol_a_exact.parquet"
 FINAL = "dataset/final/stocknet_final_modeling_set.parquet"
 TEXT_CACHE = "data/processed/experiment8_text_matrix.pt"
 EDGE_CACHE = "results/experiment6_dense_graph/edge_cache.pkl"
+SECTOR_CSV = "dataset/final/sector_mapping.csv"
 OUT_DIR = "results/experiment10_multimodal"
 RESULTS_CSV = os.path.join(OUT_DIR, "results.csv")
 
@@ -58,7 +60,7 @@ MIN_EPOCHS = 10
 WINSORIZE_LIMIT = 10.0
 
 
-def load_everything(target: str):
+def load_everything(target: str, peer: bool = False):
     df = pd.read_parquet(EXACT)
     df["day"] = pd.to_datetime(df["Target_Date"]).dt.strftime("%Y-%m-%d")
 
@@ -77,6 +79,17 @@ def load_everything(target: str):
             _, _, vt = np.linalg.svd(matrix[is_train] - centre, full_matrices=False)
             text_pca = (matrix - centre) @ vt[:TEXT_PCA_DIMS].T   # fit on train only
     static, names = assemble(df, FINAL, text_pca)
+
+    cache = load_edge_cache(EDGE_CACHE)
+    if peer:
+        # The graph's information without the graph's mechanism. If this helps
+        # while message passing does not, the edges carry signal that GNN
+        # averaging was failing to extract.
+        peer_matrix, peer_names = build_peer_features(
+            df, build_volatility_features(FINAL), cache, SECTOR_CSV)
+        static = np.concatenate([static, peer_matrix], axis=1)
+        names = names + peer_names
+
     static = standardise(static, is_train)
     print(f"  static node features: {static.shape[1]} "
           f"({'with' if text_pca is not None else 'WITHOUT'} text)")
@@ -86,8 +99,6 @@ def load_everything(target: str):
 
     splits = tuple(build_daily_snapshots(df, s) for s in ("train", "dev", "test"))
     normalize_price_snapshots(*splits, winsorize_limit=WINSORIZE_LIMIT)
-
-    cache = load_edge_cache(EDGE_CACHE)
     return splits, lookup, cache, static.shape[1], names
 
 
@@ -198,6 +209,8 @@ def main() -> None:
     ap.add_argument("--seeds", type=int, nargs="*", default=None)
     ap.add_argument("--variants", nargs="*", default=["plain"],
                     help=f"any of {list(VARIANTS)}")
+    ap.add_argument("--peer", action="store_true",
+                    help="append peer/sector features derived from the graph")
     args = ap.parse_args()
 
     if args.screen:
@@ -209,10 +222,11 @@ def main() -> None:
 
     for target in args.targets:
         print(f"\n=== target: {target} ===", flush=True)
-        splits, lookup, cache, dim, names = load_everything(target)
+        splits, lookup, cache, dim, names = load_everything(target, args.peer)
         for variant, conv, use_graph, seed in itertools.product(
                 args.variants, convs, [True, False], seeds):
-            if done(target, conv, use_graph, seed, variant):
+            if done(target, conv, use_graph, seed,
+                    variant + ("+peer" if args.peer else "")):
                 print(f"  skip {variant} {conv} graph={use_graph} seed={seed}")
                 continue
             contrast, cross_sectional = VARIANTS[variant]
@@ -221,12 +235,14 @@ def main() -> None:
             # duplicate cell rather than recording the same run twice.
             if not use_graph and contrast and not cross_sectional:
                 continue
-            tag = f"{variant:<12} {conv:<12} graph={str(use_graph):<5} seed={seed}"
+            variant_tag = variant + ("+peer" if args.peer else "")
+            tag = f"{variant_tag:<16} {conv:<12} graph={str(use_graph):<5} seed={seed}"
             print(f"  train {tag} ...", flush=True)
             test = train_one(conv, use_graph, seed, splits, lookup, cache, dim,
                              contrast=contrast, cross_sectional=cross_sectional)
-            record({"target": target, "variant": variant, "conv": conv,
-                    "use_graph": use_graph, "seed": seed, **test})
+            record({"target": target, "variant": variant_tag, "conv": conv,
+                    "use_graph": use_graph, "seed": seed,
+                    "n_features": dim, **test})
             print(f"        {tag}  within-day={test['within_day_mcc']:+.4f}  "
                   f"pooled={test['mcc']:+.4f}  acc={test['accuracy']:.4f}  "
                   f"n={test['n_samples']}", flush=True)
