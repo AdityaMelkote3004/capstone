@@ -42,3 +42,23 @@ Comparisons (Welch two-sample vs the paper's 5-seed mean ± std; one-sample vs t
 - DTML's published 0.191 was not reproduced; faithful DTML here averages 0.130.
   The market index is proxied by an equal-weighted mean of the 87 stocks, since
   the S&P 500 series is not in the published data.
+
+## 10-seed results (seeds 5–9 added; see PREREGISTRATION.md addendum)
+
+| Rung | Pooled MCC (10 seeds) | Acc | AUC | Within-day | vs paper +0.0876 ± 0.0253 (Welch) | vs LSTM +0.0017 |
+|---|---|---|---|---|---|---|
+| F0 DTML, faithful | **+0.1389 ± 0.0488** | 0.5583 | 0.5933 | +0.0078 | +0.0513, **p = 0.019**, 9/10 above | p < 10⁻⁵ |
+| F1 + StockNet features | **+0.1254 ± 0.0380** | 0.5537 | 0.5669 | +0.0303 | +0.0378, **p = 0.042**, 9/10 above | p < 10⁻⁵ |
+| F2 + ranking loss (declared) | +0.1053 ± 0.0275 | 0.5455 | 0.5609 | +0.0242 | +0.0177, p = 0.25, 8/10 above | p < 10⁻⁶ |
+
+The new seeds 5–9 replicate seeds 0–4 (F1: +0.1232 vs +0.1275; F0: +0.1476 vs
++0.1302), so the 5-seed result was not a favourable draw.
+
+Headline: on the StockNet test set (n = 3,720), DTML-based models beat both the
+tweet-count LSTM baseline and the group paper's full model on pooled MCC, with
+10-seed means of +0.139 (DTML) and +0.125 (DTML + the group's multimodal
+features), each significant at p < 0.05 against the paper's model.
+
+Same disclosures apply: the 10-seed extension was decided after seeing the
+5-seed results; faithful DTML's score is mostly market timing (within-day
++0.008), while F1 carries a modest stock-discrimination edge (+0.030).

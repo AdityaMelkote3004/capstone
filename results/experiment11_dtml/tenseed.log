@@ -1,0 +1,16 @@
+[F0_dtml] seed=5 ep=0 val mcc=+0.2147 acc=0.6133 wd=-0.0313 collapse=+0.2979 (4.26m) || TEST mcc=+0.1265 acc=0.5312 wd=+0.0254 collapse=+0.2157
+[F2_ours] seed=5 ep=16 val mcc=+0.2294 auc=0.6362 wd=+0.0564 collapse=+0.2410 || TEST mcc=+0.1283 acc=0.5538 auc=0.5705 wd=+0.0247 collapse=+0.1945
+[F1_peer] seed=5 ep=22 val mcc=+0.2823 auc=0.6239 wd=+0.0304 collapse=+0.3382 || TEST mcc=+0.0451 acc=0.5220 auc=0.5359 wd=+0.0309 collapse=+0.0478
+[F1_peer] seed=6 ep=26 val mcc=+0.2399 auc=0.6521 wd=+0.0397 collapse=+0.3253 || TEST mcc=+0.1511 acc=0.5731 auc=0.5919 wd=-0.0026 collapse=+0.1803
+[F2_ours] seed=6 ep=28 val mcc=+0.1934 auc=0.6192 wd=+0.0584 collapse=+0.2228 || TEST mcc=+0.0982 acc=0.5425 auc=0.5640 wd=+0.0269 collapse=+0.0817
+[F0_dtml] seed=6 ep=56 val mcc=+0.2373 acc=0.5683 wd=+0.0075 collapse=+0.2725 (12.08m) || TEST mcc=+0.1452 acc=0.5731 wd=+0.0112 collapse=+0.1336
+[F1_peer] seed=7 ep=18 val mcc=+0.2416 auc=0.6766 wd=+0.0321 collapse=+0.2705 || TEST mcc=+0.1650 acc=0.5723 auc=0.5782 wd=+0.0296 collapse=+0.1536
+[F0_dtml] seed=7 ep=68 val mcc=+0.2315 acc=0.5495 wd=+0.0133 collapse=+0.2767 (13.74m) || TEST mcc=+0.2017 acc=0.6016 wd=+0.0011 collapse=+0.1111
+[F1_peer] seed=8 ep=18 val mcc=+0.3067 auc=0.6871 wd=+0.0219 collapse=+0.2968 || TEST mcc=+0.1146 acc=0.5478 auc=0.5705 wd=+0.0302 collapse=+0.0970
+[F2_ours] seed=7 ep=26 val mcc=+0.2645 auc=0.6318 wd=+0.0543 collapse=+0.2634 || TEST mcc=+0.1520 acc=0.5712 auc=0.5941 wd=+0.0226 collapse=+0.2102
+[F0_dtml] seed=9 ep=1 val mcc=+0.2387 acc=0.6180 wd=-0.0284 collapse=+0.3004 (4.47m) || TEST mcc=+0.1380 acc=0.5462 wd=+0.0123 collapse=+0.2036
+[F2_ours] seed=8 ep=20 val mcc=+0.2960 auc=0.6851 wd=+0.0415 collapse=+0.3680 || TEST mcc=+0.1054 acc=0.5462 auc=0.5597 wd=+0.0031 collapse=+0.1564
+[F0_dtml] seed=8 ep=40 val mcc=+0.2201 acc=0.5632 wd=-0.0032 collapse=+0.2473 (9.4m) || TEST mcc=+0.1265 acc=0.5621 wd=+0.0257 collapse=+0.1007
+[F1_peer] seed=9 ep=19 val mcc=+0.2586 auc=0.6809 wd=+0.0578 collapse=+0.2001 || TEST mcc=+0.1404 acc=0.5594 auc=0.5694 wd=+0.0146 collapse=+0.1135
+[F2_ours] seed=9 ep=34 val mcc=+0.2454 auc=0.6469 wd=+0.0383 collapse=+0.3223 || TEST mcc=+0.0909 acc=0.5457 auc=0.5502 wd=+0.0051 collapse=+0.1955
+### 10SEED COMPLETE
