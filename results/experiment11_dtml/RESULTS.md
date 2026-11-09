@@ -62,3 +62,18 @@ features), each significant at p < 0.05 against the paper's model.
 Same disclosures apply: the 10-seed extension was decided after seeing the
 5-seed results; faithful DTML's score is mostly market timing (within-day
 +0.008), while F1 carries a modest stock-discrimination edge (+0.030).
+
+## Stage D — reduced feature set (S4: daily return + 5–30-day trend, 7 of 11 features)
+
+Selected on validation per the pre-registered rule; 10 seeds on test.
+
+| Model | Pooled MCC (10 seeds) | Acc | AUC | Within-day | vs paper +0.0876 | vs LSTM +0.0017 |
+|---|---|---|---|---|---|---|
+| S4 reduced DTML | +0.1210 ± 0.0322 | 0.5511 | 0.5866 | −0.0012 | +0.0334, p = 0.053, 9/10 above | p < 10⁻⁶ |
+| F0 full DTML (reference) | +0.1389 ± 0.0488 | 0.5583 | 0.5933 | +0.0078 | +0.0513, p = 0.019 | p < 10⁻⁵ |
+
+S4 vs full DTML, paired by seed: p = 0.21 (no significant loss from dropping
+4 of 11 features). Validation screen also showed a single feature (daily
+return) reaching val MCC 0.188, so the gain comes from the architecture
+(cross-stock attention + market context), not the feature count. Like full
+DTML, S4's score is market timing: within-day −0.001, day-collapse +0.148.

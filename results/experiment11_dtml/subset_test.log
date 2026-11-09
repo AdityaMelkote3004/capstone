@@ -1,0 +1,11 @@
+[S4_ret_trend] seed=3 ep=0 val mcc=+0.2198 acc=0.6114 wd=+0.0390 collapse=+0.3004 (4.48m) || TEST mcc=+0.1418 acc=0.5296 wd=-0.0303 collapse=+0.1757
+[S4_ret_trend] seed=5 ep=0 val mcc=+0.1880 acc=0.5875 wd=-0.0591 collapse=+0.2584 (4.5m) || TEST mcc=+0.1385 acc=0.5513 wd=-0.0007 collapse=+0.1404
+[S4_ret_trend] seed=2 ep=1 val mcc=+0.1562 acc=0.5374 wd=+0.0361 collapse=+0.0128 (4.64m) || TEST mcc=+0.0451 acc=0.5239 wd=-0.0236 collapse=+0.1117
+[S4_ret_trend] seed=9 ep=1 val mcc=+0.1624 acc=0.5640 wd=+0.0028 collapse=+0.2007 (4.62m) || TEST mcc=+0.1450 acc=0.5626 wd=+0.0032 collapse=+0.1828
+[S4_ret_trend] seed=4 ep=39 val mcc=+0.2127 acc=0.5781 wd=+0.0407 collapse=+0.2566 (10.08m) || TEST mcc=+0.1467 acc=0.5667 wd=+0.0183 collapse=+0.1651
+[S4_ret_trend] seed=0 ep=55 val mcc=+0.2522 acc=0.5675 wd=-0.0052 collapse=+0.2517 (11.81m) || TEST mcc=+0.1407 acc=0.5688 wd=+0.0058 collapse=+0.1655
+[S4_ret_trend] seed=6 ep=56 val mcc=+0.2218 acc=0.5538 wd=+0.0302 collapse=+0.2517 (11.92m) || TEST mcc=+0.0966 acc=0.5457 wd=-0.0065 collapse=+0.0971
+[S4_ret_trend] seed=1 ep=59 val mcc=+0.2468 acc=0.5914 wd=+0.0147 collapse=+0.2817 (12.57m) || TEST mcc=+0.1021 acc=0.5406 wd=+0.0175 collapse=+0.1868
+[S4_ret_trend] seed=7 ep=43 val mcc=+0.2168 acc=0.5675 wd=+0.0186 collapse=+0.1988 (9.66m) || TEST mcc=+0.1169 acc=0.5540 wd=-0.0008 collapse=+0.1197
+[S4_ret_trend] seed=8 ep=62 val mcc=+0.2004 acc=0.5636 wd=-0.0081 collapse=+0.1996 (11.11m) || TEST mcc=+0.1364 acc=0.5675 wd=+0.0051 collapse=+0.1340
+### SUBSET TEST COMPLETE
