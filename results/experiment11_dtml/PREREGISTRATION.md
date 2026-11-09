@@ -19,3 +19,9 @@ Primary claim: F2 pooled test MCC (5-seed mean +/- std) versus
   - group paper's full model, 5 seeds:         +0.0876
 Also reported for every rung: accuracy, AUC, within-day MCC, day-collapse MCC,
 day-block bootstrap 95% CI.
+
+## Addendum (written after the 5-seed test results, before running more)
+Rungs F0, F1 and F2 are extended to 10 seeds (5-9 added), matching DTML's own
+10-seed protocol. No configuration changes. This decision was made after seeing
+the 5-seed results (F1 vs paper p = 0.059), so it is disclosed as a post-hoc
+extension; all three rungs are extended equally and all 10 seeds are reported.
