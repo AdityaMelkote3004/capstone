@@ -1,0 +1,13 @@
+[C0_faithful] seed=0 ep=12 val mcc=+0.0000 auc=0.6105 wd=+0.0521 collapse=+0.0000
+[C1_base] seed=0 ep=13 val mcc=+0.0000 auc=0.5338 wd=+0.0700 collapse=+0.0000
+[C0_faithful] seed=1 ep=2 val mcc=-0.0363 auc=0.4652 wd=+0.0439 collapse=+0.0000
+[C1_base] seed=1 ep=5 val mcc=+0.0000 auc=0.5078 wd=+0.0687 collapse=+0.0000
+[C3_rank] seed=0 ep=4 val mcc=+0.0000 auc=0.5198 wd=+0.0535 collapse=+0.0000
+[C2_peer] seed=0 ep=12 val mcc=+0.0000 auc=0.5212 wd=+0.0754 collapse=+0.0000
+[C2_peer] seed=1 ep=1 val mcc=+0.0242 auc=0.5145 wd=+0.0717 collapse=+0.0000
+[C3_rank] seed=1 ep=8 val mcc=+0.0000 auc=0.5316 wd=+0.0398 collapse=+0.0000
+[C5_peer_rank_nomc] seed=0 ep=4 val mcc=+0.0373 auc=0.5059 wd=+0.0830 collapse=-0.1578
+[C4_peer_rank] seed=0 ep=1 val mcc=-0.0356 auc=0.4811 wd=+0.0799 collapse=+0.0000
+[C5_peer_rank_nomc] seed=1 ep=5 val mcc=+0.0000 auc=0.5343 wd=+0.0659 collapse=+0.0000
+[C4_peer_rank] seed=1 ep=35 val mcc=+0.0534 auc=0.5233 wd=+0.0746 collapse=-0.0610
+### STAGE C COMPLETE
