@@ -25,3 +25,17 @@ Rungs F0, F1 and F2 are extended to 10 seeds (5-9 added), matching DTML's own
 10-seed protocol. No configuration changes. This decision was made after seeing
 the 5-seed results (F1 vs paper p = 0.059), so it is disclosed as a post-hoc
 extension; all three rungs are extended equally and all 10 seeds are reported.
+
+## Stage D — reduced feature sets (declared before running)
+Feature indices: 0 z_open, 1 z_high, 2 z_low, 3 z_close, 4 z_adj_close,
+5-10 z_d5, z_d10, z_d15, z_d20, z_d25, z_d30.
+  S0 all 11            (reference, same seeds)
+  S1 returns only      3
+  S2 returns+intraday  0 1 2 3
+  S3 trend only        5-10
+  S4 return+trend      3 5-10
+  S5 compact           3 5 7 10
+Screen on validation, seeds 0-2, config as above. The subset with the best
+mean val MCC among S1-S5 goes to test at 10 seeds; S0 is the reference. If no
+reduced subset is within the S0 val range, the reduced model is reported as not
+viable rather than tuned further.

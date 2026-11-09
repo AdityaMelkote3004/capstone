@@ -107,16 +107,25 @@ def main() -> None:
     ap.add_argument("--seeds", type=int, nargs="+", default=[0])
     ap.add_argument("--tag", default="")
     ap.add_argument("--eval-test", action="store_true")
+    # Feature-subset runs (stage D) write to their own files so the column set of
+    # search.csv / final.csv is never changed mid-experiment.
+    ap.add_argument("--features", type=int, nargs="+", default=None,
+                    help="indices into DTML's 11 features; default all")
     args = ap.parse_args()
 
     data = load_acl18(window=args.window)
+    if args.features is not None:
+        data["x"] = np.ascontiguousarray(data["x"][..., args.features])
+        data["market"] = np.ascontiguousarray(data["market"][..., args.features])
     idx = {s: np.where(data["split"] == s)[0] for s in ("train", "val", "test")}
     os.makedirs(OUT_DIR, exist_ok=True)
-    out_csv = os.path.join(OUT_DIR, "final.csv" if args.eval_test else "search.csv")
+    prefix = "subset_" if args.features is not None else ""
+    out_csv = os.path.join(OUT_DIR, prefix + ("final.csv" if args.eval_test else "search.csv"))
 
     for seed in args.seeds:
         set_seed(seed)
-        model = DTML(n_stocks=len(data["tickers"]), hidden=args.hidden,
+        model = DTML(n_stocks=len(data["tickers"]), n_features=data["x"].shape[-1],
+                     hidden=args.hidden,
                      heads=args.heads, beta=args.beta, dropout=args.dropout,
                      use_ta=args.ablate not in ("ta", "all"),
                      use_sa=args.ablate not in ("sa", "all"),
@@ -139,6 +148,8 @@ def main() -> None:
                "hidden": args.hidden, "heads": args.heads, "lr": args.lr,
                "reg": args.reg, "dropout": args.dropout, "ablate": args.ablate,
                "select": args.select, "best_epoch": best_epoch,
+               **({"features": "-".join(map(str, args.features))}
+                  if args.features is not None else {}),
                "minutes": round((time.time() - t0) / 60, 2)}
         row.update({f"val_{k}": v for k, v in best_val.items()})
         if args.eval_test:
