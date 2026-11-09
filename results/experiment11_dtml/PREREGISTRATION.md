@@ -39,3 +39,15 @@ Screen on validation, seeds 0-2, config as above. The subset with the best
 mean val MCC among S1-S5 goes to test at 10 seeds; S0 is the reference. If no
 reduced subset is within the S0 val range, the reduced model is reported as not
 viable rather than tuned further.
+
+## Stage E — graph-aware DTML (declared before running)
+All variants = F1 (DTML + Exp 10 stock/peer features, same config) plus a graph
+in the stock-attention layer:
+  G1 bias, relations sector + correlation + comention
+  G2 bias, relations sector + correlation + comention + residual (group paper's
+     market-residual top-8 graph, built from ACL18 z_close, 20 prior days)
+  G3 mask (attend only to neighbours + self), same four relations
+Screen on validation, seeds 0-2. The variant with the best mean val MCC goes to
+test at 10 seeds ONLY IF that mean is at least F1's validation mean on seeds
+0-2; otherwise the result is reported as "the explicit graph did not help" and
+nothing goes to test. Test comparison: paired by seed against F1.

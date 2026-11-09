@@ -47,9 +47,18 @@ class DTML(nn.Module):
     def __init__(self, n_stocks: int, n_features: int = 11, hidden: int = 64,
                  heads: int = 4, beta: float = 0.1, dropout: float = 0.15,
                  use_ta: bool = True, use_sa: bool = True, use_mc: bool = True,
-                 extra_dim: int = 0):
+                 extra_dim: int = 0, graph_mode: str = "none", n_relations: int = 0):
         super().__init__()
         self.beta, self.use_sa, self.use_mc = beta, use_sa, use_mc
+        self.heads = heads
+        # Graph-aware stock attention (stage E). "bias": every stock still sees
+        # every other, but each relation adds a learned per-head bonus to the
+        # attention score of connected pairs, so the model decides how much to
+        # trust each edge type. "mask": attention is restricted to graph
+        # neighbours plus self -- the old GAT-style design.
+        self.graph_mode = graph_mode
+        if graph_mode == "bias":
+            self.rel_bias = nn.Parameter(torch.zeros(heads, n_relations))
         self.stock_encoder = AttentionLSTM(n_features, hidden, use_ta)
         self.market_encoder = AttentionLSTM(n_features, hidden, use_ta)
         self.norm_scale = nn.Parameter(torch.ones(n_stocks, hidden))
@@ -65,8 +74,24 @@ class DTML(nn.Module):
         self.out_norm = nn.LayerNorm(hidden)
         self.output = nn.Linear(hidden, 1)
 
+    def _attention_mask(self, valid: torch.Tensor, adj: torch.Tensor) -> torch.Tensor:
+        """Float mask (heads, S, S) added to attention logits. Finite -1e4 rather
+        than -inf so a fully masked row cannot produce NaN."""
+        S = valid.shape[0]
+        mask = torch.zeros(self.heads, S, S)
+        mask[:, :, ~valid] = -1e4
+        if adj is None or self.graph_mode == "none":
+            return mask
+        a = adj.float()
+        if self.graph_mode == "bias":
+            mask = mask + torch.einsum("hr,rij->hij", self.rel_bias, a)
+        elif self.graph_mode == "mask":
+            allowed = (a.sum(0) > 0) | torch.eye(S, dtype=torch.bool)
+            mask = mask.masked_fill(~allowed.unsqueeze(0), -1e4)
+        return mask
+
     def forward(self, x: torch.Tensor, valid: torch.Tensor, market: torch.Tensor,
-                extra: torch.Tensor = None) -> torch.Tensor:
+                extra: torch.Tensor = None, adj: torch.Tensor = None) -> torch.Tensor:
         """x (S, W, F) one day's windows; valid (S,) stocks with complete windows;
         market (W, F). Returns one logit per stock."""
         context = self.stock_encoder(x)                                   # S, h
@@ -80,9 +105,14 @@ class DTML(nn.Module):
 
         hidden = context
         if self.use_sa:
-            mixed, _ = self.attention(context.unsqueeze(0), context.unsqueeze(0),
-                                      context.unsqueeze(0),
-                                      key_padding_mask=~valid.unsqueeze(0))
+            if self.graph_mode == "none":
+                mixed, _ = self.attention(context.unsqueeze(0), context.unsqueeze(0),
+                                          context.unsqueeze(0),
+                                          key_padding_mask=~valid.unsqueeze(0))
+            else:
+                mixed, _ = self.attention(context.unsqueeze(0), context.unsqueeze(0),
+                                          context.unsqueeze(0),
+                                          attn_mask=self._attention_mask(valid, adj))
             combined = context + self.dropout(mixed.squeeze(0))
             hidden = self.out_norm(torch.tanh(combined + self.mlp(combined)))
         return self.output(hidden).squeeze(-1)

@@ -32,6 +32,7 @@ import torch.nn as nn
 from scripts.run_dtml import metrics
 from src.data.acl18 import load_acl18
 from src.data.acl18_extra import extra_features
+from src.data.acl18_graph import relation_tensor
 from src.models.dtml import DTML
 from src.utils.seed import set_seed
 
@@ -45,7 +46,7 @@ def pairwise_rank_loss(logits, y):
     return nn.functional.softplus(neg.unsqueeze(0) - pos.unsqueeze(1)).mean()
 
 
-def run_split(model, data, extra, idx, optimizer=None, reg=1.0, rank_alpha=0.0):
+def run_split(model, data, extra, idx, optimizer=None, reg=1.0, rank_alpha=0.0, adj=None):
     train = optimizer is not None
     model.train(train)
     order = list(idx)
@@ -59,10 +60,11 @@ def run_split(model, data, extra, idx, optimizer=None, reg=1.0, rank_alpha=0.0):
         x = torch.from_numpy(data["x"][i])
         m = torch.from_numpy(data["market"][i])
         e = torch.from_numpy(extra[i]) if extra is not None else None
+        a = torch.from_numpy(adj[i]) if adj is not None else None
         y = torch.from_numpy(data["y"][i])
         lab = y >= 0
         with torch.set_grad_enabled(train):
-            logits = model(x, valid, m, e)
+            logits = model(x, valid, m, e, a)
             if train and lab.any():
                 loss = nn.functional.binary_cross_entropy_with_logits(
                     logits[lab], y[lab].float()) + reg * model.selective_penalty()
@@ -94,6 +96,9 @@ def main() -> None:
     ap.add_argument("--extra", default="none", choices=["none", "base", "peer"])
     ap.add_argument("--rank-alpha", type=float, default=0.0)
     ap.add_argument("--seeds", type=int, nargs="+", default=[0])
+    ap.add_argument("--graph", default="none", choices=["none", "bias", "mask"])
+    ap.add_argument("--relations", nargs="+",
+                    default=["sector", "correlation", "comention"])
     ap.add_argument("--tag", default="plus")
     ap.add_argument("--eval-test", action="store_true")
     args = ap.parse_args()
@@ -101,7 +106,10 @@ def main() -> None:
     data = load_acl18(window=args.window)
     extra = None if args.extra == "none" else extra_features(data, peer=args.extra == "peer")
     idx = {s: np.where(data["split"] == s)[0] for s in ("train", "val", "test")}
-    out_csv = os.path.join(OUT_DIR, "plus_final.csv" if args.eval_test else "plus_search.csv")
+    adj = relation_tensor(data, args.relations) if args.graph != "none" else None
+    # Graph runs (stage E) get their own files so earlier CSVs keep their columns.
+    prefix = "graph_" if args.graph != "none" else "plus_"
+    out_csv = os.path.join(OUT_DIR, prefix + ("final.csv" if args.eval_test else "search.csv"))
 
     for seed in args.seeds:
         set_seed(seed)
@@ -109,12 +117,13 @@ def main() -> None:
         model = DTML(n_stocks=len(data["tickers"]), hidden=args.hidden, heads=args.heads,
                      beta=args.beta, dropout=args.dropout,
                      use_sa=args.ablate != "sa", use_mc=args.ablate != "mc",
-                     extra_dim=0 if extra is None else extra.shape[-1])
+                     extra_dim=0 if extra is None else extra.shape[-1],
+                     graph_mode=args.graph, n_relations=len(args.relations))
         opt = torch.optim.Adam(model.parameters(), lr=args.lr)
         best, state, stale, best_epoch = -9.0, None, 0, 0
         for epoch in range(args.epochs):
-            run_split(model, data, extra, idx["train"], opt, args.reg, args.rank_alpha)
-            vm = metrics(*run_split(model, data, extra, idx["val"]))
+            run_split(model, data, extra, idx["train"], opt, args.reg, args.rank_alpha, adj)
+            vm = metrics(*run_split(model, data, extra, idx["val"], adj=adj))
             if vm[args.select] > best:
                 best, stale, best_epoch, best_val = vm[args.select], 0, epoch, vm
                 state = {k: v.clone() for k, v in model.state_dict().items()}
@@ -127,13 +136,15 @@ def main() -> None:
                "hidden": args.hidden, "lr": args.lr, "ablate": args.ablate,
                "extra": args.extra, "rank_alpha": args.rank_alpha,
                "select": args.select, "best_epoch": best_epoch,
+               **({"graph": args.graph, "relations": "+".join(args.relations)}
+                  if args.graph != "none" else {}),
                "minutes": round((time.time() - t0) / 60, 2)}
         row.update({f"val_{k}": v for k, v in best_val.items()})
         msg = (f"[{args.tag}] seed={seed} ep={best_epoch} val mcc={best_val['mcc']:+.4f} "
                f"auc={best_val['auc']:.4f} wd={best_val['within_day_mcc']:+.4f} "
                f"collapse={best_val['collapse_mcc']:+.4f}")
         if args.eval_test:
-            tm = metrics(*run_split(model, data, extra, idx["test"]), boot=2000, seed=seed)
+            tm = metrics(*run_split(model, data, extra, idx["test"], adj=adj), boot=2000, seed=seed)
             row.update({f"test_{k}": v for k, v in tm.items()})
             msg += (f" || TEST mcc={tm['mcc']:+.4f} acc={tm['acc']:.4f} auc={tm['auc']:.4f} "
                     f"wd={tm['within_day_mcc']:+.4f} collapse={tm['collapse_mcc']:+.4f}")
