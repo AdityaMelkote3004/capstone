@@ -103,7 +103,10 @@ def main() -> None:
     ap.add_argument("--epochs", type=int, default=200)
     ap.add_argument("--patience", type=int, default=30)
     ap.add_argument("--select", default="mcc", choices=["mcc", "acc", "within_day_mcc"])
-    ap.add_argument("--ablate", default="none", choices=["none", "ta", "sa", "mc", "all"])
+    # "samc" removes stock attention and market context but keeps temporal
+    # attention: the attention-LSTM (ALSTM) baseline. "all" leaves a plain LSTM.
+    ap.add_argument("--ablate", default="none",
+                    choices=["none", "ta", "sa", "mc", "samc", "all"])
     ap.add_argument("--seeds", type=int, nargs="+", default=[0])
     ap.add_argument("--tag", default="")
     ap.add_argument("--eval-test", action="store_true")
@@ -128,8 +131,8 @@ def main() -> None:
                      hidden=args.hidden,
                      heads=args.heads, beta=args.beta, dropout=args.dropout,
                      use_ta=args.ablate not in ("ta", "all"),
-                     use_sa=args.ablate not in ("sa", "all"),
-                     use_mc=args.ablate not in ("mc", "all"))
+                     use_sa=args.ablate not in ("sa", "samc", "all"),
+                     use_mc=args.ablate not in ("mc", "samc", "all"))
         opt = torch.optim.Adam(model.parameters(), lr=args.lr)
         best, best_state, best_epoch, stale, t0 = -9.0, None, 0, 0, time.time()
         for epoch in range(args.epochs):

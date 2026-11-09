@@ -1,0 +1,10 @@
+[G1_bias3] seed=0 ep=14 val mcc=+0.2460 auc=0.6618 wd=+0.0138 collapse=+0.2369
+[G2_bias4] seed=0 ep=14 val mcc=+0.2460 auc=0.6619 wd=+0.0138 collapse=+0.2369
+[G3_mask4] seed=0 ep=15 val mcc=+0.1965 auc=0.6424 wd=+0.0382 collapse=+0.1609
+[G1_bias3] seed=2 ep=16 val mcc=+0.2626 auc=0.6693 wd=+0.0264 collapse=+0.1941
+[G3_mask4] seed=1 ep=27 val mcc=+0.2591 auc=0.6550 wd=+0.0250 collapse=+0.2541
+[G2_bias4] seed=1 ep=27 val mcc=+0.3283 auc=0.6766 wd=+0.0450 collapse=+0.3058
+[G1_bias3] seed=1 ep=28 val mcc=+0.3243 auc=0.6707 wd=+0.0519 collapse=+0.3431
+[G2_bias4] seed=2 ep=16 val mcc=+0.2619 auc=0.6693 wd=+0.0233 collapse=+0.1941
+[G3_mask4] seed=2 ep=20 val mcc=+0.2137 auc=0.6521 wd=+0.0150 collapse=+0.2145
+### GRAPH SCREEN COMPLETE
