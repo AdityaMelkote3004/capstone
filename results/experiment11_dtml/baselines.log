@@ -1,0 +1,31 @@
+[B_mlp] seed=1 val mcc=+0.1528 || TEST mcc=+0.0344 acc=0.5199 auc=0.5270 wd=-0.0011
+[B_mlp] seed=0 val mcc=+0.1783 || TEST mcc=+0.0607 acc=0.5309 auc=0.5406 wd=-0.0150
+[B_mlp] seed=2 val mcc=+0.1494 || TEST mcc=+0.0734 acc=0.5366 auc=0.5369 wd=-0.0163
+[B_mlp] seed=3 val mcc=+0.1796 || TEST mcc=+0.0774 acc=0.5387 auc=0.5452 wd=-0.0239
+[B_lstm] seed=1 ep=0 val mcc=+0.0498 acc=0.5104 wd=+0.0009 collapse=+0.0630 (2.56m) || TEST mcc=+0.0012 acc=0.5035 wd=+0.0173 collapse=+0.0995
+[B_alstm] seed=0 ep=0 val mcc=+0.0702 acc=0.4912 wd=-0.0464 collapse=+0.0000 (2.69m) || TEST mcc=+0.1095 acc=0.5559 wd=+0.0216 collapse=+0.1238
+[B_lstm] seed=0 ep=3 val mcc=+0.0458 acc=0.4579 wd=+0.0029 collapse=+0.0000 (2.79m) || TEST mcc=-0.0083 acc=0.5102 wd=+0.0374 collapse=+0.0000
+[B_alstm] seed=1 ep=2 val mcc=+0.0691 acc=0.4685 wd=+0.0371 collapse=+0.0000 (2.87m) || TEST mcc=+0.0488 acc=0.5253 wd=+0.0453 collapse=+0.0000
+[B_lstm] seed=2 ep=0 val mcc=+0.0527 acc=0.4845 wd=+0.0124 collapse=+0.0450 (2.56m) || TEST mcc=+0.0110 acc=0.5102 wd=+0.0292 collapse=-0.0965
+[B_mlp] seed=4 val mcc=+0.1584 || TEST mcc=+0.0578 acc=0.5288 auc=0.5365 wd=+0.0005
+[B_alstm] seed=2 ep=0 val mcc=+0.0539 acc=0.4865 wd=+0.0312 collapse=-0.0376 (2.74m) || TEST mcc=-0.0235 acc=0.4981 wd=+0.0068 collapse=+0.0648
+[B_mlp] seed=5 val mcc=+0.1971 || TEST mcc=+0.0772 acc=0.5339 auc=0.5513 wd=+0.0114
+[B_lstm] seed=3 ep=1 val mcc=+0.0388 acc=0.4509 wd=-0.0212 collapse=+0.0000 (2.67m) || TEST mcc=-0.0008 acc=0.5116 wd=+0.0432 collapse=+0.0000
+[B_mlp] seed=6 val mcc=+0.1798 || TEST mcc=+0.0588 acc=0.5242 auc=0.5383 wd=+0.0215
+[B_alstm] seed=4 ep=0 val mcc=+0.0876 acc=0.4857 wd=+0.0060 collapse=+0.0000 (2.75m) || TEST mcc=+0.0338 acc=0.5212 wd=+0.0348 collapse=-0.0462
+[B_lstm] seed=5 ep=0 val mcc=+0.0404 acc=0.5159 wd=-0.0154 collapse=+0.0404 (2.61m) || TEST mcc=+0.0420 acc=0.5137 wd=+0.0295 collapse=+0.0311
+[B_alstm] seed=5 ep=0 val mcc=+0.1306 acc=0.5769 wd=+0.0108 collapse=+0.1709 (2.74m) || TEST mcc=+0.0924 acc=0.5296 wd=+0.0432 collapse=+0.1370
+[B_mlp] seed=7 val mcc=+0.1528 || TEST mcc=+0.0628 acc=0.5306 auc=0.5388 wd=+0.0135
+[B_mlp] seed=8 val mcc=+0.1700 || TEST mcc=+0.0580 acc=0.5285 auc=0.5297 wd=-0.0005
+[B_alstm] seed=6 ep=0 val mcc=+0.0485 acc=0.4896 wd=-0.0361 collapse=+0.0000 (2.8m) || TEST mcc=+0.0337 acc=0.5180 wd=+0.0147 collapse=-0.0248
+[B_lstm] seed=4 ep=21 val mcc=+0.0229 acc=0.4665 wd=-0.0190 collapse=-0.0109 (4.38m) || TEST mcc=+0.0279 acc=0.5183 wd=+0.0563 collapse=+0.0136
+[B_lstm] seed=6 ep=17 val mcc=+0.0358 acc=0.4528 wd=+0.0055 collapse=+0.0000 (4.08m) || TEST mcc=+0.0339 acc=0.5204 wd=+0.0319 collapse=+0.0000
+[B_mlp] seed=9 val mcc=+0.1327 || TEST mcc=+0.0128 acc=0.5056 auc=0.5182 wd=+0.0085
+[B_lstm] seed=7 ep=3 val mcc=+0.0385 acc=0.4528 wd=-0.0538 collapse=+0.0000 (2.86m) || TEST mcc=+0.0486 acc=0.5258 wd=+0.0564 collapse=-0.0217
+[B_alstm] seed=7 ep=0 val mcc=+0.0632 acc=0.4669 wd=-0.0089 collapse=+0.0000 (2.74m) || TEST mcc=+0.0181 acc=0.5145 wd=-0.0071 collapse=-0.0492
+[B_alstm] seed=3 ep=45 val mcc=+0.0642 acc=0.4826 wd=-0.0099 collapse=+0.0000 (6.76m) || TEST mcc=+0.0461 acc=0.5263 wd=+0.0439 collapse=+0.0806
+[B_lstm] seed=8 ep=2 val mcc=+0.0359 acc=0.4708 wd=+0.0083 collapse=-0.0196 (2.78m) || TEST mcc=+0.0469 acc=0.5242 wd=+0.0331 collapse=+0.0313
+[B_alstm] seed=9 ep=3 val mcc=+0.0653 acc=0.4732 wd=-0.0356 collapse=+0.0000 (2.99m) || TEST mcc=+0.0263 acc=0.5177 wd=+0.0147 collapse=-0.0463
+[B_lstm] seed=9 ep=11 val mcc=+0.0443 acc=0.4501 wd=-0.0038 collapse=+0.0000 (3.45m) || TEST mcc=+0.0178 acc=0.5148 wd=+0.0607 collapse=+0.0000
+[B_alstm] seed=8 ep=142 val mcc=+0.1029 acc=0.5217 wd=+0.0072 collapse=+0.1145 (13.81m) || TEST mcc=+0.0621 acc=0.5325 wd=+0.0455 collapse=+0.0578
+### BASELINES COMPLETE

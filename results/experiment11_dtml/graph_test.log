@@ -1,0 +1,11 @@
+[G2_bias4] seed=0 ep=14 val mcc=+0.2460 auc=0.6619 wd=+0.0138 collapse=+0.2369 || TEST mcc=+0.1182 acc=0.5527 auc=0.5631 wd=+0.0280 collapse=+0.1615
+[G2_bias4] seed=2 ep=16 val mcc=+0.2619 auc=0.6693 wd=+0.0233 collapse=+0.1941 || TEST mcc=+0.0895 acc=0.5430 auc=0.5518 wd=+0.0647 collapse=+0.0604
+[G2_bias4] seed=1 ep=27 val mcc=+0.3283 auc=0.6766 wd=+0.0450 collapse=+0.3058 || TEST mcc=+0.1623 acc=0.5616 auc=0.5712 wd=+0.0342 collapse=+0.1764
+[G2_bias4] seed=3 ep=28 val mcc=+0.3047 auc=0.6947 wd=+0.0785 collapse=+0.3256 || TEST mcc=+0.1528 acc=0.5530 auc=0.5827 wd=+0.0322 collapse=+0.1427
+[G2_bias4] seed=4 ep=15 val mcc=+0.2611 auc=0.6743 wd=+0.0494 collapse=+0.2314 || TEST mcc=+0.1090 acc=0.5454 auc=0.5605 wd=+0.0429 collapse=+0.1261
+[G2_bias4] seed=5 ep=28 val mcc=+0.2829 auc=0.5928 wd=+0.0455 collapse=+0.3382 || TEST mcc=+0.0210 acc=0.5105 auc=0.5182 wd=+0.0209 collapse=-0.0319
+[G2_bias4] seed=6 ep=26 val mcc=+0.2413 auc=0.6492 wd=+0.0487 collapse=+0.3253 || TEST mcc=+0.1483 acc=0.5718 auc=0.5916 wd=+0.0051 collapse=+0.1803
+[G2_bias4] seed=7 ep=25 val mcc=+0.2432 auc=0.6566 wd=+0.0530 collapse=+0.2116 || TEST mcc=+0.1492 acc=0.5672 auc=0.5615 wd=+0.0191 collapse=+0.1475
+[G2_bias4] seed=8 ep=18 val mcc=+0.3067 auc=0.6875 wd=+0.0219 collapse=+0.2968 || TEST mcc=+0.1140 acc=0.5476 auc=0.5700 wd=+0.0321 collapse=+0.0970
+[G2_bias4] seed=9 ep=19 val mcc=+0.2606 auc=0.6814 wd=+0.0589 collapse=+0.2001 || TEST mcc=+0.1390 acc=0.5586 auc=0.5690 wd=+0.0107 collapse=+0.1135
+### GRAPH TEST COMPLETE

@@ -51,3 +51,11 @@ Screen on validation, seeds 0-2. The variant with the best mean val MCC goes to
 test at 10 seeds ONLY IF that mean is at least F1's validation mean on seeds
 0-2; otherwise the result is reported as "the explicit graph did not help" and
 nothing goes to test. Test comparison: paired by seed against F1.
+
+## Stage F — federated training (declared before running)
+F1's model, features and config trained with FedAvg over the nine sector
+clients (7-10 tickers each), 1 local epoch per round, up to 40 rounds, global
+model selected on validation MCC (patience 10), 5 seeds. Compared, paired by
+seed, against centralised F1. Expected direction: at or below F1 (federation
+adds no data). A one-round smoke run was executed to check the code and
+discarded; no selection was made from it.
