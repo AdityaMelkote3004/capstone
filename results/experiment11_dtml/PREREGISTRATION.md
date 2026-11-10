@@ -59,3 +59,24 @@ model selected on validation MCC (patience 10), 5 seeds. Compared, paired by
 seed, against centralised F1. Expected direction: at or below F1 (federation
 adds no data). A one-round smoke run was executed to check the code and
 discarded; no selection was made from it.
+
+## Correction (2026-11-10): target-day leak in the stock profile
+After the test results above, a review found that the v1 profile keyed every
+feature to the TARGET date in the modeling parquet, which only contains
+labelled rows. A row exists at (stock, t) exactly when that stock's move on t
+left StockNet's buffer zone (26,584 / 16,782 cells, zero exceptions), so row
+presence on t is target-day information. It reached the model through the peer
+neighbour count (corr 0.947 with the number of neighbours labelled at t), the
+peer means, and zero-filled profiles of unlabelled stocks.
+
+All results that use the profile -- F1, F2, F3, G2 and the federated runs -- are
+therefore void. Results that do not use it (F0, F4, S4, all baselines) are
+unaffected.
+
+Fix: profile v2 (src/data/acl18_extra.py) uses only data dated strictly before
+t. tests/test_profile_leakage.py rebuilds it with all data from t onward deleted
+and finds zero difference on 12 sampled days across train/val/test.
+
+Rerun with v2, identical configurations and seeds, tags suffixed "c":
+F1c, F2c (10 seeds), F3c (5 seeds), G2c (10 seeds), FEDc (5 seeds). No
+hyperparameter or selection changes. The paper reports only the v2 results.
