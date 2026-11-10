@@ -1,0 +1,6 @@
+[FED_fedavg] seed=4 best_round=0 val mcc=+0.1112 || TEST mcc=+0.0173 acc=0.5151 auc=0.5392 wd=+0.0265 (12.4m)
+[FED_fedavg] seed=1 best_round=0 val mcc=+0.0477 || TEST mcc=+0.0724 acc=0.5384 auc=0.5578 wd=+0.0291 (12.4m)
+[FED_fedavg] seed=0 best_round=0 val mcc=+0.0945 || TEST mcc=+0.0138 acc=0.5134 auc=0.5429 wd=-0.0039 (12.4m)
+[FED_fedavg] seed=2 best_round=2 val mcc=+0.0620 || TEST mcc=+0.0099 acc=0.5121 auc=0.5559 wd=-0.0052 (13.7m)
+[FED_fedavg] seed=3 best_round=36 val mcc=+0.2876 || TEST mcc=+0.1585 acc=0.5769 auc=0.5928 wd=+0.0111 (27.4m)
+### FEDERATED COMPLETE
