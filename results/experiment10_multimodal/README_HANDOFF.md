@@ -2,6 +2,17 @@
 
 **Read this before citing any number from this folder.**
 
+> **⚠️ Likely target-day leak (found 2026-11-10, during Experiment 11).**
+> `build_peer_features` takes each day's neighbour values from rows of the
+> modeling parquet dated on the target day. That parquet only contains labelled
+> rows, and a row exists at (stock, t) exactly when the stock's move on t left
+> StockNet's buffer zone (checked: 26,584 / 16,782 cells, zero exceptions). So
+> which neighbours are "present", and `log_peer_count`, encode target-day move
+> sizes — which is exactly what the volatility target asks about. The +0.0287
+> peer-feature gain below should be treated as **void** until rerun with the
+> strictly-prior builder in `src/data/acl18_extra.py` (`build_profile_v2`,
+> verified by `tests/test_profile_leakage.py`).
+
 ## What was found
 
 On the **volatility** target (is tomorrow's |move| above the training median?),
