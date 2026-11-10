@@ -47,9 +47,27 @@ def main():
         diff = np.abs(full - cut).max()
         worst = max(worst, diff)
         print(f"  {t}: max |full - truncated| = {diff:.3g}")
-    print("PASS: profile uses only data dated before the target day"
-          if worst == 0.0 else f"FAIL: max difference {worst}")
-    return 0 if worst == 0.0 else 1
+    # The graph edges feeding the peer features: rebuild correlation and
+    # co-mention edges from data truncated before t and compare with the cache.
+    from src.data.graph_edges import (build_comention_edges, build_correlation_edges,
+                                      load_event_texts, load_returns_matrix)
+    rets = load_returns_matrix(FINAL)
+    texts = load_event_texts(FINAL)
+    universe = set(rets.columns)
+    edge_mismatch = 0
+    for t in sample:
+        t = str(t)
+        ts = pd.Timestamp(t)
+        corr = build_correlation_edges(rets[rets.index < ts], ts)
+        com = build_comention_edges({d: v for d, v in texts.items() if d < ts}, ts, universe)
+        ok = (corr == set(cache[t]["correlation"])) and (com == set(cache[t]["comention"]))
+        edge_mismatch += 0 if ok else 1
+        print(f"  {t}: edges rebuilt from truncated data match cache: {ok}")
+
+    passed = worst == 0.0 and edge_mismatch == 0
+    print("PASS: profile and graph use only data dated before the target day"
+          if passed else f"FAIL: profile diff {worst}, edge mismatches {edge_mismatch}")
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":

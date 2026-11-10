@@ -15,10 +15,11 @@ stock graph), reaches a pooled MCC well above every baseline we trained on the
 same split. Pooled MCC, however, mixes two skills: calling the whole market's
 direction on a day, and ranking stocks against each other. The backbone's
 shared market signal makes it a market-timer with no stock-selection skill;
-the multi-modal profile restores stock selection while keeping the timing gain.
-Hand-built graphs inside the attention layer add nothing, and federated training
-across sector clients keeps stock selection but loses market timing, because no
-client sees the whole market.
+MMGT keeps the timing gain, and its multi-modal profile restores stock selection
+to the level of a per-stock LSTM. Hand-built graphs inside the attention layer add
+nothing. Federated training across sector clients scores lower under a fixed
+schedule, mostly because it stopped near its first round (a one-epoch centralised
+control looks the same).
 
 **Paper:** [`paper/main.tex`](paper/main.tex) (IEEE conference format).
 **All numbers:** [`results/experiment11_dtml/RESULTS.md`](results/experiment11_dtml/RESULTS.md).

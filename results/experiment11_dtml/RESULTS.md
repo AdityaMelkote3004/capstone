@@ -31,8 +31,10 @@ All ten MMGT seeds (lowest 0.097) exceed the best baseline mean (0.060).
   LSTM within-day 0.040 (p = 1.1e-5 vs 0), day-collapse 0.006, pooled 0.022.
 - The DTML backbone **times the market** but loses stock selection:
   day-collapse 0.130 of pooled 0.139; within-day 0.008 (p = 0.12 vs 0).
-- **MMGT does both**: day-collapse 0.219; within-day 0.023 (p = 0.003 vs 0),
-  above the backbone on 8/10 seeds (paired p = 0.031).
+- **MMGT keeps the timing and partly restores selection**: day-collapse 0.219;
+  within-day 0.023 (p = 0.003 vs 0), above the backbone on 8/10 seeds
+  (paired p = 0.031), below the LSTM's 0.040 (p = 0.031). The profile alone
+  reaches 0.031, level with the LSTM (p = 0.30).
 
 ## Ablations
 
@@ -55,11 +57,14 @@ Same five seeds, test:
 |---|---|---|---|---|---|
 | Centralised | 0.115 | 0.024 | 0.103 | 0.557 | 0.587 |
 | Federated | 0.040 ± 0.022 | 0.027 | −0.024 | 0.523 | 0.548 |
-| paired p | 0.017 (5/5 lower) | 0.80 | 0.003 | 0.018 | 0.059 |
+| Centralised, one epoch (control) | 0.053 | 0.016 | 0.035 | 0.523 | – |
+| paired p (fed vs centralised) | 0.017 (5/5 lower) | 0.80 | 0.003 | 0.018 | 0.059 |
 
-Federation removes market timing (no client sees the whole market during
-training) and keeps stock selection (within-day still above zero, p = 0.018).
-Best global round: 1, 1, 1, 14, 1 (patience 10, max 40) — under-trained.
+Each client trains on its own sector's stocks and labels only; the market index
+and peer features use public prices of all stocks. Best global round: 1, 1, 1,
+14, 1 (patience 10, max 40). The federated pattern matches the one-epoch
+centralised control (tag `UT1c`), so the gap is mostly under-training, not a
+demonstrated cost of partitioning.
 
 ## Correction: target-day leak (found during review, before publication)
 

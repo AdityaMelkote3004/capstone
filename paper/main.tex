@@ -57,14 +57,17 @@ relational graph network ($p\le1.1\times10^{-5}$ in every comparison). A
 within-day metric and a day-collapse control show where this comes from. Simple
 per-stock models rank stocks but cannot time the market; the transformer
 backbone times the market but loses the ability to rank stocks (within-day MCC
-$0.008$, not distinguishable from zero); MMGT keeps the market timing and
+$0.008$, not distinguishable from zero); MMGT keeps the market timing and partly
 restores stock selection (within-day MCC $0.023$, above the backbone on 8 of 10
-seeds, $p=0.031$). Hand-built graphs added to the attention layer bring no
-further gain. Training the model with federated averaging across nine sector
-clients lowers pooled MCC to $0.040$, and the same decomposition shows why: the
-federated model keeps its stock selection but loses market timing, because no
-client sees the whole market. The model reported as ours was pre-registered
-before any test result was computed, and every rung of the ablation is reported.
+seeds, $p=0.031$), and its multi-modal profile alone restores it to the level of
+a per-stock LSTM. Hand-built graphs added to the attention layer bring no further
+gain. Training with federated averaging across nine sector clients lowers pooled
+MCC to $0.040$; under our fixed schedule the federated model barely improved
+after its first round and behaves like a centralised model trained for one
+epoch, so this gap reflects the training budget more than partitioning. The
+model reported as ours was pre-registered before any test result was computed
+and re-run with a corrected, leak-tested profile; every rung of the ablation is
+reported.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -110,11 +113,13 @@ split and for our own earlier models.
 \item \textbf{Market timing and stock selection, separated.} Using a within-day
 MCC and a day-collapse control, we show that simple per-stock models select
 stocks but cannot time the market, that the transformer backbone times the market
-but loses stock selection, and that MMGT does both.
+but loses stock selection, and that MMGT keeps the timing while its multi-modal
+profile restores stock selection.
 \item \textbf{Graph and federation analysis.} Hand-built stock graphs help as a
 source of peer features but not inside the attention layer. Federated
-averaging~\cite{mcmahan2017fedavg} across sector clients preserves stock
-selection but removes market timing, which accounts for its accuracy cost.
+averaging~\cite{mcmahan2017fedavg} across sector clients lowers accuracy under a
+fixed schedule, and a one-epoch centralised control shows that most of this gap
+is under-training.
 \item \textbf{A disciplined protocol.} Test data were locked during all tuning,
 the model reported as ours was pre-registered~\cite{nosek2018} before any test
 metric existed, and a feature leak found during review was fixed and verified
@@ -214,8 +219,9 @@ code.
 correlates $0.81$ with the label, while the same quantity on the last day the
 model sees correlates $-0.006$, confirming the window alignment. For the profile
 we use a stronger, mechanical test: for twelve target days spread over the three
-splits, we rebuild the profile after deleting all data dated on or after the
-target day and require the result to be identical. It is, to the last bit.
+splits, we rebuild the profile, and the correlation and co-mention edges that feed
+its peer features, after deleting all data dated on or after the target day, and
+require the result to be identical. It is, to the last bit.
 
 % =====================================================================
 \section{Model}
@@ -347,7 +353,8 @@ MMGT, federated$^{\S}$ & \FedMCC & \FedACC & \FedAUC & \FedWD \\
 \bottomrule
 \multicolumn{5}{l}{\footnotesize $^{\dagger}$Deterministic, one run. $^{\ddagger}$Our earlier work, five seeds;}\\
 \multicolumn{5}{l}{\footnotesize \phantom{$^{\ddagger}$}the RGCN score may be optimistic (Section V).}\\
-\multicolumn{5}{l}{\footnotesize $^{\S}$Without the ranking term; five seeds, FedAvg over nine sector clients.}\\
+\multicolumn{5}{l}{\footnotesize $^{\S}$Without the ranking term; five seeds, FedAvg over nine sector}\\
+\multicolumn{5}{l}{\footnotesize \phantom{$^{\S}$}clients; largely under-trained (Section VI-D).}\\
 \end{tabular}
 \end{table}
 
@@ -408,10 +415,12 @@ MCC, $0.008$, is not distinguishable from zero ($p=0.12$): the shared market
 context moves all of a day's predictions together, and the model has traded stock
 selection for market timing.
 
-MMGT has both. Its day-collapse MCC, $0.219$, shows strong market timing, and its
-within-day MCC, $0.023$, is above zero ($p=0.003$) and above the backbone's on 8 of
-10 seeds (paired $p=0.031$). The ablations below attribute the recovered stock
-selection to the multi-modal profile.
+MMGT keeps the market timing and recovers part of the stock selection. Its
+day-collapse MCC, $0.219$, shows strong market timing, and its within-day MCC,
+$0.023$, is above zero ($p=0.003$) and above the backbone's on 8 of 10 seeds
+(paired $p=0.031$), though still below the per-stock LSTM's $0.040$ ($p=0.031$).
+The ablations below attribute the recovered stock selection to the multi-modal
+profile.
 
 \subsection{Ablations}
 
@@ -440,8 +449,9 @@ Table~\ref{tab:ablation} isolates each component.
 
 \textbf{The profile restores stock selection.} Adding the multi-modal profile to
 the backbone raises within-day MCC from $0.008$ to $0.031$, higher on 8 of 10
-seeds (paired $p=0.011$), without changing pooled MCC ($0.137$ against $0.139$,
-$p=0.93$). The ranking term on top of it changes neither metric significantly
+seeds (paired $p=0.011$) and indistinguishable from the per-stock LSTM's $0.040$
+($p=0.30$), without changing pooled MCC ($0.137$ against $0.139$, $p=0.93$). The
+ranking term on top of it changes neither metric significantly
 (pooled $0.146$ against $0.137$, $p=0.46$; within-day $0.023$ against $0.031$,
 $p=0.35$); it is retained because it is part of the pre-registered model.
 
@@ -476,7 +486,8 @@ validation MCC over at most 40 rounds (patience 10).
 
 \begin{table}[t]
 \caption{Federated versus centralised training of the profile model (test, the
-same five seeds).}
+same five seeds). The one-epoch row is a centralised control for the short
+federated schedule.}
 \label{tab:fed}
 \centering
 \setlength{\tabcolsep}{4pt}
@@ -484,27 +495,30 @@ same five seeds).}
 \toprule
 Training & Pooled & Within-day & Day-collapse \\
 \midrule
-Centralised & $0.115$ & $0.024$ & $0.103$ \\
+Centralised, fully trained & $0.115$ & $0.024$ & $0.103$ \\
 Federated (FedAvg) & $0.040$ & $0.027$ & $-0.024$ \\
-\midrule
-Paired $p$ & $0.017$ & $0.80$ & $0.003$ \\
+Centralised, one epoch & $0.053$ & $0.016$ & $0.035$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:fed} shows the result through the same decomposition. Federation
-lowers pooled MCC from $0.115$ to $0.040$, lower on all five seeds ($p=0.017$),
-but the loss is entirely in market timing: day-collapse MCC falls from $0.103$ to
-$-0.024$ ($p=0.003$), while within-day MCC is unchanged ($0.027$ against $0.024$,
-$p=0.80$) and still above zero ($p=0.018$). This is what the architecture
-predicts. Market timing is learned from how all stocks move together, but each
-client sees only one sector during training, so no client learns it; stock
-selection rests on each stock's own profile and survives partitioning. Training
-was also short: in four of five seeds the best global model came from the first
-round, so longer schedules may recover part of the gap. Because every input here
-is public market data, the experiment measures the cost of partitioned training
-rather than providing a privacy guarantee; no secure aggregation or differential
-privacy is applied.
+Table~\ref{tab:fed} gives the result. Each client trains on its own sector's
+stocks and labels only, while the market index and the peer features are built
+from public prices of all stocks, so what a client lacks is the other sectors'
+stocks in the attention layer and their labels. Federation lowers pooled MCC from
+$0.115$ to $0.040$, lower on all five seeds ($p=0.017$). Through the same
+decomposition, the loss is in market timing (day-collapse $0.103$ against
+$-0.024$, $p=0.003$) while within-day MCC is unchanged ($0.027$ against $0.024$,
+$p=0.80$) and still above zero ($p=0.018$).
+
+This pattern cannot be attributed to partitioning. In four of five seeds the best
+global model came from the first round, and a centralised model stopped after one
+epoch looks much the same: pooled $0.053$, day-collapse $0.035$, within-day
+$0.016$. Under the fixed schedule, then, most of the federated gap is
+under-training, and measuring the cost of partitioning itself requires a longer
+schedule. Because every input here is public market data, the experiment does not
+provide a privacy guarantee; no secure aggregation or differential privacy is
+applied.
 
 % =====================================================================
 \section{Discussion}
@@ -544,11 +558,11 @@ MCC $0.146$ on StockNet over ten seeds and outperforms every baseline we trained
 on the same split as well as our own earlier models. Separating market timing from
 stock selection explains the result: per-stock models select stocks but cannot
 time the market, the attention backbone times the market but loses stock
-selection, and MMGT does both, with the stock selection coming from its
-multi-modal profile. Learned attention across stocks was more useful than any fixed
-graph we supplied, and federated training across sector clients kept stock
-selection but lost market timing, since no client sees the whole market. We
-recommend that work on this benchmark report within-day and
+selection, and MMGT keeps the timing while its multi-modal profile restores stock
+selection. Learned attention across stocks was more useful than any fixed graph we
+supplied. Federated training across sector clients scored lower under a fixed
+schedule, mostly because it stopped near its first round; isolating the cost of
+partitioning is left to longer schedules. We recommend that work on this benchmark report within-day and
 day-collapse scores alongside pooled MCC, use multiple seeds, and select models
 on validation data only.
 

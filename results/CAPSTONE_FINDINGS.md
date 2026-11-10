@@ -32,11 +32,13 @@ The organising finding is that pooled MCC mixes two skills:
 | **MMGT** | **0.146** | **0.023** | **0.219** |
 
 Per-stock models select stocks but cannot time the market; the backbone times
-the market but loses stock selection; MMGT does both, and the ablations attribute
-its recovered stock selection to the multi-modal profile (within-day 0.008 →
-0.031, p = 0.011). Hand-built graphs inside attention add nothing. Federated
-training across sector clients lowers pooled MCC to 0.040 because it removes
-market timing (no client sees the whole market) while keeping stock selection.
+the market but loses stock selection; MMGT keeps the timing and partly restores
+stock selection (within-day 0.023, below the LSTM's 0.040, p = 0.031). The
+multi-modal profile is the source: alone it lifts within-day 0.008 → 0.031
+(p = 0.011), level with the LSTM (p = 0.30). Hand-built graphs inside attention
+add nothing. Federated training across sector clients lowers pooled MCC to 0.040
+under a fixed schedule; a one-epoch centralised control (0.053) shows this is
+mostly under-training, not a demonstrated cost of partitioning.
 
 This revises Finding 1 below, which was written before Experiment 11.
 
@@ -181,13 +183,13 @@ Defensible, with evidence:
   models: pooled MCC 0.146 ± 0.029 over ten seeds, p ≤ 1.1e-5 (Experiment 11).
 - **Pooled MCC mixes market timing and stock selection**, and the two can be
   separated: per-stock models select stocks, the attention backbone times the
-  market, MMGT does both. The multi-modal profile is what restores stock
-  selection (within-day 0.008 → 0.031, p = 0.011).
+  market, MMGT keeps the timing and partly restores selection. The multi-modal
+  profile is what restores it (within-day 0.008 → 0.031, p = 0.011).
 - **Graph structure helps as peer features, not inside attention**: graph-biased
   attention adds nothing (p = 0.45), graph-masked attention is worse.
-- **Federated training** across sector clients keeps stock selection but loses
-  market timing (pooled 0.115 → 0.040, day-collapse 0.103 → −0.024, within-day
-  unchanged; Experiment 11 stage F).
+- **Federated training** across sector clients is built and measured: pooled
+  0.115 → 0.040 under a fixed schedule, mostly under-training (a one-epoch
+  centralised control scores 0.053; Experiment 11 stage F).
 - **Semantic text adds nothing measurable** (Experiments 2, 3, 7, 8); tweet
   *volume* is what carries signal, which is why MMGT uses counts.
 - A methodological contribution: **six documented cases of results that passed
@@ -212,8 +214,8 @@ Not claimable:
 2. ~~Re-run Experiment 6's +0.0677 at 5 seeds.~~ **Done — §2, §3. Pooled holds;
    within-day is zero.**
 3. ~~Federated learning is 0% built.~~ **Done — Experiment 11 stage F**
-   (`scripts/run_dtml_federated.py`): FedAvg over nine sector clients. It keeps
-   stock selection and loses market timing; 4 of 5 seeds peaked in round 1, so a
+   (`scripts/run_dtml_federated.py`): FedAvg over nine sector clients. 4 of 5
+   seeds peaked in round 1 and match a one-epoch centralised control, so a
    longer schedule is the open item.
 4. **Longer horizons** (5-day, 10-day volatility) are the most promising
    remaining direction, and must be benchmarked against EWMA, never against

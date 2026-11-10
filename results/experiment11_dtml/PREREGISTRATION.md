@@ -80,3 +80,14 @@ and finds zero difference on 12 sampled days across train/val/test.
 Rerun with v2, identical configurations and seeds, tags suffixed "c":
 F1c, F2c (10 seeds), F3c (5 seeds), G2c (10 seeds), FEDc (5 seeds). No
 hyperparameter or selection changes. The paper reports only the v2 results.
+
+## Post-hoc diagnostic (2026-11-10): one-epoch centralised control
+After the federated results, a review noted that 4 of 5 federated seeds kept
+their round-1 global model. To test whether the federated pattern reflects
+partitioning or under-training, the centralised profile model (F1c config) was
+trained for exactly one epoch (tag UT1c, 5 seeds) and two epochs (UT2c; identical
+selection, so identical results). Pooled 0.053, within-day 0.016, day-collapse
+0.035 -- the same pattern as federated (0.040 / 0.027 / -0.024). This diagnostic
+informed only the paper's interpretation; no model was selected from it.
+The leakage test was also extended to rebuild the correlation and co-mention
+edges from truncated data; they match the cache on all 12 sampled days.

@@ -46,7 +46,7 @@ def fig_architecture():
     # inputs
     box(ax, 0.05, 2.35, 1.75, 0.75, "Price window\n10 days $\\times$ 11\nfeatures per stock")
     box(ax, 0.05, 1.30, 1.75, 0.80, "Multimodal profile\nvolatility, SEC\nfundamentals, tweets", edge=BLUE, face=ours_face)
-    box(ax, 0.05, 0.25, 1.75, 0.80, "Stock graph\nsector, correlation,\nco-mention, residual", edge=BLUE, face=ours_face)
+    box(ax, 0.05, 0.25, 1.75, 0.80, "Stock graph\nsector, correlation,\ntweet co-mention", edge=BLUE, face=ours_face)
     # encoders
     box(ax, 2.25, 2.35, 1.75, 0.75, "Attention LSTM\n+ context\nnormalisation")
     box(ax, 2.25, 1.30, 1.75, 0.80, "Profile encoder\nlinear, 47 $\\rightarrow$ 64", edge=BLUE, face=ours_face)
