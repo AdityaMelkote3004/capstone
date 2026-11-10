@@ -1,28 +1,61 @@
-# MMGTFFF — Consolidated findings across nine experiments
+# MMGTFFF — Consolidated findings across eleven experiments
 
-**Scope.** 87 StockNet tickers, protocol-A splits, test set fixed at **3,720
-samples** in every experiment so all numbers below are directly comparable.
-Primary metric: MCC. Where it matters, **within-day MCC** (per-day
-cross-section, thresholded at that day's median) is reported alongside, because
-48.3% of test label variance is between-day market direction.
+**Scope.** 87 StockNet tickers, test set fixed at **3,720 samples** in every
+experiment (verified row by row between the two preprocessings used), so all
+numbers below are directly comparable. Primary metric: MCC. Where it matters,
+**within-day MCC** (per-day cross-section, thresholded at that day's median) is
+reported alongside, because a market-direction oracle alone scores pooled MCC
+0.625 on this test set.
 
 This document is the summary. Each experiment has its own write-up with full
-method, controls and disclosures.
+method, controls and disclosures. **The paper (`paper/main.tex`) reports
+Experiment 11; its numbers are in `results/experiment11_dtml/RESULTS.md`.**
 
 ---
 
-## 1. The three findings
+## 0. The final result (Experiment 11 — the paper)
 
-**1. Next-day *direction* is not predictable from this data.**
+**MMGT** — the DTML data-axis transformer (every stock attends to every other
+stock; a shared market context) extended with a 47-feature multi-modal stock
+profile (volatility, SEC EDGAR fundamentals, tweet volume, graph-derived peer
+features) — reaches **pooled MCC 0.146 ± 0.029 over ten seeds**, above every
+baseline trained on the same split and above our own earlier models
+(p ≤ 1.1e-5 in every comparison). It was the model pre-registered as "ours"
+before any test result existed.
+
+The organising finding is that pooled MCC mixes two skills:
+
+| | Pooled | Within-day (stock selection) | Day-collapse (market timing) |
+|---|---|---|---|
+| per-stock LSTM | 0.022 | **0.040** | 0.006 |
+| DTML backbone | 0.139 | 0.008 (n.s.) | **0.130** |
+| **MMGT** | **0.146** | **0.023** | **0.219** |
+
+Per-stock models select stocks but cannot time the market; the backbone times
+the market but loses stock selection; MMGT does both, and the ablations attribute
+its recovered stock selection to the multi-modal profile (within-day 0.008 →
+0.031, p = 0.011). Hand-built graphs inside attention add nothing. Federated
+training across sector clients lowers pooled MCC to 0.040 because it removes
+market timing (no client sees the whole market) while keeping stock selection.
+
+This revises Finding 1 below, which was written before Experiment 11.
+
+---
+
+## 1. The three findings of Experiments 1–9 (revised where noted)
+
+**1. Next-day *direction* — not predictable by Experiments 1–9's models, but
+predictable at the market level (revised by Experiment 11).**
 Seven architectures — logistic regression, LSTM, MLP, hierarchical attention,
 MAN-SF-style bilinear, GAT, graph transformer, RGCN, GraphSAGE, and a
 macro-conditioned tweet graph. Best honest result: **+0.0338 MCC**, against a
-seed-to-seed noise floor of ~0.030. Nothing survives that clears its own noise.
+seed-to-seed noise floor of ~0.030.
 
-This holds for the graph work specifically. The best graph result (Exp 6, RGCN,
-pooled +0.0598) is the project's highest neural number and it *replicates* — but
-its within-day MCC is +0.0046 (p=0.43), so it is calling market direction, not
-picking stocks. No graph in this project does cross-sectional work.
+The best graph result (Exp 6, RGCN, pooled +0.0598) replicates, but its
+within-day MCC is +0.0046 (p=0.43): it calls market direction, not stocks.
+*Experiment 11 shows that a transformer with a shared market context does this
+far better (pooled 0.139) and that adding the multi-modal profile restores stock
+selection (Section 0).*
 
 **2. Next-day *volatility* is predictable — but not by us.**
 The identical pipeline, pointed at "will tomorrow's absolute move exceed the
@@ -32,14 +65,14 @@ training median", scores **+0.1433 MCC / 58.5% accuracy**. But **EWMA
 this project beat a classical baseline on either target.
 
 **3. Financial text contributes nothing, and degrades a good model.**
-Every apparent text gain across nine experiments traced back to tweet *volume*,
+Every apparent text gain across Experiments 1–9 traced back to tweet *volume*,
 press *coverage*, or feature/label *timing* — never to semantic content. Added
 to the best baseline, eight dimensions of FinBERT cost **37% of its MCC**
 (+0.1475 → +0.0925).
 
 ---
 
-## 2. Five results that looked real and were not
+## 2. Six results that looked real and were not
 
 The value of this project is concentrated here. In each case the apparent
 finding passed the checks that were being applied at the time, and failed a
@@ -52,6 +85,7 @@ check that was added afterwards.
 | Exp 8 | PCA-compressed text, **+0.0424** over price-only, significant on all four metrics | PC1 correlated **−0.986** with "row has no tweets". The gain was **missingness encoding**, not semantics. Semantics beyond presence: +0.0088, p=0.13 | 40 min |
 | Exp 9 | Volatility, **+0.1433** MCC, leak-checked, replicated | **EWMA beats it** on every metric | 30 min |
 | Exp 6 | RGCN sector+correlation, **+0.0677** — the best neural number in the project | Survived a 5-seed top-up (+0.0598), then **within-day MCC came in at +0.0046, p=0.43** — below the no-graph baseline. It ranks *days*, not *stocks* | 45 min |
+| Exp 10 / 11 | Graph-derived peer features: Exp 10 volatility **+0.0287** (p=0.005); Exp 11 first profile | The feature table holds only labelled rows, so a row's **presence on the target day revealed whether that stock's move left the buffer zone** (perfect 26,584/16,782 split). Peer neighbour count correlated **0.947** with the number of neighbours labelled that day. Caught in review before the paper; the strictly-prior rebuild passes a truncation test, and Exp 11's results are reported from it. Exp 10's +0.0287 is void | 1 hour |
 
 **The pattern.** Every one of these was caught by a *cheap* control that was not
 part of the original protocol. None was caught by significance testing, seed
@@ -82,6 +116,17 @@ Pooled MCC on the fixed 3,720-sample test set.
 | 7 — Macro-conditioned tweet graph | tweet graph, no conditioning | +0.0412 | ❌ effect was label-timing overlap |
 | 8 — Low-dimensional text | counts + PCA-2 | +0.0338 | ⚠️ gain is missingness encoding |
 | 9 — **Volatility target** | **EWMA (classical)** | **+0.1475** | ✅ holds; neural models lose to it |
+| 10 — Multi-modal graph (volatility) | peer features | +0.2261 | ❌ void: target-day leak in peer features |
+| 11 — **MMGT (the paper)** | **DTML backbone + multi-modal profile + ranking term** | **+0.146** | ✅ 10 seeds, pre-registered, leak-tested; within-day +0.023 |
+
+**Caveat on the graph experiments (4–7, 10), found during Experiment 11.** Their
+daily graphs were built from the exact-protocol table, which holds only labelled
+rows, so each day's node set contained only stocks whose move on the target day
+left the buffer zone. Message passing over that node set sees target-day move
+sizes. Most of these results were null or already invalidated for other reasons;
+Exp 6's RGCN (+0.0598) is used in the paper only as a baseline, flagged there as
+possibly optimistic. Experiment 11's models never condition on the target-day
+node set.
 
 Reference points: market-direction oracle **+0.6248** (knows only each day's
 direction — shows how much pooled MCC rewards non-stock-specific skill);
@@ -132,38 +177,46 @@ hypothesis, and every null result here is consistent with it.
 
 Defensible, with evidence:
 
-- A rigorous demonstration that **semantic financial text adds no measurable
-  predictive value** for next-day movement on the StockNet benchmark, across
-  nine experiments and six architecture families, with the mechanism behind each
-  apparent counter-example identified rather than assumed.
-- A demonstration that **the target, not the model, sets the ceiling** —
-  volatility is predictable where direction is not, using identical features.
-- A demonstration that **classical baselines beat deep models** on the one target
-  that is predictable.
-- A methodological contribution: **five documented cases of results that passed
-  standard significance machinery and were false**, with the specific cheap
-  control that caught each.
+- **MMGT beats every baseline we trained on the same split** and our earlier
+  models: pooled MCC 0.146 ± 0.029 over ten seeds, p ≤ 1.1e-5 (Experiment 11).
+- **Pooled MCC mixes market timing and stock selection**, and the two can be
+  separated: per-stock models select stocks, the attention backbone times the
+  market, MMGT does both. The multi-modal profile is what restores stock
+  selection (within-day 0.008 → 0.031, p = 0.011).
+- **Graph structure helps as peer features, not inside attention**: graph-biased
+  attention adds nothing (p = 0.45), graph-masked attention is worse.
+- **Federated training** across sector clients keeps stock selection but loses
+  market timing (pooled 0.115 → 0.040, day-collapse 0.103 → −0.024, within-day
+  unchanged; Experiment 11 stage F).
+- **Semantic text adds nothing measurable** (Experiments 2, 3, 7, 8); tweet
+  *volume* is what carries signal, which is why MMGT uses counts.
+- A methodological contribution: **six documented cases of results that passed
+  standard significance machinery and were false**, each with the control that
+  caught it.
 
 Not claimable:
 
-- Any improvement over published StockNet or MAN-SF numbers.
-- Any benefit from graph structure, macro conditioning, or text semantics.
+- A new state of the art: the backbone is DTML's, and our reproduction (0.139)
+  is below its published 0.191.
+- Any benefit from macro conditioning or text semantics.
 - MAN-SF reproduction — its Wikidata company graph was never built here.
 
 ---
 
 ## 6. Open items
 
-1. **Obtain `stocknet-dataset/price/preprocessed/`.** The volatility result is
-   leak-free and replicated, but the per-feature correlation with |next move| is
-   *negative* where clustering predicts positive, and `data[3:6]` cannot be
-   identified without the raw files. The result stands; the explanation does not.
+1. ~~Explain the negative volatility correlation.~~ **Resolved in Experiment 10:**
+   properly computed EWMA volatility correlates +0.27 with |next move|, as
+   clustering predicts; the negative sign was an artefact of StockNet's own
+   Price1/2/3 channels.
 2. ~~Re-run Experiment 6's +0.0677 at 5 seeds.~~ **Done — §2, §3. Pooled holds;
    within-day is zero.**
-3. **Federated learning is 0% built.** It is in the project title and no code
-   exists. It will not improve accuracy — federated training typically costs a
-   little versus centralised — so it is a completeness deliverable, not a
-   performance one.
+3. ~~Federated learning is 0% built.~~ **Done — Experiment 11 stage F**
+   (`scripts/run_dtml_federated.py`): FedAvg over nine sector clients. It keeps
+   stock selection and loses market timing; 4 of 5 seeds peaked in round 1, so a
+   longer schedule is the open item.
 4. **Longer horizons** (5-day, 10-day volatility) are the most promising
    remaining direction, and must be benchmarked against EWMA, never against
    price-only.
+5. **Explainability** (in the original scope) is not done: attention maps over
+   stocks exist in the model but have not been validated.

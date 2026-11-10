@@ -59,7 +59,7 @@ to emit the two blocks separately — they are currently concatenated)
 1. The effect (+0.0287) is **below the peer row's own seed spread (0.0352)**
    despite p = 0.0052. Small n.
 2. **Direction shows no peer benefit** (graph vs no-graph −0.0014, p = 0.871),
-   but its matched 5-seed plain baseline was never run. `run_exp10_gaps.sh`
+   but its matched 5-seed plain baseline was never run. `scripts/runs/run_exp10_gaps.sh`
    does that.
 3. `contrast` no-graph cells are absent by design — contrast lives inside the
    conv loop, so it is a no-op with the graph off.
@@ -80,8 +80,8 @@ promising thing in the project *and* it has an unrun control. Treat accordingly.
 | `scripts/analyze_experiment10.py` | regenerates every number above |
 | `src/data/node_features.py` | 39 base features + 16 peer/sector features |
 | `src/models/multimodal_graph.py` | 4 convs, `use_graph` control, contrast, cross-sectional |
-| `run_exp10_full.sh` | the four-stage run |
-| `run_exp10_gaps.sh` | the missing direction baseline |
+| `scripts/runs/run_exp10_full.sh` | the four-stage run |
+| `scripts/runs/run_exp10_gaps.sh` | the missing direction baseline |
 
 Leakage: max \|corr\| between any feature and the target day's move is **0.032**.
 `n_samples` is **3720** on every cell, matching Experiments 1 and 4–9.

@@ -64,7 +64,28 @@ Training scripts write JSON results to `results/phase1_baselines/`. The Streamli
 - **Primary metric for classification**: MCC (Matthews Correlation Coefficient) — used for early stopping in `src/training/trainer.py` with patience=10.
 - **Data files are gitignored**: Raw/processed data in `data/`, checkpoints (*.pt, *.pth), and prediction outputs are not committed.
 
-## Current State (as of 2026-03-26)
+## Current State (as of 2026-11-10) — read this first
+
+- **The paper is `paper/main.tex`** (IEEE conference format, compile on Overleaf with
+  `refs.bib` and `figures/`). It reports Experiment 11: **MMGT** = DTML backbone
+  (`src/models/dtml.py`) + 47-feature multi-modal profile (`src/data/acl18_extra.py`,
+  `build_profile_v2`) + within-day ranking term. Pooled test MCC 0.146 ± 0.029 over
+  10 seeds; story = market timing vs stock selection.
+- **All paper numbers** come from `paper/compute_numbers.py` → `paper/numbers.json`;
+  summary in `results/experiment11_dtml/RESULTS.md`; protocol history in
+  `results/experiment11_dtml/PREREGISTRATION.md`; project-wide summary in
+  `results/CAPSTONE_FINDINGS.md`.
+- **Data for Exp 11** is ACL18 (Adv-ALSTM preprocessing of StockNet) in `data/acl18/`
+  (gitignored; clone github.com/fulifeng/Adv-ALSTM to restore). Test set = the same
+  3,720 samples as Experiments 1–10, verified row by row.
+- **Leakage rule:** `dataset/final/stocknet_final_modeling_set.parquet` contains only
+  labelled rows, so never key a feature to the target date in it. Run
+  `python tests/test_profile_leakage.py` after any change to the profile.
+- Results tagged `F1_peer`, `F2_ours`, `F3_nomc`, `G2_bias4`, `FED_fedavg` are void
+  (leaky profile); use the `c`-suffixed tags.
+- Everything below this section describes the March 2026 plan and is historical.
+
+## Earlier state (as of 2026-03-26, historical)
 
 ### Completed (Phase 0 + Phase 1)
 - **Data audit**: `results/phase0_data_audit/data_statistics.json` — 26,603 rows, 87 tickers, 9 sectors, 50.2% target balance

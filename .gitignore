@@ -62,3 +62,6 @@ Thumbs.db
 # Large files / duplicates
 Preprocessed_stocknet_secedgar/
 Preprocessed_stocknet_secedgar.zip
+
+# ACL18 (Adv-ALSTM preprocessing of StockNet); restore from github.com/fulifeng/Adv-ALSTM
+data/acl18/

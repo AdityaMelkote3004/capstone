@@ -81,9 +81,10 @@ def fig_seeds():
     e6 = e6[(e6.model == "RGCN") & (e6.edges == "sector+correlation")].mcc.to_numpy()
     exp1 = np.array([0.0027, -0.0009, 0.0011, 0.0181, -0.0125])  # Exp 1 write-up, 5-seed rerun
 
-    rows = [  # (label, values, colour) top to bottom
-        ("MMGT (ours)", d[d.tag == "F1_peer"].test_mcc.to_numpy(), BLUE),
-        ("MMGT + graph-biased attention", d[d.tag == "G2_bias4"].test_mcc.to_numpy(), BLUE),
+    rows = [  # (label, values, colour) top to bottom; only leak-free ("c") profile runs
+        ("MMGT (ours)", d[d.tag == "F2c"].test_mcc.to_numpy(), BLUE),
+        ("MMGT w/o ranking loss", d[d.tag == "F1c"].test_mcc.to_numpy(), BLUE),
+        ("MMGT + graph-biased attention", d[d.tag == "G2c"].test_mcc.to_numpy(), BLUE),
         ("DTML (reproduced)", d[d.tag == "F0_dtml"].test_mcc.to_numpy(), ORANGE),
         ("DTML, 7 price features", d[d.tag == "S4_ret_trend"].test_mcc.to_numpy(), ORANGE),
         ("DTML w/o stock attention", d[d.tag == "F4_nosa"].test_mcc.to_numpy(), ORANGE),
@@ -94,7 +95,7 @@ def fig_seeds():
         ("LSTM", d[d.tag == "B_lstm"].test_mcc.to_numpy(), GREY),
         ("Tweet-count LSTM (Exp. 1)", exp1, GREY),
     ]
-    fig, ax = plt.subplots(figsize=(3.5, 3.0))
+    fig, ax = plt.subplots(figsize=(3.5, 3.2))
     rng = np.random.default_rng(0)
     for k, (label, vals, col) in enumerate(rows):
         y = len(rows) - 1 - k
@@ -103,11 +104,11 @@ def fig_seeds():
         m = vals.mean()
         ax.plot([m, m], [y - 0.32, y + 0.32], color=col, linewidth=2.0, zorder=3,
                 solid_capstyle="round")
-        ax.text(0.292, y, f"{m:+.3f}", va="center", ha="right", fontsize=6.8, color=INK2)
+        ax.text(0.318, y, f"{m:+.3f}", va="center", ha="right", fontsize=6.8, color=INK2)
     ax.set_yticks(range(len(rows)))
     ax.set_yticklabels([r[0] for r in rows][::-1], fontsize=6.8)
     ax.axvline(0, color=INK2, linewidth=0.6, linestyle=(0, (2, 2)), zorder=1)
-    ax.set_xlim(-0.04, 0.295)
+    ax.set_xlim(-0.04, 0.32)
     ax.set_xticks([0, 0.10, 0.20])
     ax.set_xticklabels(["0", "0.10", "0.20"])
     ax.set_xlabel("Pooled test MCC")
