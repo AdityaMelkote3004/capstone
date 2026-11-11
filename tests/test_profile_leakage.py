@@ -5,7 +5,7 @@ data and once from data truncated so that nothing dated on or after t exists.
 Any difference means the profile reads information from day t or later.
 The v1 (leaky) builder fails this test; v2 must pass it exactly.
 
-Run: python tests/test_profile_leakage.py
+Run: python tests/test_profile_leakage.py [--all]
 """
 
 import os
@@ -32,11 +32,16 @@ def main():
     cache = load_edge_cache(EDGE_CACHE)
 
     split = data["split"]
-    rng = np.random.default_rng(0)
-    sample = []
-    for s in ("train", "val", "test"):
-        days = [d for d, sp in zip(data["dates"], split) if sp == s]
-        sample += list(rng.choice(days, 4, replace=False))
+    if "--all" in sys.argv:
+        # every target day of every split (review round 2: exhaustive, not sampled)
+        sample = [d for d, sp in zip(data["dates"], split) if sp in ("train", "val", "test")]
+    else:
+        rng = np.random.default_rng(0)
+        sample = []
+        for s in ("train", "val", "test"):
+            days = [d for d, sp in zip(data["dates"], split) if sp == s]
+            sample += list(rng.choice(days, 4, replace=False))
+    print(f"testing {len(sample)} target days", flush=True)
 
     worst = 0.0
     for t in sample:
@@ -46,7 +51,7 @@ def main():
                                cache, SECTOR_CSV)
         diff = np.abs(full - cut).max()
         worst = max(worst, diff)
-        print(f"  {t}: max |full - truncated| = {diff:.3g}")
+        print(f"  {t}: max |full - truncated| = {diff:.3g}", flush=True)
     # The graph edges feeding the peer features: rebuild correlation and
     # co-mention edges from data truncated before t and compare with the cache.
     from src.data.graph_edges import (build_comention_edges, build_correlation_edges,

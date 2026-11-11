@@ -178,3 +178,12 @@ Guard: pooled MCC not significantly below MMGT (Welch p >= 0.05 or higher mean).
 Outcome: endpoint + guard met -> MMGT-D is presented as the paper's disentangled
 variant; otherwise it is reported as a negative result and the paper keeps MMGT.
 Day-level bootstrap and walk-forward are reported either way.
+
+### Experiment 12 -- selection (validation only, recorded before any test run)
+
+Grid means over seeds 0-1 (val MCC / val within-day): D_adv_lm1 0.146 / 0.084;
+D_struct_lm1 0.139 / 0.039; D_beta_lm1 0.137 / 0.069; D_beta_lm0.5 0.133 / 0.074;
+D_adv_lm0.5 0.129 / 0.072; D_struct_lm0.5 0.125 / 0.070.
+Selected by the rule (highest mean val MCC): **D-adv, lambda_market = 1** (tag D_final).
+Test: seeds 0-9 standard split; folds A, B seeds 0-4.
+Also: exhaustive leakage test (all 504 target days) PASSED.
