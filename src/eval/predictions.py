@@ -32,7 +32,12 @@ def collect(model, data, idx, extra=None, adj=None):
         rows["prob"].append(torch.sigmoid(logits).numpy()[keep])
         rows["label"].append(data["y"][i][keep])
         rows["ret"].append(data["ret"][i][keep])
-    return {k: np.concatenate(v) for k, v in rows.items()}
+        # disentangled models also expose their market / excess / beta components
+        for k in ("m", "e", "b"):
+            part = getattr(model, "parts", {}).get(k)
+            if part is not None:
+                rows.setdefault(k, []).append(part.numpy()[keep])
+    return {k: np.concatenate(v) for k, v in rows.items() if v}
 
 
 def save(path, preds, dates):
