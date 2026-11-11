@@ -140,3 +140,41 @@ FEDlong, seeds 0-4: test MCC 0.025, 0.164, 0.130, 0.157, 0.177 (mean 0.131).
 Centralised profile model on the same seeds: mean 0.115; paired p = 0.67.
 Rule: mean >= 0.10 AND not significantly below centralised -> **met; federated stays.**
 Reported alongside: within-day MCC drops 0.024 -> -0.004 (paired p = 0.037).
+
+## Experiment 12 -- disentangled MMGT (MMGT-D), pre-registered before any run
+
+Motivation: external review; MMGT's gain is mostly market timing. MMGT-D is a
+follow-up designed AFTER MMGT's test results were known, so it is reported as a
+separate model, never as a renamed MMGT. Prior work: ADD (Tang et al., 2020,
+adversarial market/excess disentanglement), two-step disentanglement (Hadad et al.,
+CVPR 2018), FactorVAE (Duan et al., AAAI 2022).
+
+Model (src/models/dtml_disentangled.py), same backbone/inputs as MMGT (window 10,
+hidden 64, lr 1e-4, peer profile, ranking alpha 1):
+- market branch: market-index encoder only -> day logit m_t; trained with an extra
+  BCE on market_up_t = [mean target-day return over WINDOW-VALID stocks > 0]
+  (training label only; never an input).
+- stock branch: stock encoder + profile + stock attention, NO market input; output
+  centred over window-valid stocks after the last layer norm, then a bias-free head
+  -> e_{i,t}, which sums to exactly zero over each day.
+- D-struct: logit = m_t + e_{i,t}.
+- D-beta:   logit = (1 + b_i) m_t + e_{i,t}, b_i = tanh(w . h_i) from the stock branch
+  (systematic response to the market).
+- D-adv:    D-struct + gradient-reversal adversary predicting market_up_t from
+  permutation-invariant statistics (mean |.|, std) of the centred stock states (ADD-style).
+- Selective L2 on all output heads.
+
+Validation grid (seeds 0, 1): {D-struct, D-beta, D-adv} x lambda_market {0.5, 1}
+= 6 configs. Adversary weight fixed at 0.1 (not tuned).
+Selection: mean validation pooled MCC (same rule as everywhere).
+Test: chosen config, 10 seeds (0-9), predictions + components (m, e, b) saved.
+Walk-forward: folds A and B, seeds 0-4.
+
+Primary endpoint (stock selection), test, 10 seeds vs MMGT (R_mmgt):
+  within-day MCC higher AND mean daily Rank IC (Spearman of prob vs target-day
+  return over window-valid stocks) higher, with run-level Welch p < 0.05 on at
+  least one of the two and the other not lower.
+Guard: pooled MCC not significantly below MMGT (Welch p >= 0.05 or higher mean).
+Outcome: endpoint + guard met -> MMGT-D is presented as the paper's disentangled
+variant; otherwise it is reported as a negative result and the paper keeps MMGT.
+Day-level bootstrap and walk-forward are reported either way.
