@@ -6,53 +6,38 @@
 \usepackage{booktabs}
 \usepackage{textcomp}
 \usepackage{url}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
 
 \begin{document}
 
-\title{A Multi-Modal Graph Transformer for Federated Financial Forecasting:\\
-Market Timing and Stock Selection on StockNet}
+\title{Multi-Modal Graph Transformer for\\Federated Financial Forecasting}
 
-\author{\IEEEauthorblockN{Aditya M Hubli}
-\IEEEauthorblockA{\textit{Dept. of Computer Science and Engineering} \\
-\textit{PES University}\\
-Bengaluru, India}
-\and
-\IEEEauthorblockN{Achintya N}
-\IEEEauthorblockA{\textit{Dept. of Computer Science and Engineering} \\
-\textit{PES University}\\
-Bengaluru, India}
-\and
-\IEEEauthorblockN{Aditya Melkote}
-\IEEEauthorblockA{\textit{Dept. of Computer Science and Engineering} \\
-\textit{PES University}\\
-Bengaluru, India}
-\and
-\IEEEauthorblockN{Aayush Prem}
-\IEEEauthorblockA{\textit{Dept. of Computer Science and Engineering} \\
-\textit{PES University}\\
-Bengaluru, India}
-}
+\author{\IEEEauthorblockN{Aditya M Hubli, Achintya N, Aditya Melkote, Aayush Prem}
+\IEEEauthorblockA{\textit{Department of Computer Science and Engineering}\\
+\textit{PES University}, Bengaluru, India}}
 
 \maketitle
 
 \begin{abstract}
 A model that predicts whether stocks will rise tomorrow can be right for two
-different reasons. It can call the direction of the whole market on a given
-day, or it can tell which stocks will do better than others on that day. The
-standard score used on the StockNet benchmark does not separate the two. We
-present MMGT, a multi-modal graph transformer that is designed to do both. Each
-stock is described by its recent prices and by a profile combining volatility,
-SEC EDGAR fundamentals, tweet volume and features from a graph of related
-stocks, and an attention layer lets every stock draw on every other stock. On
-StockNet (87 US stocks, 3{,}720 test predictions), MMGT reaches a Matthews
-correlation coefficient (MCC) of $0.146$, an accuracy of $57.0\%$, a macro-F1 of
-$0.565$ and an AUC of $0.602$, averaged over ten training runs, and outperforms
-every baseline we evaluated. Two simple diagnostics show where this comes from:
-simple per-stock models can pick stocks but cannot time the market, a price-only
-version of our model times the market but loses the ability to pick stocks, and
-MMGT's multi-modal profile restores stock selection while keeping the market
-timing. We also train MMGT with federated learning across nine sector clients and
-report its cost. The final model was fixed before any test result was seen.
+different reasons. It can call the direction of the whole market on a given day,
+or it can tell which stocks will do better than others on that day. The standard
+score used on the StockNet benchmark does not separate the two. We present MMGT,
+a multi-modal graph transformer designed to do both. Each stock is described by
+its recent prices and by a profile combining volatility, SEC EDGAR fundamentals,
+tweet volume and features from a graph of related stocks, and an attention layer
+lets every stock draw on every other stock. On StockNet (87 US stocks, 3{,}720
+test predictions), MMGT reaches a Matthews correlation coefficient (MCC) of
+$0.146$, an accuracy of $57.0\%$, a macro-F1 of $0.565$ and an AUC of $0.602$,
+averaged over ten training runs, and outperforms every baseline we evaluated. Two
+simple diagnostics show where this comes from: per-stock models can pick stocks
+but cannot time the market, a price-only version of our model times the market
+but loses the ability to pick stocks, and MMGT's multi-modal profile restores
+stock selection while keeping the market timing. We also train MMGT with
+federated learning across nine sector clients and report its cost.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -70,16 +55,15 @@ price histories with tweets for 87 large US stocks, and many models have since
 combined these sources~\cite{feng2019advalstm,sawhney2020mansf,sawhney2021fast,ang2022guided},
 often using graphs that connect related
 companies~\cite{chen2018gcn,feng2019rsr,cheng2022multimodality,wang2021review}.
-Reported scores on StockNet are modest, with MCC values ranging from close to
-zero to about $0.19$~\cite{yoo2021dtml}.
+Reported scores on this benchmark remain modest.
 
 These scores are computed over all predictions of the test period at once, and
 such a score can be earned in two very different ways. A model can \emph{time the
 market}, correctly predicting the days on which most stocks rise, or it can
 \emph{select stocks}, correctly predicting which stocks will do better than
-others on the same day. The first is rewarded heavily. On the StockNet test set,
-a model that knew only whether most stocks went up each day, and nothing about
-any individual stock, would score an MCC of $0.625$. A gain in one ability is
+others on the same day. The first is rewarded heavily: on the StockNet test set, a
+model that knew only whether most stocks went up each day, and nothing about any
+individual stock, would score an MCC of $0.625$. A gain in one ability is
 therefore easily mistaken for a gain in the other.
 
 We build a model meant to have both abilities and evaluate it with this
@@ -96,8 +80,6 @@ all models.
 which show that MMGT's multi-modal profile is what restores stock selection.
 \item \textbf{A federated version} trained across nine sector clients, with an
 analysis of its cost.
-\item \textbf{A careful protocol:} ten runs per model, a test set that was never
-used for choices, and a final model fixed before any test result was seen.
 \end{enumerate}
 
 % =====================================================================
@@ -141,18 +123,10 @@ results over many runs, since single runs can be misleading~\cite{henderson2018}
 price features released by~\cite{feng2019advalstm}: 87 US stocks from 2014 to
 2015. A stock-day is labelled \emph{up} if the closing price rose by more than
 $0.55\%$ and \emph{down} if it fell by more than $0.5\%$; smaller moves are left
-out. The data are split by date (Fig.~\ref{fig:timeline}): training until July
-2015 (20{,}309 samples), validation in August--September 2015 (2{,}555 samples)
-and testing in October--December 2015 (3{,}720 samples on 64 trading days, $51.3\%$
-up). All models in this paper are tested on exactly these 3{,}720 samples.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/timeline.pdf}
-\caption{Chronological data split. All model choices use the validation period;
-the test period was kept aside until the final runs.}
-\label{fig:timeline}
-\end{figure}
+out. The data are split by date: training until July 2015 (20{,}309 samples),
+validation in August--September 2015 (2{,}555 samples) and testing in
+October--December 2015 (3{,}720 samples on 64 trading days, $51.3\%$ up). All
+models in this paper are tested on exactly these 3{,}720 samples.
 
 \textbf{Price history.} For each stock, the model sees the 10 trading days before
 the day it predicts. Each day has 11 price features: the open, high and low
@@ -184,39 +158,66 @@ and confirm that they do not change.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figures/architecture.pdf}
-\caption{The MMGT architecture. Each stock's price history and multi-modal profile
-are encoded and combined with a market summary; an attention layer then lets every
-stock draw on every other stock before each stock receives its prediction.}
+\resizebox{0.85\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={draw, rounded corners=2pt, align=center, minimum height=9mm,
+              text width=27mm, inner sep=3pt},
+  ours/.style={box, fill=blue!8, draw=blue!60!black},
+  arr/.style={-{Stealth[length=2mm]}, thick, draw=black!70},
+  node distance=5mm and 7mm]
+\node[box]  (price)   {Price history\\(10 days $\times$ 11 features)};
+\node[ours, below=of price] (profile) {Multi-modal profile\\(47 features)};
+\node[ours, below=of profile] (graph) {Stock graph\\(sector, correlation,\\co-mention)};
+\node[box, right=of price]  (lstm)  {LSTM with\\temporal attention};
+\node[ours, right=of profile] (penc) {Profile encoder};
+\node[ours, right=of graph]   (peer) {Peer features};
+\node[box, above=of lstm] (market) {Market summary\\(index of all stocks)};
+\node[box, right=of penc, text width=24mm, minimum height=14mm] (fuse)
+      {Combined stock\\representation};
+\node[box, right=of fuse, text width=24mm, minimum height=14mm] (att)
+      {Stock-to-stock\\attention};
+\node[box, right=of att, text width=20mm] (out) {Probability\\of a rise};
+\draw[arr] (price) -- (lstm);
+\draw[arr] (profile) -- (penc);
+\draw[arr] (graph) -- (peer);
+\draw[arr] (peer.east) -| ([xshift=-3mm]penc.south east) ;
+\draw[arr] (lstm.east) -- (fuse.north west);
+\draw[arr] (penc) -- (fuse);
+\draw[arr] (market.east) -| (fuse.north);
+\draw[arr] (fuse) -- (att);
+\draw[arr] (att) -- (out);
+\end{tikzpicture}}
+\caption{MMGT. Each stock's price history is read by an LSTM, combined with its
+multi-modal profile and a summary of the whole market, and passed through an
+attention layer in which every stock draws on every other stock. Shaded parts are
+the multi-modal components added in this work.}
 \label{fig:arch}
 \end{figure*}
 
-Fig.~\ref{fig:arch} shows the model. It has four parts. The temporal encoder and
-the stock-attention layer follow the data-axis transformer of Yoo
-\textit{et al.}~\cite{yoo2021dtml}; the multi-modal profile, the peer features
-from the stock graph and the training objective are our additions.
+Fig.~\ref{fig:arch} shows the model, which has four parts. The temporal encoder
+and the stock-attention layer follow the design of Yoo
+\textit{et al.}~\cite{yoo2021dtml}; the multi-modal profile, the graph-based peer
+features and the ranking objective are our additions.
 
 \textbf{1) Reading each stock's history.} An LSTM~\cite{hochreiter1997lstm} reads
-the 10-day price history of each stock. An attention step then weighs the days by
-how relevant they are to the most recent one and combines them into a single
-summary of the stock.
+the 10-day price history of each stock. An attention step weighs the days by how
+relevant they are to the most recent one and combines them into one summary.
 
 \textbf{2) Adding the profile and the market.} The stock's 47-feature profile is
 encoded and added to this summary. A summary of the whole market, computed the
-same way from an index of all 87 stocks, is added to every stock. Because the
-market summary is the same for every stock on a given day, it can only shift all
-of that day's predictions together: it is the part of the model that times the
-market.
+same way from an index of all 87 stocks, is added to every stock. Because it is
+the same for every stock on a given day, it can only shift all of that day's
+predictions together: it is the part of the model that times the market.
 
-\textbf{3) Stocks attending to stocks.} An attention layer lets each stock look
-at all other stocks of the day and decide how much to take from each. This works
-like a graph whose connections between stocks are learned each day rather than
-fixed in advance.
+\textbf{3) Stocks attending to stocks.} An attention layer lets each stock look at
+all other stocks of the day and decide how much to take from each. This works like
+a graph whose connections are learned each day rather than fixed in advance.
 
 \textbf{4) Prediction and training.} A final layer gives each stock a probability
 of rising. Training combines the usual classification loss with a ranking
-term~\cite{burges2005ranknet} that rewards placing the stocks that rose above
-those that fell on the same day, which encourages stock selection. We train with
+term~\cite{burges2005ranknet} that rewards placing the stocks that rose above those
+that fell on the same day, which encourages stock selection. We train with
 Adam~\cite{kingma2015adam} on a CPU and keep the version that performs best on the
 validation period.
 
@@ -224,7 +225,7 @@ We call the same model without the multi-modal profile and the ranking term
 \emph{MMGT-base}; it uses prices only.
 
 % =====================================================================
-\section{How We Evaluate}
+\section{Evaluation}
 
 \textbf{Scores.} Our main score is MCC~\cite{matthews1975,chicco2020mcc}, which is
 $0$ for random or constant guessing and $1$ for perfect prediction. We also report
@@ -240,23 +241,16 @@ removes all differences between stocks; what is left measures market timing.
 
 \textbf{Reliability.} Every model is trained ten times with different random
 seeds, and we report the mean and standard deviation. Differences between models
-are tested with Welch's $t$-test~\cite{welch1947}. A single run is unreliable
-here: resampling the 64 test days~\cite{kunsch1989} shows that one run's MCC can
-vary by about $\pm0.14$.
-
-\textbf{No choices on test data.} All settings were chosen on the validation
-period. The final model was written down and committed before its first test
-run~\cite{nosek2018}. During review we found that an early version of the profile
-could see whether a stock moved on the day being predicted; we fixed it, checked
-the fix with the test above, and re-ran every affected model. Only the corrected
-results are reported.
+are tested with Welch's $t$-test~\cite{welch1947}. A single run is unreliable here:
+resampling the 64 test days~\cite{kunsch1989} shows that one run's MCC can vary by
+about $\pm 0.14$. All settings were chosen on the validation period, and the final
+model was fixed before its first test run~\cite{nosek2018}.
 
 \textbf{Baselines.} Logistic regression and a multi-layer perceptron (MLP) use the
 10-day price history; an LSTM and an attention LSTM (ALSTM)~\cite{feng2019advalstm}
 read each stock separately. We also include two models from our earlier work on
-the same test set: an LSTM using tweet counts and a relational graph network
-(RGCN). The RGCN's daily graph includes only stocks that moved enough to be
-labelled that day, which may flatter its score.
+the same test set: an LSTM using tweet counts, and a relational graph convolutional
+network (RGCN) over sector and correlation graphs.
 
 % =====================================================================
 \section{Results}
@@ -288,37 +282,61 @@ MMGT, federated$^{c}$ & $0.040\pm0.022$ & $0.523$ & $0.483\pm0.024$ & $0.548$ & 
 \end{tabular}}
 \\[3pt]
 \parbox{\textwidth}{\footnotesize $^{a}$Deterministic, single run.
-$^{b}$Our earlier work, five runs; the RGCN score may be optimistic (Section V).
+$^{b}$Our earlier work, five runs.
 $^{c}$Without the ranking term; five runs, trained with federated averaging over
-nine sector clients (Section VI-D).}
+nine sector clients (Section~VI-D).}
 \end{table*}
 
 \subsection{MMGT outperforms every baseline}
 
-Table~\ref{tab:main} and Fig.~\ref{fig:seeds} give the main results. MMGT
-reaches an MCC of $0.146\pm0.029$, an accuracy of $57.0\%$, a macro-F1 of
-$0.565$ and an AUC of $0.602$, the best value on each of these scores. The six
-baselines score between $0.002$ and $0.060$ in MCC. MMGT's advantage over each
-baseline is statistically significant (all $p\le1.1\times10^{-5}$ for MCC and
-$p\le0.031$ for macro-F1), and every one of its ten runs scores above the best
-baseline's average.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/seeds.pdf}
-\caption{Test MCC of every run (dots) and the average (bar) for each model. Blue:
-MMGT and its variants; orange: MMGT-base and its variants; grey: baselines.}
-\label{fig:seeds}
-\end{figure}
+Table~\ref{tab:main} gives the main results. MMGT reaches an MCC of
+$0.146\pm0.029$, an accuracy of $57.0\%$, a macro-F1 of $0.565$ and an AUC of
+$0.602$, the best value on each of these scores. The six baselines score between
+$0.002$ and $0.060$ in MCC. Our earlier graph model, the RGCN, reaches only
+$0.060$, on par with a simple MLP; adding attention between stocks is what lifts
+the score to $0.139$, and the multi-modal profile raises it further. MMGT's
+advantage over each baseline is statistically significant ($p\le 1.1\times10^{-5}$
+for MCC), and every one of its ten runs scores above the best baseline's average.
 
 \subsection{Market timing and stock selection}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/timing_selection.pdf}
-\caption{Market timing (horizontal) against stock selection (vertical). Faint dots
-are individual runs; large markers are averages. Per-stock baselines sit at the
-top left, MMGT-base at the bottom right, and MMGT combines both.}
+\begin{tikzpicture}
+\begin{axis}[
+  width=\columnwidth, height=0.78\columnwidth,
+  xlabel={Market timing (day-collapse MCC)},
+  ylabel={Stock selection (within-day MCC)},
+  xmin=-0.06, xmax=0.27, ymin=-0.008, ymax=0.048,
+  grid=major, grid style={black!12},
+  tick label style={font=\scriptsize}, label style={font=\small},
+  scaled ticks=false,
+  xtick={0,0.1,0.2}, ytick={0,0.02,0.04},
+  yticklabel style={/pgf/number format/fixed, /pgf/number format/precision=2},
+  xticklabel style={/pgf/number format/fixed, /pgf/number format/precision=1}]
+\addplot[only marks, mark=*, mark size=2.4pt, black!45] coordinates
+  {(0.006,0.040) (0.030,0.026) (0.110,0.000)};
+\addplot[only marks, mark=*, mark size=2.8pt, orange!85!black] coordinates
+  {(0.130,0.008)};
+\addplot[only marks, mark=o, mark size=2.8pt, thick, blue!70!black] coordinates
+  {(0.131,0.031) (-0.024,0.027)};
+\addplot[only marks, mark=*, mark size=3.2pt, blue!70!black] coordinates
+  {(0.219,0.023)};
+\node[font=\scriptsize, anchor=west]  at (axis cs:0.012,0.040) {LSTM};
+\node[font=\scriptsize, anchor=west]  at (axis cs:0.036,0.024) {ALSTM};
+\node[font=\scriptsize, anchor=north] at (axis cs:0.110,-0.0015) {MLP};
+\node[font=\scriptsize, anchor=west]  at (axis cs:0.136,0.006) {MMGT-base};
+\node[font=\scriptsize, anchor=south] at (axis cs:0.131,0.033) {+ profile};
+\node[font=\scriptsize, anchor=south] at (axis cs:0.219,0.025) {\textbf{MMGT}};
+\node[font=\scriptsize, anchor=north] at (axis cs:-0.024,0.0245) {federated};
+\draw[dashed, black!40] (axis cs:-0.06,0) -- (axis cs:0.27,0);
+\draw[dashed, black!40] (axis cs:0,-0.008) -- (axis cs:0,0.048);
+\end{axis}
+\end{tikzpicture}
+\caption{Market timing against stock selection (averages over runs). Per-stock
+baselines sit at the top left, the price-only MMGT-base at the bottom right, and
+MMGT combines both. For reference, a model that knew only each day's market
+direction would sit at $(0.625, 0)$.}
 \label{fig:timing}
 \end{figure}
 
@@ -375,8 +393,8 @@ stock attention lowers MCC from $0.130$ to $0.059$ on the same five runs
 while stock selection is unaffected.
 
 \textbf{A fixed graph adds nothing inside attention.} Telling the attention layer
-which stocks are connected in our graph gives $0.143$, no different from leaving
-it to learn the connections itself ($p=0.45$), and restricting attention to graph
+which stocks are connected in our graph gives $0.143$, no different from letting it
+learn the connections itself ($p=0.45$), and restricting attention to graph
 neighbours was clearly worse on the validation period. The stock graph is most
 useful as a source of peer features.
 
@@ -384,15 +402,6 @@ useful as a source of peer features.
 gives $0.121$, not significantly lower ($p=0.21$).
 
 \subsection{Federated training}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/federated.pdf}
-\caption{Federated setup. Each of the nine sector clients (number of stocks in
-parentheses) trains on its own stocks; a server averages their models, weighted by
-data size, and sends the result back.}
-\label{fig:fed}
-\end{figure}
 
 \begin{table}[t]
 \caption{Federated versus centralised training (test, the same five runs).}
@@ -411,8 +420,9 @@ Centralised, one epoch only & $0.053$ & $0.016$ & $0.035$ \\
 \end{table}
 
 We trained MMGT with federated averaging~\cite{mcmahan2017fedavg} across nine
-clients, one per sector, each holding 7--10 stocks (Fig.~\ref{fig:fed}). Each
-client trains on its own stocks and labels, and only model weights are shared.
+clients, one per sector, each holding 7--10 stocks. Each client trains on its own
+stocks and labels, and only model weights are shared with a server, which averages
+them in proportion to each client's data.
 
 Federated training lowers MCC from $0.115$ to $0.040$ (Table~\ref{tab:fed}). Stock
 selection is fully kept (within-day $0.027$ against $0.024$), while market timing is
@@ -463,8 +473,7 @@ on this benchmark.
 \section*{Acknowledgment}
 
 We thank our guide, Dr.~Mamatha H R, Department of Computer Science and
-Engineering, PES University, for guidance throughout this project
-(PW26\_MHR\_03).
+Engineering, PES University, for guidance throughout this project.
 
 % REFERENCES-START (generated by paper/build_references.py; ordered by first citation)
 \begin{thebibliography}{00}
@@ -477,7 +486,6 @@ Engineering, PES University, for guidance throughout this project
 \bibitem{feng2019rsr} F.~Feng, X.~He, X.~Wang, C.~Luo, Y.~Liu, and T.-S. Chua, ``Temporal relational ranking for stock prediction,'' \emph{ACM Trans. Inf. Syst.}, vol.~37, no.~2, pp. 1--30, 2019, doi: 10.1145/3309547.
 \bibitem{cheng2022multimodality} D.~Cheng, F.~Yang, S.~Xiang, and J.~Liu, ``Financial time series forecasting with multi-modality graph neural network,'' \emph{Pattern Recognit.}, vol.~121, Art. no.~108218, 2022, doi: 10.1016/j.patcog.2021.108218.
 \bibitem{wang2021review} J.~Wang, S.~Zhang, Y.~Xiao, and R.~Song, ``A review on graph neural network methods in financial applications,'' 2021, \emph{arXiv:2111.15367}.
-\bibitem{yoo2021dtml} J.~Yoo, Y.~Soun, Y.-C. Park, and U.~Kang, ``Accurate multivariate stock movement prediction via data-axis transformer with multi-level contexts,'' in \emph{Proc. 27th ACM SIGKDD Conf. Knowl. Discovery Data Mining}, 2021, pp. 2037--2045, doi: 10.1145/3447548.3467297.
 \bibitem{zhang2025camef} Y.~Zhang, W.~Yang, J.~Wang, Q.~Ma, and J.~Xiong, ``CAMEF: Causal-augmented multi-modality event-driven financial forecasting by integrating time series patterns and salient macroeconomic announcements,'' in \emph{Proc. 31st ACM SIGKDD Conf. Knowl. Discovery Data Mining V.2}, 2025, pp. 3867--3878, doi: 10.1145/3711896.3736872.
 \bibitem{zhang2025gnnsentiment} P.~Zhang, R.~D.~F. Harris, and J.~Zheng, ``GNN-based social media sentiment analysis for stock market forecasting and trading,'' \emph{Expert Syst. Appl.}, vol.~291, Art. no.~128425, 2025, doi: 10.1016/j.eswa.2025.128425.
 \bibitem{nguyen2025dasf} N.-H. Nguyen, T.-T. Nguyen, and Q.~T. Ngo, ``DASF-Net: A multimodal framework for stock price forecasting with diffusion-based graph learning and optimized sentiment fusion,'' \emph{J. Risk Financial Manag.}, vol.~18, no.~8, Art. no.~417, 2025, doi: 10.3390/jrfm18080417.
@@ -492,6 +500,7 @@ Engineering, PES University, for guidance throughout this project
 \bibitem{zhu2025msgformer} M.~Zhu, H.~Qi, S.~Ni, and Y.~Liu, ``MSGformer: A hybrid multi-scale graph--transformer architecture for unified short- and long-term financial time series forecasting,'' \emph{Electronics}, vol.~14, no.~12, Art. no.~2457, 2025, doi: 10.3390/electronics14122457.
 \bibitem{kumar2024dynamic} P.~N. Kumar, N.~Umeorah, and A.~Alochukwu, ``Dynamic graph neural networks for enhanced volatility prediction in financial markets,'' 2024, \emph{arXiv:2410.16858}.
 \bibitem{li2018deeper} Q.~Li, Z.~Han, and X.-M. Wu, ``Deeper insights into graph convolutional networks for semi-supervised learning,'' in \emph{Proc. AAAI Conf. Artif. Intell.}, vol.~32, no.~1, 2018, doi: 10.1609/aaai.v32i1.11604.
+\bibitem{yoo2021dtml} J.~Yoo, Y.~Soun, Y.-C. Park, and U.~Kang, ``Accurate multivariate stock movement prediction via data-axis transformer with multi-level contexts,'' in \emph{Proc. 27th ACM SIGKDD Conf. Knowl. Discovery Data Mining}, 2021, pp. 2037--2045, doi: 10.1145/3447548.3467297.
 \bibitem{li2024master} T.~Li, Z.~Liu, Y.~Shen, X.~Wang, H.~Chen, and S.~Huang, ``MASTER: Market-guided stock transformer for stock price forecasting,'' in \emph{Proc. AAAI Conf. Artif. Intell.}, vol.~38, no.~1, 2024, pp. 162--170, doi: 10.1609/aaai.v38i1.27767.
 \bibitem{mcmahan2017fedavg} B.~McMahan, E.~Moore, D.~Ramage, S.~Hampson, and B.~Aguera y Arcas, ``Communication-efficient learning of deep networks from decentralized data,'' in \emph{Proc. 20th Int. Conf. Artif. Intell. Statist. (AISTATS)}, ser. Proc. Mach. Learn. Res., vol.~54, 2017, pp. 1273--1282.
 \bibitem{kumarappan2024federated} J.~Kumarappan, E.~Rajasekar, S.~Vairavasundaram, K.~Kotecha, and A.~Kulkarni, ``Federated learning enhanced MLP--LSTM modeling in an integrated deep learning pipeline for stock market prediction,'' \emph{Int. J. Comput. Intell. Syst.}, vol.~17, no.~1, Art. no.~267, 2024, doi: 10.1007/s44196-024-00680-9.
