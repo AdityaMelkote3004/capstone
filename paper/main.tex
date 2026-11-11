@@ -11,13 +11,38 @@
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.17}
 
+% Second row of author blocks (as in the IEEE conference template).
+\makeatletter
+\newcommand{\linebreakand}{%
+  \end{@IEEEauthorhalign}
+  \hfill\mbox{}\par
+  \mbox{}\hfill\begin{@IEEEauthorhalign}
+}
+\makeatother
+
 \begin{document}
 
 \title{Multi-Modal Graph Transformer for\\Federated Financial Forecasting}
 
-\author{\IEEEauthorblockN{Aditya M Hubli, Achintya N, Aditya Melkote, Aayush Prem}
+\author{\IEEEauthorblockN{Aditya M Hubli}
 \IEEEauthorblockA{\textit{Department of Computer Science and Engineering}\\
-\textit{PES University}, Bengaluru, India}}
+\textit{PES University}\\
+Bengaluru, India}
+\and
+\IEEEauthorblockN{Achintya N}
+\IEEEauthorblockA{\textit{Department of Computer Science and Engineering}\\
+\textit{PES University}\\
+Bengaluru, India}
+\linebreakand
+\IEEEauthorblockN{Aditya Melkote}
+\IEEEauthorblockA{\textit{Department of Computer Science and Engineering}\\
+\textit{PES University}\\
+Bengaluru, India}
+\and
+\IEEEauthorblockN{Aayush Prem}
+\IEEEauthorblockA{\textit{Department of Computer Science and Engineering}\\
+\textit{PES University}\\
+Bengaluru, India}}
 
 \maketitle
 
