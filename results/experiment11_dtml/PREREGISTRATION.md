@@ -114,3 +114,22 @@ edges from truncated data; they match the cache on all 12 sampled days.
    DECISION RULE: federated stays in the paper if its mean test MCC >= 0.10 AND
    it is not significantly below the centralised profile model on the same seeds
    (paired p >= 0.05). Otherwise it is removed and moved to future work.
+
+### Revision -- baseline tuning result (validation only, recorded before any test run)
+
+Selected by mean validation MCC over seeds 0-1 (LR is deterministic, 1 run):
+
+| Baseline | Grid | Selected | Val MCC |
+|---|---|---|---|
+| Logistic regression | C in {0.01, 0.1, 1, 10} | C = 0.01 | 0.119 |
+| MLP | hidden {32,64,128} x lr {1e-3,1e-4} | hidden 64, lr 1e-3 | 0.166 |
+| LSTM | window {10,15} x hidden {32,64,128} x lr {1e-3,1e-4} | window 10, hidden 64, lr 1e-3 (tie with w15 broken toward the shorter window) | 0.075 |
+| Attention LSTM | same grid | window 15, hidden 128, lr 1e-4 | 0.088 |
+
+Final test runs (10 seeds, 0-9, predictions saved): R_lr, R_mlp, R_lstm, R_alstm with the
+settings above; R_base (price-only, window 10, beta 1, hidden 64, lr 1e-4); R_profile
+(+ peer profile); R_mmgt (+ peer profile + ranking loss, alpha 1).
+Walk-forward folds A and B: R_mmgt, R_base, R_mlp, R_lstm, seeds 0-4.
+
+Federated note: FEDlong seed 0 finished first (best round 0, test MCC 0.025). The decision
+rule above is applied unchanged once all 5 seeds finish.
