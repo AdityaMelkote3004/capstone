@@ -134,3 +134,47 @@ the CSVs only as the record. The corrected profile (`src/data/acl18_extra.py`,
 ## Search effort (all on validation)
 48 grid runs (DTML's search space) + 12 (stage C) + 18 (stage D) + 9 (stage E)
 + 34 baseline settings (revision).
+
+## Review round 2: Rank IC, full trading statistics, leakage, sensitivity
+
+Scripts: `paper/revision_finance.py` (Rank IC, portfolios), `paper/exp12_eval.py` (Exp 12).
+
+**Rank IC** (daily Spearman of predicted probability vs target-day return over all
+window-valid stocks; mean over runs), standard period: ALSTM 0.027, LSTM 0.020,
+MMGT-base 0.015, MMGT-D 0.014, Profile 0.013, MLP 0.004, LR 0.002, MMGT 0.001,
+Federated -0.024. Period A / B: MMGT 0.023 / 0.045, MMGT-base 0.008 / 0.019, LSTM
+0.004 / 0.010, MLP -0.018 / 0.020, LR -0.024 / 0.014, MMGT-D 0.033 / 0.069.
+Agreement with within-day MCC: across 21 model x period means r = 0.73 (p = 0.0002);
+across seeds within the same model r = 0.75 (n = 125 de-meaned runs).
+Labelled-stocks-only Rank IC (standard period): MMGT 0.006, ALSTM 0.039, LSTM 0.039.
+
+**Portfolios** (standard period, Sharpe, mean over runs; buy-and-hold 1.39, max DD 6.5%):
+long-only top-10 at 0 bps: ALSTM 2.27, LR 2.11, MLP 1.59, LSTM 1.42, MMGT-base 1.41,
+MMGT-D 0.58, MMGT 0.52, Federated 0.24. Best timing portfolio (MMGT) and best
+stock-picking portfolios (ALSTM) unchanged at 0/5/10/20 bps. MMGT timing max DD 4.1%.
+Full table (Sortino, Calmar, turnover, all costs) in `paper/revision_finance.json`.
+
+**Leakage**: `python tests/test_profile_leakage.py --all` -- all 504 target days, zero
+profile difference, all rebuilt graph edges identical. PASS.
+**Fundamentals timing**: EDGAR values are keyed to the SEC filing date and forward-filled
+(preprocessing_notebooks/MMGTFFF_SECEDGAR_preprocessing.ipynb, cell 17); the profile uses
+rows dated < t, so a filing on day d is first used for day d+1. When one filing reports
+several periods, one value per filing date is kept (noise, not look-ahead).
+**Sensitivity** (48-run validation grid): lr 1e-4 -> all 12 window/beta/width combinations
+reach val MCC 0.14-0.26; lr 1e-3 -> 0.00-0.20, unstable.
+
+## Experiment 12: disentangled MMGT (MMGT-D) -- negative result (pre-registered)
+
+Market head on the market-summary encoder (+ BCE on market direction); stock branch with
+no market input, centred over window-valid stocks, bias-free head; logit = m + e;
+gradient-reversal adversary. Selected on validation (D_adv, lambda_m = 1).
+
+| Period | MCC D / MMGT | Within-day D / MMGT | Rank IC D / MMGT | Day-collapse D / MMGT |
+|---|---|---|---|---|
+| Oct-Dec (10 seeds) | 0.064 / 0.146 (p = 1.4e-5) | 0.027 / 0.023 (p = 0.61) | 0.014 / 0.001 (p = 0.11) | 0.080 / 0.219 |
+| A (5 seeds) | 0.074 / 0.048 | 0.043 / 0.037 | 0.033 / 0.023 | -0.002 / 0.029 |
+| B (5 seeds) | 0.082 / 0.106 | 0.060 / 0.017 (day-level p = 0.002) | 0.069 / 0.045 | 0.025 / 0.174 |
+
+Guard failed (pooled MCC significantly lower) -> negative result; paper keeps MMGT.
+Market head alone: MCC 0.040. Pooled day-level bootstrap D minus MMGT: -0.083
+[-0.157, -0.008]. Trading: long-short Sharpe 0.34, timing 1.68.

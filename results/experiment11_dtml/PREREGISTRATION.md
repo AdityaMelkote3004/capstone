@@ -196,3 +196,10 @@ Within-day 0.027 vs 0.023 (p = 0.61); Rank IC 0.0135 vs 0.0007 (p = 0.11) -> end
 all three periods (within-day +0.004/+0.007/+0.043, Rank IC +0.013/+0.010/+0.024; fold B
 within-day day-level p = 0.002). Market head alone: MCC 0.040 -- the index encoder cannot
 reproduce MMGT's timing, which therefore comes from attention pooling all stocks' histories.
+Clarification (added after review of the outcome entry): the mechanism sentence above is
+too strong. The market summary is itself the equal-weight index of all stocks. What is
+established: MMGT's timing needs the market summary AND stock attention together (removing
+either lowers MCC: 0.131 -> 0.078, 0.130 -> 0.059); a separate linear head on the index
+encoding alone reaches 0.04. Validation already showed the timing loss (D_final val MCC
+0.146 vs MMGT 0.211); the grid compared D variants only with each other.
+No follow-up variant was run.

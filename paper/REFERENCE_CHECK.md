@@ -41,3 +41,10 @@ Crossref lists no page range, so none is printed.
 - Slide [21] — title completed: "...External Knowledge Infusion: Datasets and Benchmarks for Stock Markets".
 - Slide [22] — added vol. 17, no. 1, art. 267.
 - Slide [23] FinGraphFL — two authors (Z. Xia, S. C. Saha), not "et al.".
+
+## Added in review round 2
+
+| Key | Verified against |
+|---|---|
+| tang2020add | arXiv listing 2012.06289 and Microsoft Research publication page: H. Tang, L. Wu, W. Liu, J. Bian, "ADD: Augmented Disentanglement Distillation Framework for Improving Stock Trend Forecasting", arXiv 2020 (no peer-reviewed venue found). |
+| ganin2015grl | PMLR v37 page (proceedings.mlr.press/v37/ganin15): Y. Ganin, V. Lempitsky, "Unsupervised Domain Adaptation by Backpropagation", Proc. 32nd ICML, PMLR 37:1180-1189, 2015. |

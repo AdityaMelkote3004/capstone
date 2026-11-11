@@ -56,6 +56,9 @@ REFS = {
     "welch1947": r"B.~L. Welch, ``The generalization of `Student's' problem when several different population variances are involved,'' \emph{Biometrika}, vol.~34, no.~1--2, pp. 28--35, 1947, doi: 10.1093/biomet/34.1-2.28.",
     "kunsch1989": r"H.~R. K{\"u}nsch, ``The jackknife and the bootstrap for general stationary observations,'' \emph{Ann. Statist.}, vol.~17, no.~3, pp. 1217--1241, 1989, doi: 10.1214/aos/1176347265.",
     "nosek2018": r"B.~A. Nosek, C.~R. Ebersole, A.~C. DeHaven, and D.~T. Mellor, ``The preregistration revolution,'' \emph{Proc. Nat. Acad. Sci.}, vol.~115, no.~11, pp. 2600--2606, 2018, doi: 10.1073/pnas.1708274114.",
+    # added in review round 2 (verified: arXiv listing / Microsoft Research page; PMLR v37 page)
+    "tang2020add": r"H.~Tang, L.~Wu, W.~Liu, and J.~Bian, ``ADD: Augmented disentanglement distillation framework for improving stock trend forecasting,'' 2020, \emph{arXiv:2012.06289}.",
+    "ganin2015grl": r"Y.~Ganin and V.~Lempitsky, ``Unsupervised domain adaptation by backpropagation,'' in \emph{Proc. 32nd Int. Conf. Mach. Learn. (ICML)}, ser. Proc. Mach. Learn. Res., vol.~37, 2015, pp. 1180--1189.",
 }
 
 
