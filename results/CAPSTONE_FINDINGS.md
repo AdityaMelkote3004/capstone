@@ -19,26 +19,30 @@ Experiment 11; its numbers are in `results/experiment11_dtml/RESULTS.md`.**
 stock; a shared market context) extended with a 47-feature multi-modal stock
 profile (volatility, SEC EDGAR fundamentals, tweet volume, graph-derived peer
 features) — reaches **pooled MCC 0.146 ± 0.029 over ten seeds**, above every
-baseline trained on the same split and above our own earlier models
-(p ≤ 1.1e-5 in every comparison). It was the model pre-registered as "ours"
-before any test result existed.
+baseline trained on the same split (baselines re-tuned on validation in the
+revision; best 0.060) and above our own earlier models. Run-level p < 1e-6 in every
+comparison; at the level of test days (day-block bootstrap) the advantage is
+significant against ALSTM and LR, borderline against the tuned MLP (p = 0.075) and
+LSTM (p = 0.059). It was the model pre-registered as "ours" before any test result
+existed. Current numbers: `results/experiment11_dtml/RESULTS.md`.
 
 The organising finding is that pooled MCC mixes two skills:
 
 | | Pooled | Within-day (stock selection) | Day-collapse (market timing) |
 |---|---|---|---|
-| per-stock LSTM | 0.022 | **0.040** | 0.006 |
-| DTML backbone | 0.139 | 0.008 (n.s.) | **0.130** |
-| **MMGT** | **0.146** | **0.023** | **0.219** |
+| per-stock LSTM (tuned) | 0.055 | **0.025** | 0.082 |
+| MMGT-base (DTML backbone) | 0.139 | 0.008 (n.s.) | 0.130 |
+| **MMGT** | **0.146** | 0.023 | **0.219** |
 
-Per-stock models select stocks but cannot time the market; the backbone times
-the market but loses stock selection; MMGT keeps the timing and partly restores
-stock selection (within-day 0.023, below the LSTM's 0.040, p = 0.031). The
-multi-modal profile is the source: alone it lifts within-day 0.008 → 0.031
-(p = 0.011), level with the LSTM (p = 0.30). Hand-built graphs inside attention
-add nothing. Federated training across sector clients lowers pooled MCC to 0.040
-under a fixed schedule; a one-epoch centralised control (0.053) shows this is
-mostly under-training, not a demonstrated cost of partitioning.
+MMGT's gain is mostly market timing: its timing portfolio has Sharpe 4.2 (3.2
+after 10 bps) against 1.4 for buy-and-hold, while its long-short portfolio is flat
+and the per-stock ALSTM is the best stock picker in money terms. The multi-modal
+profile adds stock selection (within-day 0.008 → 0.031, run-level p = 0.011,
+day-level p = 0.14), and MMGT's selection gain over the backbone has the same sign
+in all three walk-forward periods (15/20 paired runs, sign test p = 0.041).
+Pooled-MCC rankings shift between periods with market timing. Hand-built graphs
+inside attention add nothing. Federated training (150 rounds) matches centralised
+pooled MCC (0.131 vs 0.115, p = 0.67) but loses stock selection (p = 0.037).
 
 This revises Finding 1 below, which was written before Experiment 11.
 
@@ -179,17 +183,20 @@ hypothesis, and every null result here is consistent with it.
 
 Defensible, with evidence:
 
-- **MMGT beats every baseline we trained on the same split** and our earlier
-  models: pooled MCC 0.146 ± 0.029 over ten seeds, p ≤ 1.1e-5 (Experiment 11).
+- **MMGT has the highest pooled MCC on the standard test period**, above every
+  tuned baseline and our earlier models: 0.146 ± 0.029 over ten seeds (run-level
+  p < 1e-6; day-level significant vs ALSTM and LR, borderline vs MLP and LSTM).
 - **Pooled MCC mixes market timing and stock selection**, and the two can be
-  separated: per-stock models select stocks, the attention backbone times the
-  market, MMGT keeps the timing and partly restores selection. The multi-modal
-  profile is what restores it (within-day 0.008 → 0.031, p = 0.011).
+  separated: MMGT's gain is mostly timing (timing-portfolio Sharpe 4.2 vs 1.4
+  buy-and-hold); the profile adds a small stock-selection gain that is consistent
+  in sign across three test periods.
+- **Rankings by pooled MCC are period-dependent** (walk-forward): MMGT is best in
+  Oct–Dec, below MMGT-base in Jun–Jul, level with LR in Aug–Sep.
 - **Graph structure helps as peer features, not inside attention**: graph-biased
   attention adds nothing (p = 0.45), graph-masked attention is worse.
-- **Federated training** across sector clients is built and measured: pooled
-  0.115 → 0.040 under a fixed schedule, mostly under-training (a one-epoch
-  centralised control scores 0.053; Experiment 11 stage F).
+- **Federated training** across sector clients matches centralised pooled MCC
+  with a 150-round schedule (0.131 vs 0.115, p = 0.67) but loses stock selection
+  (within-day −0.004 vs 0.024, p = 0.037).
 - **Semantic text adds nothing measurable** (Experiments 2, 3, 7, 8); tweet
   *volume* is what carries signal, which is why MMGT uses counts.
 - A methodological contribution: **six documented cases of results that passed
@@ -214,9 +221,9 @@ Not claimable:
 2. ~~Re-run Experiment 6's +0.0677 at 5 seeds.~~ **Done — §2, §3. Pooled holds;
    within-day is zero.**
 3. ~~Federated learning is 0% built.~~ **Done — Experiment 11 stage F**
-   (`scripts/run_dtml_federated.py`): FedAvg over nine sector clients. 4 of 5
-   seeds peaked in round 1 and match a one-epoch centralised control, so a
-   longer schedule is the open item.
+   (`scripts/run_dtml_federated.py`): FedAvg over nine sector clients. With the
+   150-round schedule (revision) it matches centralised pooled MCC and loses
+   stock selection. Open: FedProx or cross-sector aggregation to keep selection.
 4. **Longer horizons** (5-day, 10-day volatility) are the most promising
    remaining direction, and must be benchmarked against EWMA, never against
    price-only.

@@ -11,15 +11,16 @@ Next-day stock movement prediction (up / down) on the **StockNet** benchmark:
 A transformer in which every stock attends to every other stock each day
 (the DTML backbone, KDD 2021), extended with a multi-modal profile per stock
 (volatility, SEC EDGAR fundamentals, tweet volume, and peer features from a
-stock graph), reaches a pooled MCC well above every baseline we trained on the
-same split. Pooled MCC, however, mixes two skills: calling the whole market's
-direction on a day, and ranking stocks against each other. The backbone's
-shared market signal makes it a market-timer with no stock-selection skill;
-MMGT keeps the timing gain, and its multi-modal profile restores stock selection
-to the level of a per-stock LSTM. Hand-built graphs inside the attention layer add
-nothing. Federated training across sector clients scores lower under a fixed
-schedule, mostly because it stopped near its first round (a one-epoch centralised
-control looks the same).
+stock graph), reaches a pooled MCC of 0.146 on the standard test period, above every tuned
+baseline (at most 0.060). Pooled MCC, however, mixes two skills: calling the whole
+market's direction on a day, and ranking stocks against each other. MMGT's gain is
+mostly market timing (its timing portfolio has a Sharpe ratio of 4.2 against 1.4
+for buy-and-hold). Its multi-modal profile adds a small stock-selection gain with
+the same sign in all three test periods we examined. Pooled-MCC rankings shift
+between periods with market timing, and the advantage over the tuned MLP and LSTM
+is not significant at the level of test days. Hand-built graphs inside the
+attention layer add nothing. Federated training across nine sector clients matches
+centralised MCC but loses stock selection.
 
 **Paper:** [`paper/main.tex`](paper/main.tex) (IEEE conference format).
 **All numbers:** [`results/experiment11_dtml/RESULTS.md`](results/experiment11_dtml/RESULTS.md).

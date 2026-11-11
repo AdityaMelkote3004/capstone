@@ -133,3 +133,10 @@ Walk-forward folds A and B: R_mmgt, R_base, R_mlp, R_lstm, seeds 0-4.
 
 Federated note: FEDlong seed 0 finished first (best round 0, test MCC 0.025). The decision
 rule above is applied unchanged once all 5 seeds finish.
+
+### Revision -- federated decision (rule applied unchanged)
+
+FEDlong, seeds 0-4: test MCC 0.025, 0.164, 0.130, 0.157, 0.177 (mean 0.131).
+Centralised profile model on the same seeds: mean 0.115; paired p = 0.67.
+Rule: mean >= 0.10 AND not significantly below centralised -> **met; federated stays.**
+Reported alongside: within-day MCC drops 0.024 -> -0.004 (paired p = 0.037).
