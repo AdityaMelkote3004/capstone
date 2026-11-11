@@ -121,8 +121,123 @@ def fig_seeds():
     plt.close(fig)
 
 
+def _all_results():
+    frames = [pd.read_csv(os.path.join(R, f)) for f in
+              ["final.csv", "plus_final.csv", "graph_final.csv", "baselines_final.csv",
+               "subset_final.csv", "federated_final.csv"]]
+    return pd.concat(frames, ignore_index=True)
+
+
+def fig_timing_selection():
+    """The paper's central idea: x = market timing, y = stock selection."""
+    d = _all_results()
+    groups = [  # tag, label, colour, filled, label offset (points)
+        ("B_lstm", "LSTM", GREY, True, (6, 4)),
+        ("B_alstm", "ALSTM", GREY, True, (6, -9)),
+        ("B_mlp", "MLP", GREY, True, (-8, -11)),
+        ("F0_dtml", "DTML backbone", ORANGE, True, (6, -9)),
+        ("F1c", "+ profile", BLUE, False, (-30, 9)),
+        ("F2c", "MMGT (ours)", BLUE, True, (-14, 9)),
+        ("FEDc", "MMGT federated", BLUE, False, (-22, -15)),
+    ]
+    fig, ax = plt.subplots(figsize=(3.5, 2.7))
+    ax.axhline(0, color=INK2, linewidth=0.6, linestyle=(0, (2, 2)), zorder=1)
+    ax.axvline(0, color=INK2, linewidth=0.6, linestyle=(0, (2, 2)), zorder=1)
+    for tag, label, col, filled, off in groups:
+        x = d[d.tag == tag]
+        ax.scatter(x.test_collapse_mcc, x.test_within_day_mcc, s=8, color=col, alpha=0.25,
+                   linewidths=0, zorder=2)
+        mx, my = x.test_collapse_mcc.mean(), x.test_within_day_mcc.mean()
+        sx = x.test_collapse_mcc.std() / np.sqrt(len(x))
+        sy = x.test_within_day_mcc.std() / np.sqrt(len(x))
+        ax.errorbar(mx, my, xerr=sx, yerr=sy, fmt="none", ecolor=col, elinewidth=0.9, zorder=3)
+        ax.scatter([mx], [my], s=34, zorder=4, linewidths=1.3, edgecolors=col,
+                   facecolors=col if filled else "white")
+        ax.annotate(label, (mx, my), xytext=off, textcoords="offset points",
+                    fontsize=6.6, color=INK)
+    ax.set_xlabel("Market timing: day-collapse MCC")
+    ax.set_ylabel("Stock selection: within-day MCC")
+    ax.set_xlim(-0.1, 0.32)
+    ax.set_ylim(-0.03, 0.09)
+    ax.grid(color="#e4e3df", linewidth=0.5, zorder=0)
+    for s in ("top", "right"):
+        ax.spines[s].set_visible(False)
+    fig.tight_layout(pad=0.2)
+    fig.savefig(os.path.join(OUT, "timing_selection.pdf"))
+    fig.savefig(os.path.join(OUT, "timing_selection.png"), dpi=200)
+    plt.close(fig)
+
+
+def fig_federated():
+    """FedAvg over nine sector clients."""
+    sectors = pd.read_csv(os.path.join(ROOT, "dataset", "final", "sector_mapping.csv"))
+    counts = sectors.Sector.value_counts().sort_index()
+    fig, ax = plt.subplots(figsize=(3.5, 2.05))
+    ax.set_xlim(0, 9.4); ax.set_ylim(0, 3.2); ax.axis("off")
+    box(ax, 2.9, 2.25, 3.6, 0.82,
+        "Server: weighted FedAvg\n$w \\leftarrow \\sum_k \\frac{n_k}{n}\\, w_k$", bold=True)
+    short = {"Basic_Materials": "Basic\nmat.", "Conglomerates": "Conglo-\nmerates",
+             "Consumer_Goods": "Cons.\ngoods", "Financial": "Finan-\ncial",
+             "Healthcare": "Health-\ncare", "Industrial_Goods": "Indus.\ngoods",
+             "Services": "Ser-\nvices", "Technology": "Tech-\nnology",
+             "Utilities": "Utili-\nties"}
+    w = 0.98
+    for i, (name, c) in enumerate(counts.items()):
+        x = 0.1 + i * (w + 0.04)
+        ax.add_patch(FancyBboxPatch((x, 0.15), w, 0.95,
+                                    boxstyle="round,pad=0.02,rounding_size=0.06",
+                                    linewidth=1.0, edgecolor=BLUE, facecolor="#e8f1fc"))
+        ax.text(x + w / 2, 0.62, f"{short[name]}\n({c})", ha="center", va="center",
+                fontsize=5.6, color=INK, linespacing=1.15)
+        ax.add_patch(FancyArrowPatch((x + w / 2, 1.12), (4.7, 2.22), arrowstyle="<|-|>",
+                                     mutation_scale=6, linewidth=0.6, color=INK2, alpha=0.7))
+    ax.text(4.7, 1.62, "local training on own stocks and labels;\nweights up, global model down",
+            ha="center", va="center", fontsize=6.2, color=INK2,
+            bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none"))
+    fig.tight_layout(pad=0.1)
+    fig.savefig(os.path.join(OUT, "federated.pdf"))
+    fig.savefig(os.path.join(OUT, "federated.png"), dpi=200)
+    plt.close(fig)
+
+
+def fig_timeline():
+    """Chronological splits."""
+    spans = [("Train", "2014-01-02", "2015-07-31", "398 days, 20,309 samples", GREY),
+             ("Val.", "2015-08-03", "2015-09-30", "val.: 42 days, 2,555", ORANGE),
+             ("Test", "2015-10-01", "2015-12-31", "test: 64 days, 3,720", BLUE)]
+    fig, ax = plt.subplots(figsize=(3.5, 1.05))
+    for name, a, b, note, col in spans:
+        a, b = pd.Timestamp(a), pd.Timestamp(b)
+        ax.barh(0, (b - a).days, left=a, height=0.5, color=col, alpha=0.85,
+                edgecolor="white", linewidth=1.5)
+        mid = a + (b - a) / 2
+        ax.text(mid, 0, name, ha="center", va="center", fontsize=7, color="white",
+                weight="bold")
+        if name == "Train":
+            ax.text(mid, -0.48, note, ha="center", va="top", fontsize=6, color=INK2)
+        else:
+            ax.text(b, -0.40 if name == "Val." else -0.72, note, ha="right", va="top",
+                    fontsize=6, color=INK2)
+    ax.set_ylim(-1.15, 0.45)
+    ax.set_yticks([])
+    for s in ("top", "right", "left"):
+        ax.spines[s].set_visible(False)
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%b %Y"))
+    ax.set_xticks([pd.Timestamp(x) for x in ["2014-01-01", "2014-07-01", "2015-01-01",
+                                             "2015-07-01", "2016-01-01"]])
+    ax.tick_params(axis="x", labelsize=6.4)
+    fig.tight_layout(pad=0.15)
+    fig.savefig(os.path.join(OUT, "timeline.pdf"))
+    fig.savefig(os.path.join(OUT, "timeline.png"), dpi=200)
+    plt.close(fig)
+
+
 if __name__ == "__main__":
+    import matplotlib.dates  # noqa: F401  (date axis for the timeline)
     os.makedirs(OUT, exist_ok=True)
     fig_architecture()
     fig_seeds()
+    fig_timing_selection()
+    fig_federated()
+    fig_timeline()
     print("figures written to", OUT)

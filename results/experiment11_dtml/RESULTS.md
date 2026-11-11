@@ -10,16 +10,23 @@ Mean ± s.d. over ten seeds unless marked.
 
 ## Main results
 
-| Model | Pooled MCC | Acc | AUC | Within-day | Day-collapse |
-|---|---|---|---|---|---|
-| Logistic regression (1 run) | 0.033 | 0.517 | 0.513 | 0.004 | −0.030 |
-| LSTM | 0.022 ± 0.021 | 0.515 | 0.528 | **0.040** | 0.006 |
-| ALSTM | 0.045 ± 0.038 | 0.524 | 0.533 | 0.026 | 0.030 |
-| MLP | 0.057 ± 0.020 | 0.528 | 0.536 | 0.000 | 0.110 |
-| Tweet-count LSTM, Exp 1 (5 seeds) | 0.002 ± 0.011 | – | – | – | – |
-| RGCN graph, Exp 6 (5 seeds) | 0.060 ± 0.018 | – | – | 0.005 | – |
-| DTML backbone, reproduced | 0.139 ± 0.049 | 0.558 | 0.593 | 0.008 | 0.130 |
-| **MMGT (pre-registered model)** | **0.146 ± 0.029** | **0.570** | **0.602** | 0.023 | 0.219 |
+| Model | Pooled MCC | Acc | Macro-F1 | AUC | Within-day | Day-collapse |
+|---|---|---|---|---|---|---|
+| Always predict "up" | 0 | 0.513 | 0.339 | 0.500 | – | – |
+| Logistic regression (1 run) | 0.033 | 0.517 | 0.516 | 0.513 | 0.004 | −0.030 |
+| LSTM | 0.022 ± 0.021 | 0.515 | 0.435 | 0.528 | **0.040** | 0.006 |
+| ALSTM | 0.045 ± 0.038 | 0.524 | 0.489 | 0.533 | 0.026 | 0.030 |
+| MLP | 0.057 ± 0.020 | 0.528 | 0.525 | 0.536 | 0.000 | 0.110 |
+| Tweet-count LSTM, Exp 1 (5 seeds) | 0.002 ± 0.011 | – | – | – | – | – |
+| RGCN graph, Exp 6 (5 seeds) | 0.060 ± 0.018 | 0.527 | 0.494 | 0.541 | 0.005 | – |
+| DTML backbone, reproduced | 0.139 ± 0.049 | 0.558 | 0.534 | 0.593 | 0.008 | 0.130 |
+| **MMGT (pre-registered model)** | **0.146 ± 0.029** | **0.570** | **0.565 ± 0.018** | **0.602** | 0.023 | **0.219** |
+
+Macro-F1 = mean of up-class and down-class F1, reconstructed exactly from each
+run's logged accuracy and up-prediction rate (MCC recomputed from the rebuilt
+confusion matrix matches the logged MCC to 1e-15). Up-class F1 alone is not
+reported because an always-up predictor scores 0.678 on it. MMGT's macro-F1 beats
+every baseline: LR p = 1.4e-5, MLP 2.9e-5, LSTM 2.0e-5, ALSTM 5.9e-5, RGCN 0.031.
 
 MMGT vs each baseline (Welch): MLP p = 6.6e-7, ALSTM 3.4e-6, LSTM 6.9e-9,
 LR 6.6e-7, RGCN 1.1e-5, tweet-count LSTM 6.2e-9 — all survive Bonferroni.

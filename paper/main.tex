@@ -182,9 +182,17 @@ exceeds $0.55\%$, \emph{down} if it is below $-0.5\%$, and is excluded otherwise
 The splits are chronological: training from 2 Jan.\ 2014 to 31 Jul.\ 2015 (398
 trading days, 20{,}309 labelled samples), validation from 3 Aug.\ to 30 Sep.\ 2015
 (42 days, 2{,}555 samples) and test from 1 Oct.\ to 31 Dec.\ 2015 (64 days,
-3{,}720 samples, $51.3\%$ up). We verified that these 3{,}720 test samples match
+3{,}720 samples, $51.3\%$ up), as shown in Fig.~\ref{fig:timeline}. We verified that these 3{,}720 test samples match
 those of our earlier experiments one-to-one, by stock, date and label, so every
 result in this paper shares one test set.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/timeline.pdf}
+\caption{Chronological splits of StockNet used throughout. Model selection uses
+the validation period only; the test period was locked until the final runs.}
+\label{fig:timeline}
+\end{figure}
 
 \textbf{Price features.} Each stock-day carries the 11 features of
 DTML~\cite{yoo2021dtml}: the open, high and low relative to the close; the daily
@@ -282,8 +290,14 @@ training runs on CPU.
 \section{Evaluation Protocol}
 
 \textbf{Metrics.} The primary metric is MCC~\cite{matthews1975,chicco2020mcc} at a
-0.5 threshold, with accuracy and AUC. Because the test set is $51.3\%$ up, an
-always-up predictor reaches $51.3\%$ accuracy and MCC $0$.
+0.5 threshold. We also report accuracy, AUC and macro-F1, the mean of the F1
+scores of the up and down classes. We use macro-F1 rather than the F1 of the up
+class alone because the latter rewards predicting ``up'' indiscriminately: on this
+test set, which is $51.3\%$ up, an always-up predictor reaches an up-class F1 of
+$0.678$ while its MCC is $0$ and its macro-F1 $0.339$. F1 was not logged during
+training; each run's confusion matrix is recovered exactly from its logged
+accuracy and share of up predictions, and the MCC recomputed from it matches the
+logged MCC to within $10^{-15}$.
 
 \textbf{Market timing versus stock selection.} Two diagnostics separate the
 abilities that pooled MCC mixes. \emph{Within-day MCC} thresholds each day's
@@ -330,33 +344,36 @@ include every stock with a complete input window, independent of the target day.
 % =====================================================================
 \section{Results}
 
-\begin{table}[t]
-\caption{Test results on StockNet (3{,}720 predictions). Mean $\pm$ s.d.\ over
-ten seeds unless marked. WD: within-day MCC (stock selection).}
+\begin{table*}[t]
+\caption{Test results on StockNet (3{,}720 predictions on 64 trading days). Mean
+$\pm$ s.d.\ over ten seeds unless marked. Macro-F1 averages the F1 of the up and
+down classes. Within-day MCC measures stock selection; day-collapse MCC measures
+market timing (Section V). Best value in each column in bold.}
 \label{tab:main}
 \centering
-\setlength{\tabcolsep}{3.2pt}
-\begin{tabular}{lcccc}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lcccccc}
 \toprule
-Model & MCC & Acc. & AUC & WD \\
+Model & MCC & Accuracy & Macro-F1 & AUC & Within-day MCC & Day-collapse MCC \\
 \midrule
-Logistic regression$^{\dagger}$ & $0.033$ & $0.517$ & $0.513$ & $0.004$ \\
-LSTM & $0.022\pm0.021$ & $0.515$ & $0.528$ & $0.040$ \\
-ALSTM & $0.045\pm0.038$ & $0.524$ & $0.533$ & $0.026$ \\
-MLP & $0.057\pm0.020$ & $0.528$ & $0.536$ & $0.000$ \\
-Tweet-count LSTM$^{\ddagger}$ & $0.002\pm0.011$ & -- & -- & -- \\
-RGCN graph$^{\ddagger}$ & $0.060\pm0.018$ & -- & -- & $0.005$ \\
+Always predict ``up'' & $0$ & $0.513$ & $0.339$ & $0.500$ & -- & -- \\
 \midrule
-DTML backbone, reproduced & $0.139\pm0.049$ & $0.558$ & $0.593$ & $0.008$ \\
-\textbf{MMGT (ours)} & $\mathbf{0.146\pm0.029}$ & $\mathbf{0.570}$ & $\mathbf{0.602}$ & $0.023$ \\
-MMGT, federated$^{\S}$ & \FedMCC & \FedACC & \FedAUC & \FedWD \\
+Logistic regression$^{\dagger}$ & $0.033$ & $0.517$ & $0.516$ & $0.513$ & $0.004$ & $-0.030$ \\
+LSTM & $0.022\pm0.021$ & $0.515$ & $0.435\pm0.055$ & $0.528$ & $\mathbf{0.040}$ & $0.006$ \\
+Attention LSTM (ALSTM) & $0.045\pm0.038$ & $0.524$ & $0.489\pm0.037$ & $0.533$ & $0.026$ & $0.030$ \\
+MLP & $0.057\pm0.020$ & $0.528$ & $0.525\pm0.011$ & $0.536$ & $0.000$ & $0.110$ \\
+Tweet-count LSTM$^{\ddagger}$ & $0.002\pm0.011$ & -- & -- & -- & -- & -- \\
+RGCN graph$^{\ddagger}$ & $0.060\pm0.018$ & $0.527$ & $0.494$ & $0.541$ & $0.005$ & -- \\
+\midrule
+DTML backbone, reproduced & $0.139\pm0.049$ & $0.558$ & $0.534\pm0.060$ & $0.593$ & $0.008$ & $0.130$ \\
+\textbf{MMGT (ours)} & $\mathbf{0.146\pm0.029}$ & $\mathbf{0.570}$ & $\mathbf{0.565\pm0.018}$ & $\mathbf{0.602}$ & $0.023$ & $\mathbf{0.219}$ \\
+MMGT, federated$^{\S}$ & \FedMCC & \FedACC & $0.483\pm0.024$ & \FedAUC & \FedWD & $-0.024$ \\
 \bottomrule
-\multicolumn{5}{l}{\footnotesize $^{\dagger}$Deterministic, one run. $^{\ddagger}$Our earlier work, five seeds;}\\
-\multicolumn{5}{l}{\footnotesize \phantom{$^{\ddagger}$}the RGCN score may be optimistic (Section V).}\\
-\multicolumn{5}{l}{\footnotesize $^{\S}$Without the ranking term; five seeds, FedAvg over nine sector}\\
-\multicolumn{5}{l}{\footnotesize \phantom{$^{\S}$}clients; largely under-trained (Section VI-D).}\\
+\multicolumn{7}{l}{\footnotesize $^{\dagger}$Deterministic, one run.
+$^{\ddagger}$Our earlier work, five seeds; the RGCN score may be optimistic (Section V).
+$^{\S}$Without the ranking term; five seeds, FedAvg over nine sector clients; largely under-trained (Section VI-D).}\\
 \end{tabular}
-\end{table}
+\end{table*}
 
 \begin{figure}[t]
 \centering
@@ -369,7 +386,10 @@ its variants; orange: the DTML backbone and its ablations; grey: baselines.}
 \subsection{MMGT outperforms every baseline}
 
 Table~\ref{tab:main} and Fig.~\ref{fig:seeds} give the main results. MMGT reaches
-MCC $0.146\pm0.029$, accuracy $57.0\%$ and AUC $0.602$. Every baseline trained on
+MCC $0.146\pm0.029$, accuracy $57.0\%$, macro-F1 $0.565\pm0.018$ and AUC $0.602$,
+the best value of every one of these metrics among all models. Its macro-F1 also
+exceeds every baseline's ($p\le5.9\times10^{-5}$ against the four baselines trained
+here, $p=0.031$ against the RGCN). Every baseline trained on
 the identical split scores between $0.022$ and $0.057$, and our earlier
 tweet-count LSTM and RGCN score $0.002$ and $0.060$. The improvement over each is
 significant: against the MLP $p=6.6\times10^{-7}$, the ALSTM $p=3.4\times10^{-6}$,
@@ -387,26 +407,19 @@ from.
 
 \subsection{Market timing and stock selection}
 
-\begin{table}[t]
-\caption{Where the score comes from (test, ten seeds). Pooled MCC rewards both
-abilities; within-day MCC only stock selection; day-collapse MCC only market timing.}
-\label{tab:timing}
+\begin{figure}[t]
 \centering
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{lccc}
-\toprule
-Model & Pooled & Within-day & Day-collapse \\
-\midrule
-LSTM (per-stock) & $0.022$ & $0.040\pm0.014$ & $0.006$ \\
-DTML backbone & $0.139$ & $0.008\pm0.014$ & $0.130$ \\
-\textbf{MMGT (ours)} & $0.146$ & $0.023\pm0.018$ & $0.219$ \\
-\midrule
-Market-direction oracle & $0.625$ & $0$ & $0.625$ \\
-\bottomrule
-\end{tabular}
-\end{table}
+\includegraphics[width=\columnwidth]{figures/timing_selection.pdf}
+\caption{Market timing (day-collapse MCC, horizontal) against stock selection
+(within-day MCC, vertical). Faint dots are individual seeds; large markers are
+means with standard-error bars. Per-stock models sit at the top left, the DTML
+backbone at the bottom right, and MMGT combines both. For reference, a
+market-direction oracle would sit at $(0.625, 0)$.}
+\label{fig:timing}
+\end{figure}
 
-Table~\ref{tab:timing} decomposes the scores. The per-stock LSTM selects stocks:
+Fig.~\ref{fig:timing} and the last two columns of Table~\ref{tab:main} decompose
+the scores. The per-stock LSTM selects stocks:
 its within-day MCC, $0.040$, is clearly above zero ($p=1.1\times10^{-5}$). It
 cannot time the market, so its day-collapse MCC is $0.006$ and its pooled score
 low. The DTML backbone is the reverse. Collapsing each day to its mean prediction
@@ -477,9 +490,19 @@ model learns more useful stock-to-stock weights than the fixed relations supply.
 
 \subsection{Federated training}
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/federated.pdf}
+\caption{Federated setup. Each of the nine sector clients (stock counts in
+parentheses) trains locally on its own stocks and labels; the server averages
+client weights in proportion to their training samples and returns the global
+model.}
+\label{fig:fed}
+\end{figure}
+
 We trained the profile model (without the ranking term) with federated
 averaging~\cite{mcmahan2017fedavg} across nine sector clients, each holding 7--10
-stocks. In each round every client trains one local epoch on its own stocks only,
+stocks (Fig.~\ref{fig:fed}). In each round every client trains one local epoch on its own stocks only,
 with attention and loss restricted to them, and the server averages the client
 weights in proportion to their training samples; the global model is selected on
 validation MCC over at most 40 rounds (patience 10).

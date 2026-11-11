@@ -23,8 +23,38 @@ fed_path = os.path.join(R, "federated_final.csv")
 if os.path.exists(fed_path):
     d = pd.concat([d, pd.read_csv(fed_path)], ignore_index=True)
 
+# F1 was not logged for Experiment 11, but each run logged accuracy and the share
+# of "up" predictions, which with the test set's up rate (1908 of 3720) fix the
+# confusion matrix exactly; the MCC recomputed from it matches the logged MCC to
+# 1e-15 on every run. Macro-F1 averages the F1 of the "up" and "down" classes, so
+# predicting one class more often cannot inflate it (always-up: F1(up) 0.678,
+# macro-F1 0.339).
+N_TEST, P_UP = 3720, 1908 / 3720
+
+
+def confusion(acc, q):
+    tp = (acc * N_TEST - N_TEST + q * N_TEST + P_UP * N_TEST) / 2
+    fp, fn = q * N_TEST - tp, P_UP * N_TEST - tp
+    return tp, fp, fn, N_TEST - tp - fp - fn
+
+
+def add_f1(frame, q):
+    tp, fp, fn, tn = confusion(frame["test_acc"].to_numpy(), q)
+    frame["test_f1_up"] = 2 * tp / (2 * tp + fp + fn)
+    frame["test_macro_f1"] = (frame["test_f1_up"] + 2 * tn / (2 * tn + fn + fp)) / 2
+    mcc = (tp * tn - fp * fn) / np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    assert np.nanmax(np.abs(mcc - frame["test_mcc"].to_numpy())) < 1e-9, "confusion rebuild failed"
+    return frame
+
+
+d = add_f1(d, d["test_pos_rate_pred"].to_numpy())
+
 e6 = pd.read_csv(os.path.join(ROOT, "results", "experiment6_dense_graph", "results.csv"))
-e6 = e6[(e6.model == "RGCN") & (e6.edges == "sector+correlation")]
+e6 = e6[(e6.model == "RGCN") & (e6.edges == "sector+correlation")].copy()
+# Exp 6 logged accuracy and F1(up) but not the prediction rate; solve for it.
+e6_q = (e6.accuracy - 1 + P_UP - e6.f1 * P_UP) / (e6.f1 - 1)
+e6 = add_f1(e6.rename(columns={"accuracy": "test_acc", "mcc": "test_mcc"}), e6_q.to_numpy())
+e6 = e6.rename(columns={"test_acc": "accuracy", "test_mcc": "mcc"})
 EXP1 = np.array([0.0027, -0.0009, 0.0011, 0.0181, -0.0125])   # Exp 1 write-up, 5 seeds
 
 TAGS = {"lr": "B_lr", "mlp": "B_mlp", "lstm": "B_lstm", "alstm": "B_alstm",
@@ -43,7 +73,7 @@ for name, tag in TAGS.items():
     if not len(x):
         continue
     m = {"n": len(x)}
-    for k in ["mcc", "acc", "auc", "within_day_mcc", "collapse_mcc"]:
+    for k in ["mcc", "acc", "auc", "within_day_mcc", "collapse_mcc", "f1_up", "macro_f1"]:
         v = x[f"test_{k}"].to_numpy()
         m[k] = float(v.mean())
         m[k + "_sd"] = float(v.std(ddof=1)) if len(v) > 1 else None
@@ -51,7 +81,12 @@ for name, tag in TAGS.items():
     out["models"][name] = m
 out["models"]["rgcn_exp6"] = {"n": len(e6), "mcc": float(e6.mcc.mean()),
                               "mcc_sd": float(e6.mcc.std()),
+                              "acc": float(e6.accuracy.mean()), "auc": float(e6.auc.mean()),
+                              "macro_f1": float(e6.test_macro_f1.mean()),
+                              "f1_up": float(e6.test_f1_up.mean()),
                               "within_day_mcc": float(e6.within_day_mcc.mean())}
+out["models"]["always_up"] = {"n": 1, "mcc": 0.0, "acc": P_UP, "auc": 0.5,
+                              "f1_up": 2 * P_UP / (1 + P_UP), "macro_f1": P_UP / (1 + P_UP)}
 out["models"]["tweetlstm_exp1"] = {"n": 5, "mcc": float(EXP1.mean()),
                                    "mcc_sd": float(EXP1.std(ddof=1))}
 
@@ -76,6 +111,12 @@ def paired(a, b, c="test_mcc"):
     return float(stats.ttest_rel(x[:n], y[:n]).pvalue), int((x[:n] > y[:n]).sum()), n
 
 
+for b in ["lr", "mlp", "lstm", "alstm"]:
+    y, x = col("F2c", "test_macro_f1"), col(TAGS[b], "test_macro_f1")
+    T[f"mmgt_rank_vs_{b}_macro_f1"] = float(
+        stats.ttest_1samp(y, x[0]).pvalue if len(x) == 1 else stats.ttest_ind(y, x, equal_var=False).pvalue)
+T["mmgt_rank_vs_rgcn_exp6_macro_f1"] = float(stats.ttest_ind(
+    col("F2c", "test_macro_f1"), e6.test_macro_f1.to_numpy(), equal_var=False).pvalue)
 for a, b in [("mmgt", "dtml"), ("mmgt_graphbias", "mmgt"), ("mmgt_rank", "mmgt"),
              ("dtml_7f", "dtml"), ("mmgt_fed", "mmgt")]:
     if a in out["models"] and b in out["models"]:
