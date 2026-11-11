@@ -114,7 +114,8 @@ rounds 0, 92, 69, 58, 83 (seed 0 never improved after round 1).
 
 Pre-registered rule (MCC ≥ 0.10 and not significantly below centralised): **met,
 federated stays in the paper.** Federation keeps the score and the market timing
-but loses stock selection (day-level p vs MMGT 0.069). Earlier short-schedule run
+but loses stock selection (run-level paired p = 0.037; day-level vs the centralised
+profile model on the same seeds: −0.028 [−0.068, 0.015], p = 0.20). Earlier short-schedule run
 (`FEDc`, 40 rounds, patience 10): 0.040, matching a one-epoch centralised control;
 superseded.
 

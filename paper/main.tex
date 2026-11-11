@@ -32,10 +32,10 @@ volatility, SEC EDGAR fundamentals, tweet volume and features from a graph of
 related stocks. On the standard StockNet test period (87 US stocks, 3{,}720 test
 predictions), MMGT reaches a Matthews correlation coefficient (MCC) of $0.146$, an
 accuracy of $57.0\%$, a macro-F1 of $0.565$ and an AUC of $0.602$ over ten training
-runs, against at most $0.060$ for tuned baselines. Two diagnostics and a trading
+runs, against at most $0.057$ for tuned baselines. Two diagnostics and a trading
 simulation show where the gain comes from: almost all of it is market timing,
-worth a Sharpe ratio of $4.2$ against $1.4$ for buying and holding, while the
-multi-modal profile adds a small stock-selection gain that has the same sign in
+worth a Sharpe ratio of $4.2$ against $1.4$ for buying and holding, while MMGT's
+multi-modal additions give a small stock-selection gain that has the same sign in
 all three test periods we examine. Evaluated over three consecutive periods, the
 ranking of models by MCC changes with how much market timing each period
 rewards. Trained with federated averaging across nine sector clients, MMGT keeps
@@ -75,9 +75,9 @@ distinction in mind. Our contributions are:
 its price history and a 47-feature profile (volatility, fundamentals, tweet
 volume and features from a stock graph), and lets every stock attend to every
 other stock.
-\item \textbf{The highest score on the standard StockNet test period:} MCC
-$0.146$ against $0.027$--$0.060$ for tuned baselines, with the best accuracy,
-macro-F1 and AUC of all models.
+\item \textbf{The highest score among all models trained under our protocol} on
+the standard StockNet test period: MCC $0.146$ against $0.027$--$0.057$ for tuned
+baselines, with the best accuracy, macro-F1 and AUC of all models.
 \item \textbf{Separating market timing from stock selection} with two diagnostics
 and a trading simulation, which show that MMGT's gain is almost entirely market
 timing and that its multi-modal profile adds a small but consistent stock-selection
@@ -313,7 +313,8 @@ samples, $48.3\%$ up) and period B tests August--September 2015 (42 days, 2{,}55
 samples, $44.6\%$ up). Each model keeps the settings selected for the standard
 split and is retrained on the earlier data with five seeds. Period B coincides with
 the validation period of the standard split, on which those settings were chosen,
-so it is not fully out-of-sample for any model; period A is.
+so it is not fully out-of-sample for any model; period A is cleaner, as it was
+only training data when the settings were chosen.
 
 \textbf{Trading simulation.} To check whether the scores matter economically, we
 turn each model's daily predictions into two simple portfolios, one for each
@@ -366,7 +367,7 @@ $^{c}$Without the ranking term; five runs, trained with federated averaging over
 nine sector clients (Section~\ref{sec:fed}).}
 \end{table*}
 
-\subsection{MMGT has the highest score on the standard test period}
+\subsection{MMGT has the highest score among the models we trained}
 
 Table~\ref{tab:main} gives the main results. MMGT reaches an MCC of
 $0.146\pm0.029$, an accuracy of $57.0\%$, a macro-F1 of $0.565$ and an AUC of
@@ -419,8 +420,10 @@ MLP, while MMGT-base reaches $0.139$.
 \end{axis}
 \end{tikzpicture}
 \caption{Market timing against stock selection on the standard test period
-(averages over runs). Per-stock baselines sit at the left, the price-only
-MMGT-base at the bottom right, and MMGT adds stock selection to stronger timing.
+(averages over runs). Grey: baselines; orange: the price-only MMGT-base; open blue:
+the profile model trained centrally and with federated averaging; filled blue:
+MMGT. Per-stock baselines sit at the left, and MMGT adds stock selection to the
+strongest timing.
 For reference, a model that knew only each day's market direction would sit at
 $(0.625, 0)$.}
 \label{fig:timing}
@@ -480,8 +483,8 @@ $p=0.14$). The ranking term on top changes neither score significantly.
 
 \textbf{Stock attention and the market summary drive the overall score.} Removing
 stock attention lowers MCC from $0.130$ to $0.059$ on the same five runs
-($p=0.048$), and removing the market summary lowers it from $0.131$ to $0.078$,
-while stock selection is unaffected.
+($p=0.048$), and removing the market summary lowers it from $0.131$ to $0.078$
+($p=0.12$), while stock selection is unaffected.
 
 \textbf{A fixed graph adds nothing inside attention.} Telling the attention layer
 which stocks are connected in our graph gives $0.143$, no different from letting it
@@ -532,8 +535,10 @@ day-collapse MCC is $0.029$, $0.174$ and $0.219$ in the three periods.
 Stock selection behaves differently. MMGT has the highest within-day MCC in
 periods A and B and on average, and its gain over MMGT-base has the same sign in
 all three periods ($+0.014$, $+0.010$ and $+0.015$; positive in 15 of 20 paired
-runs, sign test $p=0.041$). The stock-selection gain from the multi-modal profile is
-small, but it is the most consistent effect we observe.
+runs, sign test $p=0.041$, $t$-test $p=0.076$). This comparison tests MMGT's two
+additions, the profile and the ranking term, together; the ablation on the standard
+period points to the profile as the source. The gain is small, but it is the most
+consistent effect we observe.
 
 \subsection{Trading simulation}
 
@@ -597,17 +602,21 @@ $p$ & $0.67$ & $0.037$ & $0.52$ \\
 We trained MMGT with federated averaging~\cite{mcmahan2017fedavg} across nine
 clients, one per sector, each holding 7--10 stocks. Each round, every client trains
 on its own stocks and labels, and only model weights are sent to a server, which
-averages them in proportion to each client's data. We ran up to 150 rounds and kept
-the round with the best validation score. Before running it, we fixed the rule that
+averages them in proportion to each client's data. A first run with at most 40
+rounds stopped improving almost immediately (MCC $0.040$) and looked like a
+centralised model trained for a single epoch, so it measured under-training rather
+than federation. We therefore lengthened the schedule to up to 150 rounds, keeping
+the round with the best validation score, and fixed in advance the rule that
 federated training stays in the paper only if its MCC is at least $0.10$ and not
 significantly below centralised training on the same seeds.
 
 It meets this rule (Table~\ref{tab:fed}). Federated training reaches an MCC of
-$0.131$, no lower than centralised training ($0.115$, $p=0.67$), with an accuracy of
-$56.6\%$. Four of the five runs improved for 58--92 rounds; one stopped improving
-after its first round and scored $0.025$. The cost of federation falls on stock
-selection: within-day MCC drops from $0.024$ to $-0.004$ ($p=0.037$ over runs;
-$p=0.069$ at the day level against MMGT), while market timing is kept. A likely
+$0.131$, not significantly different from centralised training ($0.115$,
+$p=0.67$), with an accuracy of $56.6\%$. Four of the five runs improved for 58--92
+rounds; one stopped improving after its first round and scored $0.025$. The cost of
+federation falls on stock selection: within-day MCC drops from $0.024$ to $-0.004$,
+significant across runs ($p=0.037$) though not at the level of test days ($p=0.20$),
+while market timing is kept. A likely
 reason is that each client only ever compares its own sector's stocks, so the
 averaged model learns no comparisons across sectors, while the market summary that
 drives timing is shared by all clients. Since all data here are public, and the
@@ -635,11 +644,15 @@ tell stocks apart. The effect is small but has the same sign in every period we
 tested.
 
 \textbf{Limitations.} We study one benchmark of 87 large US stocks over 2014--2015.
-Each test period has 42--64 trading days, so day-level uncertainty is large: MMGT's
-advantage over the MLP and the LSTM, and the profile's stock-selection gain, are
-significant across training runs but not at the level of test days. The walk-forward
-periods reuse the settings selected for the standard split, and one of them is not
-fully out-of-sample. Our trading simulation ignores market impact and borrowing
+Published results on this benchmark use different preprocessing and protocols, so
+we compare only with models trained under ours; our reproduction of the attention
+backbone (MMGT-base, $0.139$) is below the $0.191$ reported by its
+authors~\cite{yoo2021dtml}, and we do not claim a new state of the art. Each test
+period has 42--64 trading days, so day-level uncertainty is large: MMGT's advantage
+over the MLP and the LSTM, and the profile's stock-selection gain, are significant
+across training runs but not at the level of test days. The walk-forward periods
+reuse the settings selected for the standard split, and one of them is not fully
+out-of-sample. Our trading simulation ignores market impact and borrowing
 costs. Federated training was simulated on one machine. We did not study
 explanations of the model's predictions, which we leave to future work.
 
@@ -652,9 +665,9 @@ and lets every stock attend to every other stock. On the standard StockNet test
 period it reaches an MCC of $0.146$, an accuracy of $57.0\%$ and the best macro-F1
 and AUC of all models we evaluated, above every tuned baseline. Separating market
 timing from stock selection shows that this gain is mostly market timing, which
-translates into a timing portfolio with a Sharpe ratio of $4.2$, and that the
-multi-modal profile adds a small stock-selection gain that is consistent across
-three test periods. Trained with federated averaging across sector clients, MMGT
+translates into a timing portfolio with a Sharpe ratio of $4.2$, and that MMGT's
+multi-modal additions give a small stock-selection gain that is consistent in sign
+across three test periods. Trained with federated averaging across sector clients, MMGT
 keeps its score but loses its stock selection. We recommend reporting
 stock-selection and market-timing scores, and more than one test period, in future
 work on this benchmark.

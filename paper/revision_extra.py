@@ -60,6 +60,8 @@ for name, tag, seeds in [("MMGT-base", "R_base", main), ("Profile only", "R_prof
                          ("ALSTM", "R_alstm", main), ("MLP", "R_mlp", main), ("Federated", "FEDlong", range(5))]:
     out["wd_bootstrap"][f"MMGT-minus-{name}"] = boot_wd(mm, load(tag, "main", seeds))
 out["wd_bootstrap"]["Profile-minus-MMGT-base"] = boot_wd(prof, base)
+out["wd_bootstrap"]["Federated-minus-Profile-seeds0-4"] = boot_wd(load("FEDlong", "main", range(5)),
+                                                                  load("R_profile", "main", range(5)))
 
 r = next(iter(mm.values()))
 bh, prev = [], None

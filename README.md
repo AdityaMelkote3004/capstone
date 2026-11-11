@@ -12,7 +12,8 @@ A transformer in which every stock attends to every other stock each day
 (the DTML backbone, KDD 2021), extended with a multi-modal profile per stock
 (volatility, SEC EDGAR fundamentals, tweet volume, and peer features from a
 stock graph), reaches a pooled MCC of 0.146 on the standard test period, above every tuned
-baseline (at most 0.060). Pooled MCC, however, mixes two skills: calling the whole
+baseline (at most 0.057) and our earlier RGCN (0.060). This is within our own
+protocol, not a new state of the art. Pooled MCC, however, mixes two skills: calling the whole
 market's direction on a day, and ranking stocks against each other. MMGT's gain is
 mostly market timing (its timing portfolio has a Sharpe ratio of 4.2 against 1.4
 for buy-and-hold). Its multi-modal profile adds a small stock-selection gain with
