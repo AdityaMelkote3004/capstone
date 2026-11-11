@@ -229,3 +229,19 @@ Not claimable:
    price-only.
 5. **Explainability** (in the original scope) is not done: attention maps over
    stocks exist in the model but have not been validated.
+
+---
+
+## 7. Review round 2 (Experiment 12 and finance metrics)
+
+- **Rank IC** (the standard finance measure of stock selection) agrees with within-day
+  MCC across model x period means (r = 0.73) and across seeds (r = 0.75), so the
+  diagnostic is validated. But on the standard period MMGT's Rank IC is ~0 (0.001);
+  the per-stock ALSTM (0.027) and LSTM (0.020) are the better stock selectors there.
+  MMGT has the highest Rank IC of the compared models in walk-forward periods A and B.
+- **Experiment 12, disentangled MMGT (MMGT-D)**: separate market head + centred
+  stock-ranking head + gradient-reversal adversary. Pre-registered; **failed its guard**
+  (pooled MCC 0.064 vs 0.146) because market timing collapsed. Stock selection improved
+  in all three periods (Rank IC 0.014 / 0.033 / 0.069 vs MMGT 0.001 / 0.023 / 0.045).
+  Takeaway: timing and selection trade off in these models.
+- Exhaustive leakage test (all 504 days) passes; EDGAR fundamentals are dated by filing date.
