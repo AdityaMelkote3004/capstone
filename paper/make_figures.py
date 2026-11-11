@@ -83,17 +83,17 @@ def fig_seeds():
 
     rows = [  # (label, values, colour) top to bottom; only leak-free ("c") profile runs
         ("MMGT (ours)", d[d.tag == "F2c"].test_mcc.to_numpy(), BLUE),
-        ("MMGT w/o ranking loss", d[d.tag == "F1c"].test_mcc.to_numpy(), BLUE),
+        ("MMGT w/o ranking term", d[d.tag == "F1c"].test_mcc.to_numpy(), BLUE),
         ("MMGT + graph-biased attention", d[d.tag == "G2c"].test_mcc.to_numpy(), BLUE),
-        ("DTML (reproduced)", d[d.tag == "F0_dtml"].test_mcc.to_numpy(), ORANGE),
-        ("DTML, 7 price features", d[d.tag == "S4_ret_trend"].test_mcc.to_numpy(), ORANGE),
-        ("DTML w/o stock attention", d[d.tag == "F4_nosa"].test_mcc.to_numpy(), ORANGE),
-        ("RGCN graph (Exp. 6)", e6, GREY),
+        ("MMGT-base (price only)", d[d.tag == "F0_dtml"].test_mcc.to_numpy(), ORANGE),
+        ("MMGT-base, 7 features", d[d.tag == "S4_ret_trend"].test_mcc.to_numpy(), ORANGE),
+        ("MMGT-base w/o attention", d[d.tag == "F4_nosa"].test_mcc.to_numpy(), ORANGE),
+        ("RGCN graph (earlier work)", e6, GREY),
         ("MLP", d[d.tag == "B_mlp"].test_mcc.to_numpy(), GREY),
         ("Attention LSTM", d[d.tag == "B_alstm"].test_mcc.to_numpy(), GREY),
         ("Logistic regression", d[d.tag == "B_lr"].test_mcc.to_numpy(), GREY),
         ("LSTM", d[d.tag == "B_lstm"].test_mcc.to_numpy(), GREY),
-        ("Tweet-count LSTM (Exp. 1)", exp1, GREY),
+        ("Tweet-count LSTM (earlier work)", exp1, GREY),
     ]
     fig, ax = plt.subplots(figsize=(3.5, 3.2))
     rng = np.random.default_rng(0)
@@ -135,7 +135,7 @@ def fig_timing_selection():
         ("B_lstm", "LSTM", GREY, True, (6, 4)),
         ("B_alstm", "ALSTM", GREY, True, (6, -9)),
         ("B_mlp", "MLP", GREY, True, (-8, -11)),
-        ("F0_dtml", "DTML backbone", ORANGE, True, (6, -9)),
+        ("F0_dtml", "MMGT-base", ORANGE, True, (6, -9)),
         ("F1c", "+ profile", BLUE, False, (-30, 9)),
         ("F2c", "MMGT (ours)", BLUE, True, (-14, 9)),
         ("FEDc", "MMGT federated", BLUE, False, (-22, -15)),

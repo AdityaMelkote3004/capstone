@@ -4,19 +4,17 @@ import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 tex = open(os.path.join(HERE, "main.tex"), encoding="utf-8").read()
-bib = open(os.path.join(HERE, "refs.bib"), encoding="utf-8").read()
 BS = "\\"
 
 cites = set(k.strip() for g in re.findall(re.escape(BS + "cite{") + r"([^}]*)\}", tex)
             for k in g.split(","))
-keys = set(re.findall(r"@\w+\{([^,]+),", bib))
+keys = set(re.findall(re.escape(BS + "bibitem{") + r"([^}]+)\}", tex))
 print("cited keys:", len(cites), "| bib entries:", len(keys))
 print("cited but missing from bib:", sorted(cites - keys))
 print("in bib but never cited:", sorted(keys - cites))
 
 body = re.sub(r"(?<!\\)%.*", "", tex)
 print("brace balance (0 = ok):", body.count("{") - body.count("}"))
-print("bib brace balance (0 = ok):", bib.count("{") - bib.count("}"))
 for env in sorted(set(re.findall(re.escape(BS + "begin{") + r"([A-Za-z*]+)\}", body))):
     b = body.count(BS + "begin{" + env + "}")
     e = body.count(BS + "end{" + env + "}")
