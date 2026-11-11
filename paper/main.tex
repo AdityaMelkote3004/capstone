@@ -148,10 +148,23 @@ neighbours moved yesterday and how the stock differs from them, and record its
 sector.
 \end{itemize}
 
-\textbf{No look-ahead.} Every feature uses only information available before the
-day being predicted. We check this directly: for twelve days across the data, we
-delete all information from that day onward, rebuild the features and the graph,
-and confirm that they do not change.
+\textbf{Why tweet volume.} We use how much a stock is discussed rather than what is
+said. In earlier experiments on the same split, sentence embeddings of the tweets
+from a financial language model, alone or combined with prices, did not raise the
+score above prices alone, whereas the number of tweets carries stock-specific
+attention that varies across stocks on the same day. Counts are also cheap and need
+no language model at prediction time.
+
+\textbf{Information timeline.} The prediction for day $t$ is the direction of the
+close-to-close return from day $t-1$ to day $t$. It may use only information
+available at the close of day $t-1$: prices up to $t-1$ (the 10 days $t-10,\dots,
+t-1$), the market summary over the same days, fundamentals filed before $t$, tweets
+posted before $t$, and graph features computed from returns up to $t-1$. Which
+stocks are labelled on day $t$ depends on day $t$'s move, so no input may depend on
+it; in particular the graph and the peer features are built over all stocks with
+prices on $t-1$, labelled or not. We check this directly: for twelve days across the
+data, we delete all information from that day onward, rebuild the features and the
+graph, and confirm that they do not change.
 
 % =====================================================================
 \section{The MMGT Model}
@@ -211,8 +224,19 @@ the same for every stock on a given day, it can only shift all of that day's
 predictions together: it is the part of the model that times the market.
 
 \textbf{3) Stocks attending to stocks.} An attention layer lets each stock look at
-all other stocks of the day and decide how much to take from each. This works like
-a graph whose connections are learned each day rather than fixed in advance.
+all other stocks of the day and decide how much to take from each. In graph terms,
+the stocks of day $t$ form a fully connected graph, and the attention weight
+\begin{equation}
+a_{ij,t}=\operatorname{softmax}_j\!\left(\frac{(W_Q h_{i,t})^{\top}W_K h_{j,t}}{\sqrt{d}}\right)
+\end{equation}
+is a learned, day-specific edge weight from stock $j$ to stock $i$, where $h_{i,t}$
+is stock $i$'s representation from step~2. Each stock is updated with
+$\sum_j a_{ij,t}W_V h_{j,t}$, using four attention heads, followed by a residual
+connection and a feed-forward layer, as in a transformer layer. This is why we call
+the model a graph transformer. The explicit stock graph (sector, return correlation
+and tweet co-mention edges) enters through the peer features of the profile. We
+also tried adding it to the attention as a bias, which did not help
+(Section~\ref{sec:ablation}).
 
 \textbf{4) Prediction and training.} A final layer gives each stock a probability
 of rising. Training combines the usual classification loss with a ranking
@@ -233,24 +257,59 @@ accuracy, AUC and macro-F1. Macro-F1 averages the F1 score of the up and the dow
 class; we use it instead of the F1 of the up class alone, because a model that
 always predicts ``up'' already reaches an up-class F1 of $0.678$ on this test set.
 
-\textbf{Market timing versus stock selection.} Two diagnostics separate the two
-abilities. \emph{Within-day MCC} compares stocks only with others on the same day,
-so calling the market's direction earns nothing; it measures stock selection.
-\emph{Day-collapse MCC} replaces each day's predictions by their average, which
-removes all differences between stocks; what is left measures market timing.
+\textbf{Market timing versus stock selection.} Let $\mathcal{S}_t$ be the labelled
+stocks on test day $t$, $y_{i,t}\in\{0,1\}$ their labels, $p_{i,t}$ the predicted
+probability of a rise, and $\mathrm{MCC}(\cdot)$ the coefficient computed from a set
+of (label, prediction) pairs. The usual score pools all stock-days:
+\begin{equation}
+\mathrm{MCC}=\mathrm{MCC}\bigl(\{(y_{i,t},\,\mathbf{1}[p_{i,t}\ge 0.5])\}_{t,\,i\in\mathcal{S}_t}\bigr).
+\end{equation}
+\emph{Within-day MCC} compares each stock only with the other stocks of the same
+day, using the day's median prediction $\tilde p_t$ as the threshold, and averages
+over the $T'$ days on which both labels occur:
+\begin{equation}
+\mathrm{MCC}_{\mathrm{wd}}=\frac{1}{T'}\sum_{t}\mathrm{MCC}\bigl(\{(y_{i,t},\,\mathbf{1}[p_{i,t}>\tilde p_t])\}_{i\in\mathcal{S}_t}\bigr).
+\end{equation}
+Shifting all of a day's predictions up or down does not change it, so calling the
+market's direction earns nothing: it measures stock selection. \emph{Day-collapse
+MCC} replaces every prediction by its day's mean
+$\bar p_t=\frac{1}{|\mathcal{S}_t|}\sum_{i\in\mathcal{S}_t}p_{i,t}$:
+\begin{equation}
+\mathrm{MCC}_{\mathrm{dc}}=\mathrm{MCC}\bigl(\{(y_{i,t},\,\mathbf{1}[\bar p_t\ge 0.5])\}_{t,\,i\in\mathcal{S}_t}\bigr).
+\end{equation}
+All differences between stocks are removed, so what remains measures market
+timing.
 
 \textbf{Reliability.} Every model is trained ten times with different random
-seeds, and we report the mean and standard deviation. Differences between models
-are tested with Welch's $t$-test~\cite{welch1947}. A single run is unreliable here:
-resampling the 64 test days~\cite{kunsch1989} shows that one run's MCC can vary by
-about $\pm 0.14$. All settings were chosen on the validation period, and the final
-model was fixed before its first test run~\cite{nosek2018}.
+seeds, and we report the mean and standard deviation over these runs. Run-level
+$p$-values (Welch's $t$-test~\cite{welch1947}, $n=10$ runs per model) describe
+variation due to training. They do not describe uncertainty from the limited test
+period, so we also resample the 64 test \emph{days} with
+replacement~\cite{kunsch1989}, keeping all stocks of a day together. For each
+resample we compute every model's run-averaged MCC; the 95\% interval of the
+difference between two models and a two-sided bootstrap $p$-value then reflect the
+test period itself (2{,}000 resamples). All settings were chosen on the validation
+period, and the final model was fixed before its first test run~\cite{nosek2018}.
 
 \textbf{Baselines.} Logistic regression and a multi-layer perceptron (MLP) use the
 10-day price history; an LSTM and an attention LSTM (ALSTM)~\cite{feng2019advalstm}
-read each stock separately. We also include two models from our earlier work on
-the same test set: an LSTM using tweet counts, and a relational graph convolutional
-network (RGCN) over sector and correlation graphs.
+read each stock separately. Every baseline was tuned on the validation period with
+the same selection rule as MMGT: the regularisation strength of logistic
+regression, the width and learning rate of the MLP, and the window length, width and
+learning rate of the LSTM and the ALSTM (31 settings in total). We also include two
+models from our earlier work on the same test set: an LSTM using tweet counts, and a
+relational graph convolutional network (RGCN) over sector and correlation graphs.
+
+\textbf{Trading simulation.} To check whether the scores matter economically, we
+turn each model's daily predictions into two simple portfolios, one for each
+ability. A \emph{long--short} portfolio buys the 10 stocks with the highest
+predicted probability and sells the 10 lowest, in equal weights; it gains nothing
+from the market's direction and tests stock selection. A \emph{timing} portfolio
+holds all stocks if the average predicted probability exceeds $0.5$ and sells them
+all otherwise; it tests market timing. Both are rebalanced daily on the
+close-to-close return of the predicted day, rank all stocks with a valid input
+window (not only the labelled ones, whose selection depends on the day's move), and
+are reported with and without a cost of 10 basis points per unit of turnover.
 
 % =====================================================================
 \section{Results}
@@ -358,6 +417,7 @@ pushes all of a day's predictions in the same direction.
 from the multi-modal profile.
 
 \subsection{What each part contributes}
+\label{sec:ablation}
 
 \begin{table}[t]
 \caption{Ablation study (test). One change per row; number of runs in parentheses.}
