@@ -75,6 +75,8 @@ def main():
     ap.add_argument("--patience", type=int, default=10)
     ap.add_argument("--seeds", type=int, nargs="+", default=[0])
     ap.add_argument("--tag", default="FED_fedavg")
+    ap.add_argument("--save-preds", action="store_true")
+    ap.add_argument("--out-prefix", default="")
     args = ap.parse_args()
 
     data = load_acl18(window=10)
@@ -104,6 +106,10 @@ def main():
                        else {k: avg[k] + sd[k].detach() * w for k in avg})
             glob.load_state_dict(avg)
             vm = metrics(*run_split(glob, data, extra, idx["val"]))
+            curve = os.path.join(OUT_DIR, args.out_prefix + "federated_curve.csv")
+            pd.DataFrame([{"tag": args.tag, "seed": seed, "round": rnd + 1,
+                           "val_mcc": vm["mcc"], "val_wd": vm["within_day_mcc"]}]).to_csv(
+                curve, mode="a", header=not os.path.exists(curve), index=False)
             if vm["mcc"] > best:
                 best, best_round, stale, best_val = vm["mcc"], rnd, 0, vm
                 best_state = {k: v.clone() for k, v in glob.state_dict().items()}
@@ -113,12 +119,16 @@ def main():
                     break
         glob.load_state_dict(best_state)
         tm = metrics(*run_split(glob, data, extra, idx["test"]), boot=2000, seed=seed)
+        if args.save_preds:
+            from src.eval.predictions import collect, save
+            save(os.path.join(OUT_DIR, "preds", f"{args.tag}_main_s{seed}.npz"),
+                 collect(glob, data, idx["test"], extra), data["dates"])
         row = {"tag": args.tag, "seed": seed, "rounds_run": rnd + 1,
                "best_round": best_round, "local_epochs": args.local_epochs,
                "clients": len(names), "minutes": round((time.time() - t0) / 60, 1)}
         row.update({f"val_{k}": v for k, v in best_val.items()})
         row.update({f"test_{k}": v for k, v in tm.items()})
-        out = os.path.join(OUT_DIR, "federated_final.csv")
+        out = os.path.join(OUT_DIR, args.out_prefix + "federated_final.csv")
         pd.DataFrame([row]).to_csv(out, mode="a", header=not os.path.exists(out), index=False)
         print(f"[{args.tag}] seed={seed} best_round={best_round} val mcc={best_val['mcc']:+.4f} "
               f"|| TEST mcc={tm['mcc']:+.4f} acc={tm['acc']:.4f} auc={tm['auc']:.4f} "

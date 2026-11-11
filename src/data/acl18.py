@@ -27,8 +27,16 @@ MISSING = -1e5
 N_FEATURES = 11
 SPLIT_STARTS = {"train": "2014-01-02", "val": "2015-08-03", "test": "2015-10-01"}
 
+# Walk-forward folds (revision after review). "main" is the paper's split. Each
+# fold keeps the same configuration; days after "end" are excluded entirely.
+FOLDS = {
+    "main": {"train": "2014-01-02", "val": "2015-08-03", "test": "2015-10-01", "end": "9999"},
+    "A": {"train": "2014-01-02", "val": "2015-04-01", "test": "2015-06-01", "end": "2015-07-31"},
+    "B": {"train": "2014-01-02", "val": "2015-06-01", "test": "2015-08-03", "end": "2015-09-30"},
+}
 
-def load_acl18(root: str = "data/acl18", window: int = 15) -> dict:
+
+def load_acl18(root: str = "data/acl18", window: int = 15, fold: str = "main") -> dict:
     files = sorted(f for f in os.listdir(os.path.join(root, "ourpped"))
                    if f.endswith(".csv"))
     raw = np.stack([np.genfromtxt(os.path.join(root, "ourpped", f), delimiter=",")
@@ -64,16 +72,24 @@ def load_acl18(root: str = "data/acl18", window: int = 15) -> dict:
     market = np.stack([index_series[t - window:t] for t in target_days]).astype(np.float32)
 
     day_dates = [dates[t] for t in target_days]
+    starts = FOLDS[fold]
     split = np.empty(len(target_days), dtype=object)
     for i, d in enumerate(day_dates):
-        if d >= SPLIT_STARTS["test"]:
+        if d > starts["end"]:
+            split[i] = "after"
+        elif d >= starts["test"]:
             split[i] = "test"
-        elif d >= SPLIT_STARTS["val"]:
+        elif d >= starts["val"]:
             split[i] = "val"
-        elif d >= SPLIT_STARTS["train"]:
+        elif d >= starts["train"]:
             split[i] = "train"
         else:
             split[i] = "warmup"
 
+    # Realised close-to-close return (percent) on each target day, for the
+    # backtest only. Never a model input: it is the quantity being predicted.
+    ret = np.where(row_missing[:, target_days], np.nan, feats[:, target_days, 3]).T
+
     return {"x": x, "window_ok": window_ok, "y": y, "market": market,
-            "dates": day_dates, "split": split, "tickers": [f[:-4] for f in files]}
+            "dates": day_dates, "split": split, "tickers": [f[:-4] for f in files],
+            "ret": ret.astype(np.float32)}

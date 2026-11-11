@@ -114,15 +114,20 @@ def main() -> None:
     # search.csv / final.csv is never changed mid-experiment.
     ap.add_argument("--features", type=int, nargs="+", default=None,
                     help="indices into DTML's 11 features; default all")
+    # Revision after review: walk-forward folds, saved predictions, and a separate
+    # output file so revision runs never mix with the original CSVs.
+    ap.add_argument("--fold", default="main", choices=["main", "A", "B"])
+    ap.add_argument("--save-preds", action="store_true")
+    ap.add_argument("--out-prefix", default="")
     args = ap.parse_args()
 
-    data = load_acl18(window=args.window)
+    data = load_acl18(window=args.window, fold=args.fold)
     if args.features is not None:
         data["x"] = np.ascontiguousarray(data["x"][..., args.features])
         data["market"] = np.ascontiguousarray(data["market"][..., args.features])
     idx = {s: np.where(data["split"] == s)[0] for s in ("train", "val", "test")}
     os.makedirs(OUT_DIR, exist_ok=True)
-    prefix = "subset_" if args.features is not None else ""
+    prefix = args.out_prefix + ("subset_" if args.features is not None else "")
     out_csv = os.path.join(OUT_DIR, prefix + ("final.csv" if args.eval_test else "search.csv"))
 
     for seed in args.seeds:
@@ -158,6 +163,12 @@ def main() -> None:
         if args.eval_test:
             tm = metrics(*run_split(model, data, idx["test"]), boot=2000, seed=seed)
             row.update({f"test_{k}": v for k, v in tm.items()})
+            if args.save_preds:
+                from src.eval.predictions import collect, save
+                save(os.path.join(OUT_DIR, "preds", f"{args.tag}_{args.fold}_s{seed}.npz"),
+                     collect(model, data, idx["test"]), data["dates"])
+        if args.out_prefix:
+            row["fold"] = args.fold
         pd.DataFrame([row]).to_csv(out_csv, mode="a",
                                    header=not os.path.exists(out_csv), index=False)
         msg = (f"[{args.tag or 'run'}] seed={seed} ep={best_epoch} "

@@ -101,14 +101,17 @@ def main() -> None:
                     default=["sector", "correlation", "comention"])
     ap.add_argument("--tag", default="plus")
     ap.add_argument("--eval-test", action="store_true")
+    ap.add_argument("--fold", default="main", choices=["main", "A", "B"])
+    ap.add_argument("--save-preds", action="store_true")
+    ap.add_argument("--out-prefix", default="")
     args = ap.parse_args()
 
-    data = load_acl18(window=args.window)
+    data = load_acl18(window=args.window, fold=args.fold)
     extra = None if args.extra == "none" else extra_features(data, peer=args.extra == "peer")
     idx = {s: np.where(data["split"] == s)[0] for s in ("train", "val", "test")}
     adj = relation_tensor(data, args.relations) if args.graph != "none" else None
     # Graph runs (stage E) get their own files so earlier CSVs keep their columns.
-    prefix = "graph_" if args.graph != "none" else "plus_"
+    prefix = args.out_prefix + ("graph_" if args.graph != "none" else "plus_")
     out_csv = os.path.join(OUT_DIR, prefix + ("final.csv" if args.eval_test else "search.csv"))
 
     for seed in args.seeds:
@@ -146,8 +149,14 @@ def main() -> None:
         if args.eval_test:
             tm = metrics(*run_split(model, data, extra, idx["test"], adj=adj), boot=2000, seed=seed)
             row.update({f"test_{k}": v for k, v in tm.items()})
+            if args.save_preds:
+                from src.eval.predictions import collect, save
+                save(os.path.join(OUT_DIR, "preds", f"{args.tag}_{args.fold}_s{seed}.npz"),
+                     collect(model, data, idx["test"], extra, adj), data["dates"])
             msg += (f" || TEST mcc={tm['mcc']:+.4f} acc={tm['acc']:.4f} auc={tm['auc']:.4f} "
                     f"wd={tm['within_day_mcc']:+.4f} collapse={tm['collapse_mcc']:+.4f}")
+        if args.out_prefix:
+            row["fold"] = args.fold
         pd.DataFrame([row]).to_csv(out_csv, mode="a",
                                    header=not os.path.exists(out_csv), index=False)
         print(msg, flush=True)
