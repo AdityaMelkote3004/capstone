@@ -91,3 +91,26 @@ selection, so identical results). Pooled 0.053, within-day 0.016, day-collapse
 informed only the paper's interpretation; no model was selected from it.
 The leakage test was also extended to rebuild the correlation and co-mention
 edges from truncated data; they match the cache on all 12 sampled days.
+
+## Revision after external review (2026-11-11) — declared before running
+1. Baselines tuned on validation: LR C in {0.01,0.1,1,10}; MLP hidden {32,64,128}
+   x lr {1e-3,1e-4}; LSTM and ALSTM hidden {32,64,128} x lr {1e-3,1e-4} x
+   window {10,15}; 2 seeds each; best mean val MCC is the tuned config.
+2. Final test runs with every prediction saved (all window-valid stocks, labelled
+   or not): tuned baselines, MMGT-base (F0 config), MMGT (F2c config) and the
+   profile model (F1c config), 10 seeds, OMP_NUM_THREADS=2. Paper numbers come from
+   these runs.
+3. Date-level statistics: paired day-block bootstrap (resampling test days) of the
+   seed-averaged MCC difference, MMGT vs each model; 95% CI.
+4. Long-short backtest on saved predictions: each test day, equal-weight long the
+   top-10 and short the bottom-10 stocks by predicted probability among all
+   window-valid stocks; realised close-to-close returns; cost 0 and 10 bps per side.
+   Reported for every model, whatever it shows.
+5. Walk-forward: two extra folds with the same configurations, no re-tuning,
+   5 seeds: fold A train to 2015-03-31, val Apr-May 2015, test Jun-Jul 2015;
+   fold B train to 2015-05-29, val Jun-Jul 2015, test Aug-Sep 2015.
+6. Federated, longer schedule: FedAvg, 9 sector clients, up to 150 rounds,
+   patience 30, val MCC logged every round, 5 seeds.
+   DECISION RULE: federated stays in the paper if its mean test MCC >= 0.10 AND
+   it is not significantly below the centralised profile model on the same seeds
+   (paired p >= 0.05). Otherwise it is removed and moved to future work.
