@@ -187,3 +187,12 @@ D_adv_lm0.5 0.129 / 0.072; D_struct_lm0.5 0.125 / 0.070.
 Selected by the rule (highest mean val MCC): **D-adv, lambda_market = 1** (tag D_final).
 Test: seeds 0-9 standard split; folds A, B seeds 0-4.
 Also: exhaustive leakage test (all 504 target days) PASSED.
+
+### Experiment 12 -- outcome (rule applied unchanged)
+
+D_final vs MMGT, test, 10 seeds: pooled MCC 0.064 vs 0.146 (Welch p = 1.4e-5) -> GUARD FAILED.
+Within-day 0.027 vs 0.023 (p = 0.61); Rank IC 0.0135 vs 0.0007 (p = 0.11) -> endpoint not met.
+**MMGT-D is a negative result; the paper keeps MMGT.** Selection gains have the same sign in
+all three periods (within-day +0.004/+0.007/+0.043, Rank IC +0.013/+0.010/+0.024; fold B
+within-day day-level p = 0.002). Market head alone: MCC 0.040 -- the index encoder cannot
+reproduce MMGT's timing, which therefore comes from attention pooling all stocks' histories.
