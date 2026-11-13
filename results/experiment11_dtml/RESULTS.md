@@ -198,3 +198,7 @@ All 20 seed-matched runs (3 periods): Rank IC higher in 15/20 (t p = 0.005, sign
 within-day higher in 14/20 (t p = 0.058).
 Portfolios (Sharpe): long-only 1.21, long-short 1.39 (10 bps -2.27), timing 3.38 (10 bps 2.45),
 timing return +12.7%, max DD 4.3%.
+Capacity control (paper/exp12b_capacity_control.json): averaging two independently trained
+MMGTs (5 disjoint seed pairs, logit average) -> MCC 0.161 [0.109, 0.205], Rank IC 0.003
+[-0.004, 0.024]. Parameters: MMGT 132k, MMGT-D2 273k. So D2's MCC is no better than a
+two-MMGT ensemble; its Rank IC gain is not explained by capacity.
