@@ -203,3 +203,29 @@ either lowers MCC: 0.131 -> 0.078, 0.130 -> 0.059); a separate linear head on th
 encoding alone reaches 0.04. Validation already showed the timing loss (D_final val MCC
 0.146 vs MMGT 0.211); the grid compared D variants only with each other.
 No follow-up variant was run.
+
+## Experiment 12b -- two-branch MMGT-D2 (second and LAST follow-up), pre-registered before any run
+
+Designed after Experiment 12's test results (standard period AND folds A, B were seen),
+at the user's request to keep MMGT's market timing while improving stock selection.
+Diagnosis behind it: MMGT-D's index-only market head lost the timing (MCC 0.040).
+A shared-backbone split was rejected: MMGT's linear output already equals
+mean-part + centred-part with tied weights, so it would re-test MMGT.
+
+Model (DTMLTwoBranch): timing branch = a complete MMGT (market summary, stock attention,
+peer profile, beta 1); m_t = mean over WINDOW-VALID stocks of its logits. Selection
+branch = MMGT-D's stock branch (no market input, centred, bias-free head, optional
+gradient-reversal adversary) -> e_{i,t}, sum zero per day. logit = m_t + e_{i,t}.
+Loss: BCE(logit) + lambda_aux * [BCE + RankNet on the timing branch's own logits]
++ RankNet(e) + 0.1 * adversary BCE (if on) + selective L2 on all heads.
+
+Validation grid (seeds 0, 1): lambda_aux {0.5, 1} x adversary {on, off} = 4 configs.
+Selection: mean validation pooled MCC.
+Test: seeds 0-9 standard; folds A, B seeds 0-4.
+Primary endpoint and guard: IDENTICAL to Experiment 12 (vs MMGT, 10 seeds:
+within-day MCC and Rank IC both not lower, one with Welch p < 0.05; pooled MCC not
+significantly lower).
+Secondary (pre-registered here, chosen after Exp 12): paired test over all 20 runs
+(standard + A + B, matched by seed) of within-day MCC and of Rank IC vs MMGT.
+STOP RULE: whatever the outcome, this is the last disentanglement attempt; both
+follow-ups are reported in the paper.

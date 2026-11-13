@@ -95,3 +95,40 @@ class DTMLDisentangled(DTML):
         if self.beta_head is not None:
             pen = pen + self.beta_head.weight.pow(2).sum() + self.beta_head.bias.pow(2).sum()
         return pen
+
+
+class DTMLTwoBranch(nn.Module):
+    """MMGT-D2 (Experiment 12b): timing from a full MMGT, selection from MMGT-D's
+    stock branch.
+
+    timing branch     a complete MMGT (market summary + stock attention + profile).
+                      Its per-stock logits l_{i,t} are averaged over window-valid
+                      stocks: m_t = mean_i l_{i,t}. Timing therefore comes from
+                      exactly MMGT's mechanism.
+    selection branch  MMGT-D's stock branch (no market input, centred, bias-free
+                      head, optional gradient-reversal adversary): e_{i,t}, which
+                      sums to zero every day.
+    logit_{i,t} = m_t + e_{i,t}; the day-average logit is exactly m_t.
+    """
+
+    def __init__(self, n_stocks: int, hidden: int = 64, heads: int = 4, beta: float = 1.0,
+                 dropout: float = 0.15, extra_dim: int = 0, adversary: bool = False):
+        super().__init__()
+        self.timing = DTML(n_stocks=n_stocks, hidden=hidden, heads=heads, beta=beta,
+                           dropout=dropout, extra_dim=extra_dim)
+        self.select = DTMLDisentangled(n_stocks=n_stocks, hidden=hidden, heads=heads,
+                                       dropout=dropout, extra_dim=extra_dim, mode="struct",
+                                       adversary=adversary)
+        self.parts = {}
+
+    def forward(self, x, valid, market, extra=None, adj=None):
+        lt = self.timing(x, valid, market, extra)
+        m = lt[valid].mean()
+        self.select(x, valid, market, extra)
+        e = self.select.parts["e"]
+        self.parts = {"m": m.expand_as(e), "e": e, "b": torch.zeros_like(e),
+                      "adv": self.select.parts["adv"], "timing_logits": lt}
+        return m + e
+
+    def selective_penalty(self) -> torch.Tensor:
+        return self.timing.selective_penalty() + self.select.excess_head.weight.pow(2).sum()

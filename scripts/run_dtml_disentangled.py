@@ -25,7 +25,7 @@ from scripts.run_dtml import metrics
 from scripts.run_dtml_plus import pairwise_rank_loss
 from src.data.acl18 import load_acl18
 from src.data.acl18_extra import extra_features
-from src.models.dtml_disentangled import DTMLDisentangled
+from src.models.dtml_disentangled import DTMLDisentangled, DTMLTwoBranch
 from src.utils.seed import set_seed
 
 OUT_DIR = "results/experiment11_dtml"
@@ -51,9 +51,18 @@ def run_split(model, data, extra, idx, opt=None, args=None):
             if train and lab.any():
                 r = data["ret"][i][data["window_ok"][i]]
                 mkt = torch.tensor(float(np.nanmean(r) > 0))
-                loss = (bce(logits[lab], y[lab].float()) + args.reg * model.selective_penalty()
-                        + args.lambda_m * bce(model.parts["m"][0], mkt)
-                        + args.rank_alpha * pairwise_rank_loss(logits[lab], y[lab]))
+                yl = y[lab].float()
+                if args.two_branch:
+                    # combined BCE + MMGT's own loss on the timing branch (auxiliary)
+                    # + ranking on the selection branch only
+                    lt = model.parts["timing_logits"]
+                    loss = (bce(logits[lab], yl) + args.reg * model.selective_penalty()
+                            + args.lambda_aux * (bce(lt[lab], yl) + pairwise_rank_loss(lt[lab], y[lab]))
+                            + args.rank_alpha * pairwise_rank_loss(model.parts["e"][lab], y[lab]))
+                else:
+                    loss = (bce(logits[lab], yl) + args.reg * model.selective_penalty()
+                            + args.lambda_m * bce(model.parts["m"][0], mkt)
+                            + args.rank_alpha * pairwise_rank_loss(logits[lab], y[lab]))
                 if model.parts["adv"] is not None:
                     loss = loss + args.lambda_adv * bce(model.parts["adv"], mkt)
                 opt.zero_grad()
@@ -70,6 +79,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["struct", "beta"], default="struct")
     ap.add_argument("--adv", action="store_true")
+    ap.add_argument("--two-branch", action="store_true",
+                    help="Exp 12b: timing from a full MMGT branch, selection from MMGT-D's stock branch")
+    ap.add_argument("--lambda-aux", type=float, default=1.0)
     ap.add_argument("--lambda-m", type=float, default=1.0)
     ap.add_argument("--lambda-adv", type=float, default=0.1)
     ap.add_argument("--rank-alpha", type=float, default=1.0)
@@ -96,9 +108,14 @@ def main():
     for seed in args.seeds:
         set_seed(seed)
         t0 = time.time()
-        model = DTMLDisentangled(n_stocks=len(data["tickers"]), hidden=args.hidden, heads=4,
-                                 dropout=args.dropout, extra_dim=extra.shape[-1],
-                                 mode=args.mode, adversary=args.adv)
+        if args.two_branch:
+            model = DTMLTwoBranch(n_stocks=len(data["tickers"]), hidden=args.hidden, heads=4,
+                                  beta=1.0, dropout=args.dropout, extra_dim=extra.shape[-1],
+                                  adversary=args.adv)
+        else:
+            model = DTMLDisentangled(n_stocks=len(data["tickers"]), hidden=args.hidden, heads=4,
+                                     dropout=args.dropout, extra_dim=extra.shape[-1],
+                                     mode=args.mode, adversary=args.adv)
         opt = torch.optim.Adam(model.parameters(), lr=args.lr)
         best, state, stale, best_epoch = -9.0, None, 0, 0
         for epoch in range(args.epochs):
@@ -113,7 +130,8 @@ def main():
                     break
         model.load_state_dict(state)
         row = {"tag": args.tag, "seed": seed, "fold": args.fold, "mode": args.mode,
-               "adv": args.adv, "lambda_m": args.lambda_m, "best_epoch": best_epoch,
+               "adv": args.adv, "lambda_m": args.lambda_m, "two_branch": args.two_branch,
+               "lambda_aux": args.lambda_aux, "best_epoch": best_epoch,
                "minutes": round((time.time() - t0) / 60, 2)}
         row.update({f"val_{k}": v for k, v in best_val.items()})
         msg = (f"[{args.tag}] seed={seed} fold={args.fold} ep={best_epoch} "
