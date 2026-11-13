@@ -19,9 +19,11 @@ mostly market timing (its timing portfolio has a Sharpe ratio of 4.2 against 1.4
 for buy-and-hold). Its stock selection is weak and uneven: by within-day MCC its
 gain over the price-only base has the same sign in all three test periods, but by
 Rank IC it is near zero on the standard period, where the per-stock LSTM/ALSTM pick
-stocks better. A pre-registered disentangled variant (MMGT-D, Experiment 12) picks
-stocks better than MMGT in every period but loses most of the market timing, so it
-failed its criterion (MCC 0.064): timing and selection trade off. Pooled-MCC rankings shift
+stocks better. Experiment 12 separates the two at the output: MMGT-D (market head
+on the market index alone) loses the timing and failed its pre-registered criterion
+(MCC 0.064); MMGT-D2 (Experiment 12b) takes its market call from a full MMGT and ranks
+stocks with a market-blind branch, and met its criterion: MCC 0.151, Rank IC 0.027
+(MMGT 0.001), level with the best per-stock model. Pooled-MCC rankings shift
 between periods with market timing, and the advantage over the tuned MLP and LSTM
 is not significant at the level of test days. Hand-built graphs inside the
 attention layer add nothing. Federated training across nine sector clients matches

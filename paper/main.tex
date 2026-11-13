@@ -62,10 +62,13 @@ the rank information coefficient used in finance, and a trading simulation show
 where the gain comes from: almost all of it is market timing, worth a Sharpe ratio
 of $4.2$ against $1.4$ for buying and holding, while MMGT's stock selection is weak
 and varies from period to period. Over three consecutive test periods, the ranking
-of models by MCC changes with how much market timing each period rewards. A
-disentangled variant that separates a market head from a stock-ranking head selects
-stocks better than MMGT in all three periods but loses most of the market timing, and with
-it the overall score. Trained with federated averaging across nine sector clients,
+of models by MCC changes with how much market timing each period rewards.
+Separating the two abilities at the output addresses this. A two-branch variant,
+MMGT-D2, takes its market call from a full MMGT and ranks stocks with a separate
+branch that cannot see the market: it keeps the overall score (MCC $0.151$) and
+raises the Rank IC from $0.001$ to $0.027$, level with the best per-stock model. A
+simpler split whose market head sees only the market index loses the timing and
+fails. Trained with federated averaging across nine sector clients,
 MMGT keeps its overall score but loses its stock selection.
 \end{abstract}
 
@@ -111,9 +114,10 @@ which show that MMGT's gain is almost entirely market timing.
 \item \textbf{A walk-forward evaluation} over three test periods, showing that
 rankings by the standard score shift from period to period with the market-timing
 component.
-\item \textbf{A disentangled variant, MMGT-D,} with separate market and
-stock-ranking heads, which shows that the two abilities trade off: it selects
-stocks better than MMGT in every period but loses most of the market timing.
+\item \textbf{A disentangled two-branch model, MMGT-D2,} that takes market timing
+from MMGT and stock ranking from a market-blind branch, and keeps MMGT's score while
+picking stocks as well as the best per-stock model. A simpler split shows that the
+market branch must keep MMGT's full pathway.
 \item \textbf{A federated version} trained across nine sector clients, which
 matches centralised training on the standard score but loses stock selection.
 \end{enumerate}
@@ -399,9 +403,10 @@ Tweet-count LSTM$^{b}$ & $0.002\pm0.011$ & -- & -- & -- & -- & -- & -- & -- \\
 RGCN graph$^{b}$ & $0.060\pm0.018$ & $0.527$ & $0.494$ & $0.541$ & $0.005$ & -- & -- & -- \\
 \midrule
 MMGT-base (price only) & $0.139\pm0.049$ & $0.558$ & $0.534\pm0.060$ & $0.593$ & $0.008$ & $0.015$ & $0.130$ & $0.82$ \\
-\textbf{MMGT (ours)} & $\mathbf{0.146\pm0.029}$ & $\mathbf{0.570}$ & $\mathbf{0.565\pm0.018}$ & $\mathbf{0.602}$ & $0.023$ & $0.001$ & $\mathbf{0.219}$ & -- \\
+\textbf{MMGT (ours)} & $0.146\pm0.029$ & $0.570$ & $0.565\pm0.018$ & $0.602$ & $0.023$ & $0.001$ & $\mathbf{0.219}$ & -- \\
 MMGT, federated$^{c}$ & $0.131\pm0.062$ & $0.566$ & $0.553\pm0.057$ & $0.598$ & $-0.004$ & $-0.024$ & $0.140$ & $0.66$ \\
-MMGT-D, disentangled$^{d}$ & $0.064\pm0.033$ & $0.534$ & $0.526\pm0.014$ & $0.543$ & $\mathbf{0.027}$ & $0.014$ & $0.080$ & $0.030$ \\
+MMGT-D, index-only market head$^{d}$ & $0.064\pm0.033$ & $0.534$ & $0.526\pm0.014$ & $0.543$ & $0.027$ & $0.014$ & $0.080$ & $0.030$ \\
+\textbf{MMGT-D2, two-branch (ours)}$^{d}$ & $\mathbf{0.151\pm0.037}$ & $\mathbf{0.572}$ & $\mathbf{0.568\pm0.023}$ & $\mathbf{0.612}$ & $\mathbf{0.031}$ & $\mathbf{0.027}$ & $0.205$ & $0.77$ \\
 \bottomrule
 \end{tabular}}
 \\[3pt]
@@ -410,15 +415,17 @@ $^{b}$Our earlier work, five runs, untuned and without saved predictions; the RG
 graph was built from the labelled stocks of each day and may be optimistic.
 $^{c}$Without the ranking term; five runs, trained with federated averaging over
 nine sector clients (Section~\ref{sec:fed}).
-$^{d}$Designed after MMGT's test results; failed its pre-registered criterion
+$^{d}$Pre-registered follow-ups designed after MMGT's test results were known
 (Section~\ref{sec:disent}).}
 \end{table*}
 
-\subsection{MMGT has the highest score among the models we trained}
+\subsection{MMGT outperforms every baseline}
 
 Table~\ref{tab:main} gives the main results. MMGT reaches an MCC of
 $0.146\pm0.029$, an accuracy of $57.0\%$, a macro-F1 of $0.565$ and an AUC of
-$0.602$, the best value on each of these scores. The tuned baselines score between
+$0.602$, above every baseline on each of these scores. Its two-branch follow-up
+MMGT-D2 (Section~\ref{sec:disent}) is slightly higher on all four ($0.151$, $57.2\%$,
+$0.568$, $0.612$; every run at least $0.105$). The tuned baselines score between
 $0.027$ and $0.057$ and our earlier graph model, the RGCN, $0.060$. Every one of
 MMGT's ten runs (lowest $0.097$) scores above the best baseline's average, and
 across runs MMGT's advantage over each baseline is significant
@@ -454,6 +461,8 @@ MLP, while MMGT-base reaches $0.139$.
   {(0.131,0.031) (0.140,-0.004)};
 \addplot[only marks, mark=*, mark size=3.2pt, blue!70!black] coordinates
   {(0.219,0.023)};
+\addplot[only marks, mark=diamond*, mark size=3.6pt, red!70!black] coordinates
+  {(0.205,0.031)};
 \node[font=\scriptsize, anchor=west]  at (axis cs:0.066,-0.012) {LR};
 \node[font=\scriptsize, anchor=south] at (axis cs:0.082,0.027) {LSTM};
 \node[font=\scriptsize, anchor=west]  at (axis cs:0.027,0.018) {ALSTM};
@@ -461,7 +470,8 @@ MLP, while MMGT-base reaches $0.139$.
 \node[font=\scriptsize, anchor=west]  at (axis cs:0.135,0.009) {MMGT-base};
 \node[font=\scriptsize, anchor=south] at (axis cs:0.131,0.033) {+ profile};
 \node[font=\scriptsize, anchor=north] at (axis cs:0.140,-0.0065) {federated};
-\node[font=\scriptsize, anchor=south] at (axis cs:0.219,0.025) {\textbf{MMGT}};
+\node[font=\scriptsize, anchor=north] at (axis cs:0.219,0.020) {\textbf{MMGT}};
+\node[font=\scriptsize, anchor=south] at (axis cs:0.205,0.0335) {\textbf{MMGT-D2}};
 \draw[dashed, black!40] (axis cs:-0.01,0) -- (axis cs:0.25,0);
 \draw[dashed, black!40] (axis cs:0,-0.02) -- (axis cs:0,0.042);
 \end{axis}
@@ -469,9 +479,10 @@ MLP, while MMGT-base reaches $0.139$.
 \caption{Market timing against stock selection on the standard test period
 (averages over runs). Grey: baselines; orange: the price-only MMGT-base; open blue:
 the profile model trained centrally and with federated averaging; filled blue:
-MMGT. Per-stock baselines sit at the left; by within-day MCC, MMGT adds stock
-selection to the strongest timing, although by Rank IC its selection is near zero on
-this period (Table~\ref{tab:main}).
+MMGT; red diamond: the two-branch MMGT-D2. Per-stock baselines sit at the left. By
+within-day MCC, MMGT adds stock selection to the strongest timing, although by Rank
+IC its selection is near zero on this period; MMGT-D2 keeps the timing and is level
+with the best stock selection by both measures (Table~\ref{tab:main}).
 For reference, a model that knew only each day's market direction would sit at
 $(0.625, 0)$.}
 \label{fig:timing}
@@ -497,7 +508,8 @@ runs, but not significantly at the level of test days ($p=0.24$), and its Rank I
 close to zero ($0.001$). Within-day MCC only scores stocks that moved by more than
 the labelling threshold, while Rank IC ranks all of them, so the two can differ for
 a single model even though they agree across models. In the two earlier test periods its
-Rank IC is the highest of the models we compare there (Table~\ref{tab:wf}).
+Rank IC is above that of MMGT-base and every baseline (Table~\ref{tab:wf}).
+Section~\ref{sec:disent} shows how to keep MMGT's timing while restoring selection.
 
 \subsection{What each part contributes}
 \label{sec:ablation}
@@ -561,12 +573,13 @@ standard period. $^{*}$Not fully out-of-sample (Section~V).}
 Model & A: Jun--Jul & B$^{*}$: Aug--Sep & Oct--Dec & Average \\
 \midrule
 \multicolumn{5}{l}{\emph{MCC}} \\
-Logistic regression & $0.024$ & $\mathbf{0.115}$ & $0.027$ & $0.055$ \\
+Logistic regression & $0.024$ & $0.115$ & $0.027$ & $0.055$ \\
 MLP & $0.003$ & $0.096$ & $0.057$ & $0.052$ \\
 LSTM & $0.029$ & $0.022$ & $0.055$ & $0.035$ \\
 MMGT-base & $\mathbf{0.135}$ & $0.111$ & $0.139$ & $\mathbf{0.128}$ \\
-MMGT & $0.048$ & $0.106$ & $\mathbf{0.146}$ & $0.100$ \\
+MMGT & $0.048$ & $0.106$ & $0.146$ & $0.100$ \\
 MMGT-D & $0.074$ & $0.082$ & $0.064$ & $0.073$ \\
+MMGT-D2 & $0.052$ & $\mathbf{0.178}$ & $\mathbf{0.151}$ & $0.127$ \\
 \midrule
 \multicolumn{5}{l}{\emph{Within-day MCC (stock selection)}} \\
 Logistic regression & $-0.027$ & $-0.015$ & $-0.012$ & $-0.018$ \\
@@ -574,15 +587,17 @@ MLP & $-0.008$ & $-0.002$ & $0.000$ & $-0.003$ \\
 LSTM & $0.002$ & $-0.008$ & $0.025$ & $0.006$ \\
 MMGT-base & $0.023$ & $0.007$ & $0.008$ & $0.013$ \\
 MMGT & $0.037$ & $0.017$ & $0.023$ & $0.026$ \\
-MMGT-D & $\mathbf{0.043}$ & $\mathbf{0.060}$ & $\mathbf{0.027}$ & $\mathbf{0.043}$ \\
+MMGT-D & $\mathbf{0.043}$ & $\mathbf{0.060}$ & $0.027$ & $\mathbf{0.043}$ \\
+MMGT-D2 & $0.038$ & $\mathbf{0.060}$ & $\mathbf{0.031}$ & $\mathbf{0.043}$ \\
 \midrule
 \multicolumn{5}{l}{\emph{Rank IC (stock selection)}} \\
 Logistic regression & $-0.024$ & $0.014$ & $0.002$ & $-0.003$ \\
 MLP & $-0.018$ & $0.020$ & $0.004$ & $0.002$ \\
-LSTM & $0.004$ & $0.010$ & $\mathbf{0.020}$ & $0.011$ \\
+LSTM & $0.004$ & $0.010$ & $0.020$ & $0.011$ \\
 MMGT-base & $0.008$ & $0.019$ & $0.015$ & $0.014$ \\
 MMGT & $0.023$ & $0.045$ & $0.001$ & $0.023$ \\
-MMGT-D & $\mathbf{0.033}$ & $\mathbf{0.069}$ & $0.014$ & $\mathbf{0.039}$ \\
+MMGT-D & $\mathbf{0.033}$ & $\mathbf{0.069}$ & $0.014$ & $0.039$ \\
+MMGT-D2 & $0.025$ & $0.068$ & $\mathbf{0.027}$ & $\mathbf{0.040}$ \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -591,7 +606,8 @@ Table~\ref{tab:wf} repeats the comparison on two earlier periods. The two models
 in which stocks attend to each other have the highest average MCC ($0.128$ and
 $0.100$, against at most $0.055$ for the baselines), but the ranking is not stable.
 In period A, MMGT falls to $0.048$, below MMGT-base, and in period B logistic
-regression ($0.115$) is level with both. These swings follow market timing: MMGT's
+regression ($0.115$) is level with both, while MMGT-D2 reaches $0.178$. These swings
+follow market timing: MMGT's
 day-collapse MCC is $0.029$, $0.174$ and $0.219$ in the three periods.
 
 Stock selection behaves differently. By within-day MCC, MMGT's gain over MMGT-base
@@ -600,8 +616,8 @@ has the same sign in all three periods ($+0.014$, $+0.010$ and $+0.015$; positiv
 tests MMGT's two additions, the profile and the ranking term, together. By Rank IC
 the gain appears in periods A and B ($+0.016$, $+0.026$) but not in the standard
 period ($-0.014$), so MMGT's stock selection is real but uneven. The disentangled
-MMGT-D of Section~\ref{sec:disent} has the best stock selection of the models in
-Table~\ref{tab:wf} in every period by within-day MCC and on average by Rank IC.
+follow-ups of Section~\ref{sec:disent} have the best stock selection in
+Table~\ref{tab:wf} on average by both measures.
 
 \subsection{Trading simulation}
 
@@ -625,6 +641,7 @@ MMGT-base & $1.41$ & $0.28$ & $-2.94$ & $2.06$ & $1.59$ & $+7.6\%$ \\
 MMGT & $0.52$ & $-0.23$ & $-4.23$ & $\mathbf{4.24}$ & $\mathbf{3.16}$ & $\mathbf{+15.9\%}$ \\
 MMGT, federated & $0.24$ & $-2.32$ & $-6.31$ & $3.34$ & $2.56$ & $+12.5\%$ \\
 MMGT-D & $0.58$ & $0.34$ & $-3.27$ & $1.68$ & $1.27$ & $+6.1\%$ \\
+MMGT-D2 & $1.21$ & $1.39$ & $-2.27$ & $3.38$ & $2.45$ & $+12.7\%$ \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -646,16 +663,18 @@ ALSTM's. MMGT's timing portfolio also has the smallest drawdown of the timing
 portfolios: it loses at most
 $4.1\%$ from a peak, against $6.5\%$ for buying and holding.
 
-\subsection{Forcing timing and selection apart}
+\subsection{Separating timing and selection}
 \label{sec:disent}
 
 The results above suggest separating the two abilities inside the model. After
-MMGT's test results were known, we designed and pre-registered a disentangled
-variant, MMGT-D. A market branch, the market-summary encoder alone, gives one
-logit $m_t$ per day and is additionally trained to predict whether the average
-stock rises. A stock branch, the price encoder, profile and stock attention without
-any market input, gives states $h_{i,t}$ that are centred over the day's stocks
-before a linear head without bias:
+MMGT's test results were known, we designed two disentangled follow-ups, each
+pre-registered before its first test run with the same success criterion: better
+stock selection than MMGT (within-day MCC and Rank IC not lower, one of them
+significantly higher) without a significantly lower MCC. Both split the prediction
+into a day-level market logit $m_t$ and stock-level excess logits $e_{i,t}$. A stock
+branch, the price encoder, profile and stock attention without any market input,
+gives states $h_{i,t}$ that are centred over the day's stocks before a linear head
+without bias:
 \begin{equation}
 e_{i,t}=w^{\top}\Bigl(h_{i,t}-\frac{1}{|\mathcal{V}_t|}\sum_{j\in\mathcal{V}_t}h_{j,t}\Bigr),
 \qquad \mathrm{logit}_{i,t}=m_t+e_{i,t},
@@ -665,23 +684,46 @@ $e_{i,t}$ sum to zero every day, so they can only rank stocks, never call the da
 Following earlier disentangled stock models~\cite{tang2020add}, an adversary
 trained through gradient reversal~\cite{ganin2015grl} tries to predict the market's
 direction from the centred stock states, and the stock branch learns to defeat it.
-Among six variants (with and without the adversary, with a per-stock market
-sensitivity, two weights of the market loss), the one with the adversary had the
-best validation MCC and was tested; its validation MCC ($0.146$) was already below
-MMGT's ($0.211$).
+The two follow-ups differ only in where $m_t$ comes from.
 
-MMGT-D failed its pre-registered criterion, which required better stock selection
-without a significantly lower MCC. Its MCC falls to $0.064$ (against $0.146$,
-$p<10^{-4}$) because its market timing collapses: day-collapse MCC $0.080$, and
-the market head alone reaches an MCC of only $0.040$. MMGT's timing therefore needs
-the market summary and stock attention together; a separate head on the market
-summary does not reproduce it. Its stock selection, however, improves in every
-period: within-day MCC $0.027$, $0.043$ and $0.060$ against MMGT's $0.023$, $0.037$
-and $0.017$, and Rank IC $0.014$, $0.033$ and $0.069$ against $0.001$, $0.023$ and
-$0.045$ (Table~\ref{tab:wf}), significant at the day level only in period B
-(within-day MCC, $p=0.002$). Forcing the separation thus trades market timing for stock selection,
-which supports the view that the two are distinct abilities that a single score
-mixes.
+\textbf{MMGT-D: market head on the market summary alone.} Here $m_t$ comes from the
+market-summary encoder with its own head, also trained to predict whether the
+average stock rises. It failed its criterion: its stock selection improves on MMGT
+in every period (Rank IC $0.014$, $0.033$, $0.069$ against $0.001$, $0.023$, $0.045$),
+but its MCC falls to $0.064$ ($p<10^{-4}$) because its market timing collapses
+(day-collapse MCC $0.080$). Its validation MCC ($0.146$, against MMGT's $0.211$)
+already showed the loss. MMGT's timing needs the market summary and stock attention
+together; a head on the market summary alone does not reproduce it.
+
+\textbf{MMGT-D2: market call from a full MMGT.} The second follow-up therefore keeps
+MMGT intact as a timing branch and uses it only for the day-level call: if
+$l_{i,t}$ are its per-stock logits,
+\begin{equation}
+m_t=\frac{1}{|\mathcal{V}_t|}\sum_{i\in\mathcal{V}_t} l_{i,t},\qquad
+\mathrm{logit}_{i,t}=m_t+e_{i,t},
+\end{equation}
+so the day-average of MMGT-D2's logits is exactly MMGT's, while all differences
+between stocks come from the market-blind stock branch. Training adds MMGT's own
+loss on $l_{i,t}$ to the loss on the combined logit, and the ranking term acts on
+$e_{i,t}$. Among four variants (with and without the adversary, two weights of the
+timing loss), the one with the adversary had the best validation MCC ($0.258$).
+
+MMGT-D2 met its criterion. Its MCC ($0.151\pm0.037$) is level with MMGT's
+($p=0.77$) and its market timing is kept (day-collapse $0.205$ against $0.219$),
+while its Rank IC rises from $0.001$ to $0.027$ (run-level $p=0.002$; day-level
+$+0.026$, $[0.007, 0.047]$, $p=0.006$), level with the best per-stock model, the
+ALSTM. Its within-day MCC ($0.031$) is the highest in Table~\ref{tab:main}, level
+with the profile model of Table~\ref{tab:ablation}. Over all 20 runs
+of the three test periods matched by seed, its Rank IC is above MMGT's in 15
+($p=0.005$). In period A it is no better than MMGT, and in period B it reaches an
+MCC of $0.178$, the best of any model there (Table~\ref{tab:wf}). In money terms, its
+long--short portfolio earns a Sharpe ratio of $1.39$ (MMGT: $-0.23$) and its timing
+portfolio $3.38$ (MMGT: $4.24$; Table~\ref{tab:trade}).
+
+Taken together, the two follow-ups show that timing and selection are distinct
+abilities: forcing them apart loses the timing unless the market call keeps MMGT's
+full pathway, and once it does, stock selection improves without costing the
+overall score.
 
 \subsection{Federated training}
 \label{sec:fed}
@@ -743,12 +785,13 @@ costs nothing and makes all three visible.
 \textbf{Timing and selection compete.} The market summary is the same for every
 stock, so it pushes the model toward day-level signals. The profile adds
 information that differs between stocks on the same day, such as volatility,
-fundamentals, social media attention and comparisons with related stocks. In MMGT
-the market signal dominates, and its stock selection is small and uneven across
-periods. When the two are forced apart, as in MMGT-D, stock selection improves in
-every period but market timing is lost. By Rank IC, no single model we trained does
-both well, and which one ranks first depends on which ability the
-chosen score and test period reward.
+fundamentals, social media attention and comparisons with related stocks. In MMGT,
+where both share one representation, the market signal dominates and stock
+selection is small and uneven across periods. Separating them at the output helps
+only if the market call keeps MMGT's full pathway: MMGT-D, whose market head sees
+only the market summary, loses the timing, while MMGT-D2 keeps it and adds stock
+selection level with the best per-stock model. The lesson for model design is to
+give the two abilities separate outputs, not separate inputs.
 
 \textbf{Limitations.} We study one benchmark of 87 large US stocks over 2014--2015.
 Published results on this benchmark use different preprocessing and protocols, so
@@ -760,9 +803,11 @@ over the MLP and the LSTM, and the profile's stock-selection gain, are significa
 across training runs but not at the level of test days. On the standard period,
 MMGT's Rank IC is close to zero, and the per-stock models are the better stock
 selectors. The walk-forward periods reuse the settings selected for the standard
-split, and one of them is not fully out-of-sample. MMGT-D was designed after MMGT's
-test results were known; we report it as the pre-registered follow-up it was, with
-its negative outcome. Our trading simulation ignores market impact and borrowing
+split, and one of them is not fully out-of-sample. MMGT-D and MMGT-D2 were designed
+after MMGT's test results were known, MMGT-D2 also after MMGT-D's results on all
+three periods; each was pre-registered before its own first test run, and we report
+both outcomes. MMGT-D2's gain in stock selection is clear on the standard period and
+in period B but absent in period A. Our trading simulation ignores market impact and borrowing
 costs. Federated training was simulated on one machine. We did not study
 explanations of the model's predictions, which we leave to future work.
 
@@ -777,9 +822,11 @@ and AUC of all models we evaluated, above every tuned baseline. Separating marke
 timing from stock selection, with diagnostics that agree with the rank information
 coefficient, shows that this gain is mostly market timing, which translates into a
 timing portfolio with a Sharpe ratio of $4.2$, while MMGT's stock selection is weak
-and uneven. A disentangled variant selects stocks better than MMGT in every test period but
-loses the market timing, and a federated version keeps the score but loses the
-stock selection: the two abilities trade off. We recommend reporting
+and uneven. A two-branch model, MMGT-D2, that takes its market call from MMGT and
+ranks stocks with a separate market-blind branch keeps the score (MCC $0.151$) and
+raises the Rank IC from $0.001$ to $0.027$, level with the best per-stock model.
+A split whose market head loses MMGT's pathway keeps selection at the cost of
+timing, and federated training does the reverse. We recommend reporting
 stock-selection and market-timing scores, and more than one test period, in future
 work on this benchmark.
 

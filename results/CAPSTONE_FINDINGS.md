@@ -247,3 +247,9 @@ Not claimable:
   in all three periods (Rank IC 0.014 / 0.033 / 0.069 vs MMGT 0.001 / 0.023 / 0.045).
   Takeaway: timing and selection trade off in these models.
 - Exhaustive leakage test (all 504 days) passes; EDGAR fundamentals are dated by filing date.
+- **Experiment 12b, two-branch MMGT-D2** (second and last follow-up, pre-registered):
+  market call = mean of a full MMGT's logits, stock ranking from the market-blind
+  centred branch. **Met its criterion**: MCC 0.151 (MMGT 0.146), Rank IC 0.027
+  (MMGT 0.001, day-level p = 0.006), level with the best per-stock model (ALSTM 0.027),
+  long-short Sharpe 1.39 (MMGT -0.23). Lesson: give timing and selection separate
+  outputs, but keep MMGT's full pathway for the market call.

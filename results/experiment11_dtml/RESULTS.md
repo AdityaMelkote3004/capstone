@@ -178,3 +178,23 @@ gradient-reversal adversary. Selected on validation (D_adv, lambda_m = 1).
 Guard failed (pooled MCC significantly lower) -> negative result; paper keeps MMGT.
 Market head alone: MCC 0.040. Pooled day-level bootstrap D minus MMGT: -0.083
 [-0.157, -0.008]. Trading: long-short Sharpe 0.34, timing 1.68.
+
+## Experiment 12b: two-branch MMGT-D2 -- MET its pre-registered criterion
+
+Timing branch = a full MMGT; m_t = mean of its logits over window-valid stocks.
+Selection branch = MMGT-D's market-blind centred branch (+ gradient-reversal adversary).
+logit = m_t + e. Selected on validation: adversary on, lambda_aux = 1 (val MCC 0.258).
+
+| Period | MCC D2 / MMGT | Within-day D2 / MMGT | Rank IC D2 / MMGT | Day-collapse D2 / MMGT |
+|---|---|---|---|---|
+| Oct-Dec (10 seeds) | **0.151** / 0.146 (p = 0.77) | **0.031** / 0.023 (p = 0.22) | **0.027** / 0.001 (p = 0.0018) | 0.205 / 0.219 |
+| A (5 seeds) | 0.052 / 0.048 | 0.038 / 0.037 | 0.025 / 0.023 | 0.004 / 0.029 |
+| B (5 seeds) | **0.178** / 0.106 | 0.060 / 0.017 (day-level p = 0.0005) | 0.068 / 0.045 | 0.178 / 0.174 |
+
+Standard period: accuracy 0.572, macro-F1 0.568 +/- 0.023, AUC 0.612 (all highest).
+Day-level bootstrap, Rank IC D2 minus MMGT: +0.026 [0.007, 0.047], p = 0.006; vs ALSTM +0.000.
+Pooled MCC day-level vs MLP p = 0.070, LSTM 0.072, ALSTM 0.015, LR 0.025.
+All 20 seed-matched runs (3 periods): Rank IC higher in 15/20 (t p = 0.005, sign p = 0.041);
+within-day higher in 14/20 (t p = 0.058).
+Portfolios (Sharpe): long-only 1.21, long-short 1.39 (10 bps -2.27), timing 3.38 (10 bps 2.45),
+timing return +12.7%, max DD 4.3%.
