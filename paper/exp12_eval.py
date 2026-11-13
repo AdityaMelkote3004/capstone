@@ -1,6 +1,6 @@
 """Experiment 12 endpoint evaluation: MMGT-D (D_final) vs MMGT (R_mmgt) and others.
 Writes paper/exp12_eval.json."""
-import json, os
+import json, os, sys
 import numpy as np, pandas as pd
 from scipy import stats
 from sklearn.metrics import f1_score, matthews_corrcoef
@@ -9,7 +9,9 @@ fin = json.load(open(os.path.join(H, "revision_finance.json")))
 ic = {}
 for tag, fold, seed, i, w in fin["agreement"]["runs"]:
     ic.setdefault((tag, fold), {})[seed] = i
-d = pd.read_csv(os.path.join(R, "exp12_final.csv"))
+TAG = sys.argv[1] if len(sys.argv) > 1 else "D_final"
+CSV = sys.argv[2] if len(sys.argv) > 2 else "exp12_final.csv"
+d = pd.read_csv(os.path.join(R, CSV))
 m = pd.read_csv(os.path.join(R, "rev_plus_final.csv")); m = m[m.tag == "R_mmgt"]
 base = pd.read_csv(os.path.join(R, "rev_final.csv")); base = base[base.tag == "R_base"]
 cols = ["test_mcc", "test_acc", "test_auc", "test_within_day_mcc", "test_collapse_mcc"]
@@ -22,11 +24,11 @@ for fold in ["main", "A", "B"]:
     for col in cols:
         row[col] = {"D": [a[col].mean(), a[col].std()], "MMGT": [b[col].mean(), b[col].std()], "base": [c[col].mean(), c[col].std()],
                     "welch_p_D_vs_MMGT": stats.ttest_ind(a[col], b[col], equal_var=False).pvalue}
-    ia, ib = np.array(list(ic[("D_final", fold)].values())), np.array(list(ic[("R_mmgt", fold)].values()))
+    ia, ib = np.array(list(ic[(TAG, fold)].values())), np.array(list(ic[("R_mmgt", fold)].values()))
     row["rank_ic"] = {"D": [ia.mean(), ia.std(ddof=1)], "MMGT": [ib.mean(), ib.std(ddof=1)],
                       "welch_p": stats.ttest_ind(ia, ib, equal_var=False).pvalue}
     seeds = range(10) if fold == "main" else range(5)
-    rd, rm = load("D_final", fold, seeds), load("R_mmgt", fold, seeds)
+    rd, rm = load(TAG, fold, seeds), load("R_mmgt", fold, seeds)
     row["wd_bootstrap_D_minus_MMGT"] = boot_wd(rd, rm)
     # F1 from predictions
     f1 = lambda rr: np.mean([f1_score(r["label"][r["label"] >= 0], (r["prob"][r["label"] >= 0] >= .5).astype(int), average="macro") for r in rr.values()])
@@ -42,17 +44,29 @@ for fold in ["main", "A", "B"]:
                                              for t in np.unique(dd) if len(set(y[dd == t])) > 1]))
             res["excess_ic"].append(np.mean([stats.spearmanr(r["e"][r["day"] == t], r["ret"][r["day"] == t])[0] for t in np.unique(r["day"])]))
         return {k: float(np.mean(v)) for k, v in res.items()}
-    full = {sd: dict(np.load(os.path.join(P, f"D_final_{fold}_s{sd}.npz"))) for sd in seeds}
+    full = {sd: dict(np.load(os.path.join(P, f"{TAG}_{fold}_s{sd}.npz"))) for sd in seeds}
     row["components"] = comp(full)
     out[fold] = row
 if True:
     exec(open(os.path.join(H, "revision_analysis.py")).read().split("def main")[0].replace(
         'HERE = os.path.dirname(os.path.abspath(__file__))', f'HERE = r"{H}"'))
-    out["main"]["pooled_bootstrap_D_minus_MMGT"] = bootstrap(load("D_final", "main"), load("R_mmgt", "main"))
+    out["main"]["pooled_bootstrap_D_minus_MMGT"] = bootstrap(load(TAG, "main"), load("R_mmgt", "main"))
     for name, tag in [("MLP", "R_mlp"), ("LSTM", "R_lstm"), ("ALSTM", "R_alstm"), ("LR", "R_lr")]:
-        out["main"][f"pooled_bootstrap_D_minus_{name}"] = bootstrap(load("D_final", "main"), load(tag, "main"))
-json.dump(out, open(os.path.join(H, "exp12_eval.json"), "w"), indent=1, default=float)
-for fold, row in out.items():
+        out["main"][f"pooled_bootstrap_D_minus_{name}"] = bootstrap(load(TAG, "main"), load(tag, "main"))
+# pre-registered secondary (Exp 12b): paired over all seed-matched runs, all folds
+pw, pi = [], []
+for fold in ["main", "A", "B"]:
+    a = d[d.fold == fold].set_index("seed").test_within_day_mcc
+    b = m[m.fold == fold].set_index("seed").test_within_day_mcc
+    for sd in a.index.intersection(b.index):
+        pw.append(a[sd] - b[sd]); pi.append(ic[(TAG, fold)][sd] - ic[("R_mmgt", fold)][sd])
+pw, pi = np.array(pw), np.array(pi)
+out["paired_all_periods"] = {"n": len(pw),
+    "within_day": {"mean_diff": pw.mean(), "pos": int((pw > 0).sum()), "t_p": stats.ttest_1samp(pw, 0).pvalue, "sign_p": stats.binomtest(int((pw > 0).sum()), len(pw)).pvalue},
+    "rank_ic": {"mean_diff": pi.mean(), "pos": int((pi > 0).sum()), "t_p": stats.ttest_1samp(pi, 0).pvalue, "sign_p": stats.binomtest(int((pi > 0).sum()), len(pi)).pvalue}}
+print("paired over all periods:", out["paired_all_periods"])
+json.dump(out, open(os.path.join(H, f"exp12_eval_{TAG}.json"), "w"), indent=1, default=float)
+for fold, row in [(k, v) for k, v in out.items() if k in ("main", "A", "B")]:
     print("=====", fold, "n =", row["n"])
     for col in cols:
         v = row[col]; print(f"  {col:22} D {v['D'][0]:+.4f}±{v['D'][1]:.4f}  MMGT {v['MMGT'][0]:+.4f}  base {v['base'][0]:+.4f}  p={v['welch_p_D_vs_MMGT']:.3g}")

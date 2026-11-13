@@ -236,3 +236,14 @@ Grid means over seeds 0-1 (val MCC / within-day / collapse): D2adv_la1 0.258 / 0
 D2adv_la0.5 0.257 / 0.043 / 0.221; D2_la1 0.249 / 0.044 / 0.216; D2_la0.5 0.245 / 0.056 / 0.242.
 Selected (highest mean val MCC): **two-branch + adversary, lambda_aux = 1** (tag D2_final).
 (For reference, MMGT's val MCC: 0.211.)
+
+### Experiment 12b -- outcome (rule applied unchanged)
+
+D2_final vs MMGT, test, 10 seeds: pooled MCC 0.151 vs 0.146 (p = 0.77) -> guard MET.
+Within-day 0.031 vs 0.023 (p = 0.22, not lower); Rank IC 0.0271 vs 0.0007 (Welch p = 0.0018)
+-> **primary endpoint MET.** Day-level bootstrap of the Rank IC gain: +0.026
+[0.007, 0.047], p = 0.006. Secondary (20 seed-matched runs, all periods): Rank IC higher
+in 15/20 (t p = 0.005, sign p = 0.041); within-day higher in 14/20 (t p = 0.058).
+Fold A: MCC 0.052 vs 0.048, IC 0.025 vs 0.023. Fold B: MCC 0.178 vs 0.106, IC 0.068 vs 0.045.
+Per the rule, MMGT-D2 is presented as the paper's disentangled model, with the disclosure
+that it is the second follow-up designed after test results were seen.
