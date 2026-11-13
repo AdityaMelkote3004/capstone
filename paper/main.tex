@@ -299,7 +299,7 @@ the standard split's validation period, so it is not fully out-of-sample; period
 is cleaner. Finally, we turn daily predictions into portfolios over all stocks with
 a valid input window, rebalanced daily: a \emph{long--short} portfolio buys the 10
 stocks with the highest predicted probability and sells the 10 lowest, testing
-selection; a \emph{timing} portfolio holds all stocks if the average predicted
+selection (we also report the long-only top 10); a \emph{timing} portfolio holds all stocks if the average predicted
 probability exceeds $0.5$ and sells them otherwise. We report annualised Sharpe
 ratios, noisy over 64 days, with and without a cost of 10 basis points per unit of
 turnover.
@@ -552,9 +552,10 @@ MMGT-D2 $0.127$, MMGT $0.100$, against at most $0.055$ for the baselines), but t
 ranking changes between periods: in period A MMGT falls to $0.048$, and in period B
 logistic regression ($0.115$) is level with MMGT and MMGT-base. These swings follow
 market timing; MMGT's day-collapse MCC is $0.029$, $0.174$ and $0.219$ in the three
-periods. Stock selection is steadier. By within-day MCC, MMGT's gain over MMGT-base
+periods. Stock selection behaves differently. By within-day MCC, MMGT's gain over MMGT-base
 has the same sign in all three periods (positive in 15 of 20 paired runs, sign test
-$p=0.041$); by Rank IC it appears in periods A and B but not in the standard period.
+$p=0.041$); by Rank IC it appears in periods A and B but not in the standard period,
+so MMGT's selection is real but uneven.
 The two disentangled models have the best average Rank IC.
 
 \subsection{Trading simulation}
@@ -598,7 +599,8 @@ timing portfolio remains MMGT's and the best stock-picking portfolios the ALSTM'
 \subsection{Federated training}
 \label{sec:fed}
 
-We trained the profile model with federated averaging~\cite{mcmahan2017fedavg}
+We trained MMGT (without the ranking term) with federated
+averaging~\cite{mcmahan2017fedavg}
 across nine clients, one per sector, each holding 7--10 stocks. Each round, every
 client trains on its own stocks and labels, and a server averages the weights in
 proportion to each client's data. We fixed in advance that federated training stays
@@ -630,7 +632,7 @@ share one representation, the market signal dominates and stock selection is sma
 and uneven. Separating them at the output works only if the market call keeps the
 full model: MMGT-D, whose market head sees only the market summary, loses the
 timing, while MMGT-D2 keeps it and gains stock selection level with the best
-per-stock model. The market call needs the market summary and attention over all
+per-stock model by Rank IC. The market call needs the market summary and attention over all
 stocks; the ranking of stocks is better learned by a branch that never sees the
 market.
 
@@ -660,8 +662,8 @@ baseline. Separating market timing from stock selection shows that this gain is
 mostly market timing, worth a timing portfolio with a Sharpe ratio of $4.2$. The
 disentangled MMGT-D2, which takes its market call from MMGT and ranks stocks with a
 market-blind branch, keeps the score (MCC $0.151$, accuracy $57.2\%$) and raises the
-Rank IC from $0.001$ to $0.027$, combining MMGT's timing with the stock selection of
-the best per-stock model. We recommend reporting stock-selection and market-timing
+Rank IC from $0.001$ to $0.027$, combining MMGT's timing with a Rank IC level with
+the best per-stock model's. We recommend reporting stock-selection and market-timing
 scores, and more than one test period, in future work on this benchmark.
 
 \section*{Acknowledgment}
