@@ -39,7 +39,8 @@ after 10 bps) against 1.4 for buy-and-hold, while its long-short portfolio is fl
 and the per-stock ALSTM is the best stock picker in money terms. The multi-modal
 profile adds stock selection (within-day 0.008 → 0.031, run-level p = 0.011,
 day-level p = 0.14), and MMGT's selection gain over the backbone has the same sign
-in all three walk-forward periods (15/20 paired runs, sign test p = 0.041).
+in all three walk-forward periods by within-day MCC (15/20 paired runs, sign test
+p = 0.041) -- not confirmed by Rank IC on the standard period (see section 7).
 Pooled-MCC rankings shift between periods with market timing. Hand-built graphs
 inside attention add nothing. Federated training (150 rounds) matches centralised
 pooled MCC (0.131 vs 0.115, p = 0.67) but loses stock selection (p = 0.037).
@@ -188,8 +189,9 @@ Defensible, with evidence:
   p < 1e-6; day-level significant vs ALSTM and LR, borderline vs MLP and LSTM).
 - **Pooled MCC mixes market timing and stock selection**, and the two can be
   separated: MMGT's gain is mostly timing (timing-portfolio Sharpe 4.2 vs 1.4
-  buy-and-hold); the profile adds a small stock-selection gain that is consistent
-  in sign across three test periods.
+  buy-and-hold); the profile adds a small stock-selection gain by within-day MCC,
+  consistent in sign across three test periods but not confirmed by Rank IC on the
+  standard period. Forcing the separation (Exp 12) trades timing for selection.
 - **Rankings by pooled MCC are period-dependent** (walk-forward): MMGT is best in
   Oct–Dec, below MMGT-base in Jun–Jul, level with LR in Aug–Sep.
 - **Graph structure helps as peer features, not inside attention**: graph-biased

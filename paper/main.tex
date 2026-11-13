@@ -64,7 +64,7 @@ of $4.2$ against $1.4$ for buying and holding, while MMGT's stock selection is w
 and varies from period to period. Over three consecutive test periods, the ranking
 of models by MCC changes with how much market timing each period rewards. A
 disentangled variant that separates a market head from a stock-ranking head selects
-stocks better in all three periods but loses most of the market timing, and with
+stocks better than MMGT in all three periods but loses most of the market timing, and with
 it the overall score. Trained with federated averaging across nine sector clients,
 MMGT keeps its overall score but loses its stock selection.
 \end{abstract}
@@ -113,7 +113,7 @@ rankings by the standard score shift from period to period with the market-timin
 component.
 \item \textbf{A disentangled variant, MMGT-D,} with separate market and
 stock-ranking heads, which shows that the two abilities trade off: it selects
-stocks better in every period but loses most of the market timing.
+stocks better than MMGT in every period but loses most of the market timing.
 \item \textbf{A federated version} trained across nine sector clients, which
 matches centralised training on the standard score but loses stock selection.
 \end{enumerate}
@@ -469,8 +469,9 @@ MLP, while MMGT-base reaches $0.139$.
 \caption{Market timing against stock selection on the standard test period
 (averages over runs). Grey: baselines; orange: the price-only MMGT-base; open blue:
 the profile model trained centrally and with federated averaging; filled blue:
-MMGT. Per-stock baselines sit at the left, and MMGT adds stock selection to the
-strongest timing.
+MMGT. Per-stock baselines sit at the left; by within-day MCC, MMGT adds stock
+selection to the strongest timing, although by Rank IC its selection is near zero on
+this period (Table~\ref{tab:main}).
 For reference, a model that knew only each day's market direction would sit at
 $(0.625, 0)$.}
 \label{fig:timing}
@@ -599,8 +600,8 @@ has the same sign in all three periods ($+0.014$, $+0.010$ and $+0.015$; positiv
 tests MMGT's two additions, the profile and the ranking term, together. By Rank IC
 the gain appears in periods A and B ($+0.016$, $+0.026$) but not in the standard
 period ($-0.014$), so MMGT's stock selection is real but uneven. The disentangled
-MMGT-D of Section~\ref{sec:disent} has the best stock selection in every period by
-within-day MCC and on average by Rank IC.
+MMGT-D of Section~\ref{sec:disent} has the best stock selection of the models in
+Table~\ref{tab:wf} in every period by within-day MCC and on average by Rank IC.
 
 \subsection{Trading simulation}
 
@@ -666,7 +667,8 @@ trained through gradient reversal~\cite{ganin2015grl} tries to predict the marke
 direction from the centred stock states, and the stock branch learns to defeat it.
 Among six variants (with and without the adversary, with a per-stock market
 sensitivity, two weights of the market loss), the one with the adversary had the
-best validation MCC and was tested.
+best validation MCC and was tested; its validation MCC ($0.146$) was already below
+MMGT's ($0.211$).
 
 MMGT-D failed its pre-registered criterion, which required better stock selection
 without a significantly lower MCC. Its MCC falls to $0.064$ (against $0.146$,
@@ -744,8 +746,8 @@ information that differs between stocks on the same day, such as volatility,
 fundamentals, social media attention and comparisons with related stocks. In MMGT
 the market signal dominates, and its stock selection is small and uneven across
 periods. When the two are forced apart, as in MMGT-D, stock selection improves in
-every period but market timing is lost. Within the models we trained, no single
-model does both well, and which one ranks first depends on which ability the
+every period but market timing is lost. By Rank IC, no single model we trained does
+both well, and which one ranks first depends on which ability the
 chosen score and test period reward.
 
 \textbf{Limitations.} We study one benchmark of 87 large US stocks over 2014--2015.
@@ -775,7 +777,7 @@ and AUC of all models we evaluated, above every tuned baseline. Separating marke
 timing from stock selection, with diagnostics that agree with the rank information
 coefficient, shows that this gain is mostly market timing, which translates into a
 timing portfolio with a Sharpe ratio of $4.2$, while MMGT's stock selection is weak
-and uneven. A disentangled variant selects stocks better in every test period but
+and uneven. A disentangled variant selects stocks better than MMGT in every test period but
 loses the market timing, and a federated version keeps the score but loses the
 stock selection: the two abilities trade off. We recommend reporting
 stock-selection and market-timing scores, and more than one test period, in future
