@@ -229,3 +229,10 @@ Secondary (pre-registered here, chosen after Exp 12): paired test over all 20 ru
 (standard + A + B, matched by seed) of within-day MCC and of Rank IC vs MMGT.
 STOP RULE: whatever the outcome, this is the last disentanglement attempt; both
 follow-ups are reported in the paper.
+
+### Experiment 12b -- selection (validation only, recorded before any test run)
+
+Grid means over seeds 0-1 (val MCC / within-day / collapse): D2adv_la1 0.258 / 0.027 / 0.205;
+D2adv_la0.5 0.257 / 0.043 / 0.221; D2_la1 0.249 / 0.044 / 0.216; D2_la0.5 0.245 / 0.056 / 0.242.
+Selected (highest mean val MCC): **two-branch + adversary, lambda_aux = 1** (tag D2_final).
+(For reference, MMGT's val MCC: 0.211.)
