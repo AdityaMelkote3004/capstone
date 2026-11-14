@@ -199,7 +199,7 @@ and confirmed that they do not change.
 \draw[arr] (price) -- (lstm);
 \draw[arr] (profile) -- (penc);
 \draw[arr] (graph) -- (peer);
-\draw[arr] (peer.east) -| ([xshift=-3mm]penc.south east) ;
+\draw[arr] (peer) -- (penc);
 \draw[arr] (lstm.east) -- (fuse.north west);
 \draw[arr] (penc) -- (fuse);
 \draw[arr] (market.east) -| (fuse.north);
