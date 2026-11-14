@@ -63,40 +63,46 @@ market logit and stock-level excess logits that sum to zero within each day. MMG
 retains MMGT's pooled performance (MCC $0.151$) and improves the Rank IC from $0.001$
 to $0.027$. An ablation attributes this gain to the two-branch structure, and a probe
 shows that the zero-sum constraint provides output-level separation, not
-representation-level disentanglement. Sector-partitioned federated training gives a
-further case: it preserves pooled MCC while losing stock selection. Pooled scores can
-thus conceal large differences in stock selection, and the two abilities should be
-evaluated separately.
+representation-level disentanglement. These results show that pooled scores can
+conceal substantial differences between market timing and stock selection,
+motivating their separate evaluation.
 \end{abstract}
 
 \begin{IEEEkeywords}
-stock movement prediction, evaluation, market timing, stock selection, graph
-transformer, multimodal learning, federated learning, StockNet
+stock movement prediction, cross-sectional evaluation, market timing, stock
+selection, multimodal learning, graph transformer, federated learning, StockNet
 \end{IEEEkeywords}
 
 % =====================================================================
 \section{Introduction}
 
-Stock prices respond to more than their own history: social media activity,
-company filings and the behaviour of related companies all carry information. The
+A stock movement prediction model can achieve a high pooled score without being good
+at selecting stocks. Such scores are computed over all predictions of a test period
+at once, and can be earned in two different ways. A model can \emph{time the
+market}, predicting the days on which most stocks rise, or \emph{select stocks},
+predicting which stocks do better than others on the same day. In this work, stock
+selection refers specifically to this cross-sectional discrimination within a
+prediction day, not to a portfolio strategy.
+
+The distinction matters for multimodal models. Social media activity, company filings
+and the behaviour of related companies all carry information about stock prices. The
 StockNet benchmark~\cite{xu2018stocknet} pairs price histories with tweets for 87
 large US stocks, and many models have since combined these
 sources~\cite{feng2019advalstm,sawhney2020mansf,sawhney2021fast,ang2022guided},
 often with graphs that connect related
 companies~\cite{chen2018gcn,feng2019rsr,cheng2022multimodality,wang2021review}.
+Such models share information across stocks, and so can learn a common day-level
+signal as easily as stock-specific differences.
 
-Scores on this benchmark are computed over all predictions of the test period at
-once, and can be earned in two different ways. A model can \emph{time the market},
-predicting the days on which most stocks rise, or \emph{select stocks}, predicting
-which stocks do better than others on the same day. The first is rewarded heavily:
-a model that knew only whether most stocks went up each day, and nothing about any
-single stock, would score an MCC of $0.625$ on the StockNet test period. A gain in
-one ability is therefore easily mistaken for a gain in the other. Our contributions
-are as follows:
+On StockNet, the first ability is rewarded heavily: an oracle that knew only whether
+most stocks went up each day, and nothing about any single stock, would score an MCC
+of $0.625$ on the test period. A gain in one ability is therefore easily mistaken for
+a gain in the other. Our contributions are as follows:
 \begin{enumerate}
-\item \textbf{Evaluation diagnosis.} We show that pooled stock-day evaluation on
-StockNet rewards market timing far more than stock selection, and that the ranking
-of models changes across test periods as their market timing changes.
+\item \textbf{Evaluation diagnosis.} We show that, on StockNet, pooled stock-day
+evaluation can strongly reward market timing even when stock-specific discrimination
+is absent, and that the ranking of models changes across test periods as their market
+timing changes.
 \item \textbf{Separated diagnostics.} We introduce within-day MCC and day-collapse
 MCC to distinguish stock selection from market timing, and relate within-day MCC
 empirically to the established rank information coefficient (Rank IC).
@@ -715,8 +721,9 @@ optimisation rather than providing privacy guarantees.
 
 \textbf{What a pooled score conceals.} A predictor that knows only each day's
 majority market direction would score $0.625$ on this test period, while per-stock
-models with real stock-picking ability score around $0.05$. The pooled score
-therefore rewards market timing far more than stock selection. As a result, the
+models with real stock-picking ability score around $0.05$. On this test period,
+the pooled score can therefore strongly reward market timing while providing limited
+evidence of stock-selection ability. As a result, the
 model with the best pooled score was primarily a market timer, rankings changed
 between test periods as market timing did, and models retained their pooled score
 while losing stock selection (MMGT-base, the federated model). Reporting within-day
