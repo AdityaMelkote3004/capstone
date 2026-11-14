@@ -27,8 +27,10 @@ stocks with a branch that has no market input, and met its criterion: MCC 0.151,
 hidden states) shows the gain comes from the two-branch design, not the adversary, and
 that the ranking branch still encodes recent market moves: the separation holds at the
 output, so the paper does not call MMGT-D2 disentangled. Pooled-MCC rankings shift
-between periods with market timing, and the advantage over the tuned MLP and LSTM
-is not significant at the level of test days. Hand-built graphs inside the
+between periods with market timing. Under a hierarchical block bootstrap over runs
+and test days, MMGT's advantage over the tuned baselines survives Holm adjustment only
+against the ALSTM, and MMGT-D2's Rank IC gain has p = 0.027 (0.071 with i.i.d. days);
+full statistics and implementation details are in [`paper/SUPPLEMENT.md`](paper/SUPPLEMENT.md). Hand-built graphs inside the
 attention layer add nothing. Federated training across nine sector clients matches
 centralised MCC but loses stock selection.
 

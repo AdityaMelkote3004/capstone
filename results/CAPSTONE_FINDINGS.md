@@ -21,9 +21,9 @@ profile (volatility, SEC EDGAR fundamentals, tweet volume, graph-derived peer
 features) — reaches **pooled MCC 0.146 ± 0.029 over ten seeds**, above every
 baseline trained on the same split (baselines re-tuned on validation in the
 revision; best 0.060) and above our own earlier models. Run-level p < 1e-6 in every
-comparison; at the level of test days (day-block bootstrap) the advantage is
-significant against ALSTM and LR, borderline against the tuned MLP (p = 0.075) and
-LSTM (p = 0.059). It was the model pre-registered as "ours" before any test result
+comparison; at the level of test days (round-5 hierarchical block bootstrap, which
+resamples runs and 5-day blocks) p = 0.006 vs ALSTM, 0.030 vs LSTM, 0.040 vs LR and
+0.098 vs MLP; after Holm adjustment only the ALSTM comparison survives (0.024). It was the model pre-registered as "ours" before any test result
 existed. Current numbers: `results/experiment11_dtml/RESULTS.md`.
 
 The organising finding is that pooled MCC mixes two skills:
@@ -250,7 +250,7 @@ Not claimable:
 - **Experiment 12b, two-branch MMGT-D2** (second and last follow-up, pre-registered):
   market call = mean of a full MMGT's logits, stock ranking from the market-blind
   centred branch. **Met its criterion**: MCC 0.151 (MMGT 0.146), Rank IC 0.027
-  (MMGT 0.001, day-level p = 0.006), level with the best per-stock model (ALSTM 0.027),
+  (MMGT 0.001; hierarchical block bootstrap p = 0.027, 0.071 with i.i.d. days), level with the best per-stock model (ALSTM 0.027),
   long-short Sharpe 1.39 (MMGT -0.23). Lesson: give timing and selection separate
   outputs, but keep MMGT's full pathway for the market call.
 - **Experiment 13, ablation + market-information probe** (review round 3, pre-registered):

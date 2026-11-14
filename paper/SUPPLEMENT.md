@@ -39,7 +39,9 @@ in `results/CAPSTONE_FINDINGS.md` and are not part of the paper's evidence.
   - The days before 2014-01-02 are used only as input history.
 - **Labels:** taken from StockNet unchanged.
   - Up: adjusted-close return greater than +0.55%.
-  - Down: return below −0.5%.
+  - Down: return of −0.5% or below.
+  - StockNet's authors chose these asymmetric thresholds to balance the two classes
+    [Xu and Cohen, 2018, Sec. 3].
   - Days in between are an unlabelled buffer.
   - These thresholds are StockNet's own. They were not tuned here.
 - **Splits (standard):**
@@ -239,7 +241,9 @@ So the stock-level differences in its predictions add nothing to its pooled scor
   realised returns over all stocks with a valid window and a return, averaged over days
   [Grinold and Kahn, 2000].
 - *Which returns:* close-to-close changes from the released price features. Labels come
-  from adjusted closes, so the two do not match exactly. On the test grid, 130 up-labels
+  from adjusted closes (verified in Xu and Cohen, 2018), while these returns come from
+  the released close-price feature, so the two do not match exactly; differences in
+  preprocessing may also contribute. On the test grid, 130 up-labels
   have a close-to-close return of at most +0.55%, and 191 unlabelled stocks fall outside
   the buffer. For the same reason, label-threshold sensitivity by relabelling was not
   attempted.

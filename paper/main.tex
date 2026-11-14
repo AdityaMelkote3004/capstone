@@ -120,8 +120,9 @@ IC from $0.001$ to $0.027$ without a significant loss of pooled MCC; an ablation
 a probe of its hidden states establish what this separation does and does not
 achieve (Section~\ref{sec:probe}).
 \item \textbf{A secondary case: federated training.} Sector-partitioned federated
-training keeps the pooled score while within-day MCC falls, although we cannot yet
-separate federated averaging from the sector-restricted training context.
+training keeps the pooled score while within-day MCC falls (significantly across
+runs only), and we cannot yet separate federated averaging from the
+sector-restricted training context.
 \end{enumerate}
 
 % =====================================================================
@@ -156,8 +157,8 @@ sentiment~\cite{zhong2025financial}.
 \textbf{Benchmark.} We use StockNet~\cite{xu2018stocknet} with the price features
 released by~\cite{feng2019advalstm}: 87 US stocks from 2014 to 2015. We keep
 StockNet's labels: a stock-day is \emph{up} if the adjusted close rose by more than
-$0.55\%$ and \emph{down} if it fell by more than $0.5\%$; smaller moves are left
-out. Training runs until July 2015
+$0.55\%$ and \emph{down} if it fell by $0.5\%$ or more; smaller moves are left out.
+StockNet's authors chose these asymmetric thresholds to balance the two classes. Training runs until July 2015
 (20{,}309 samples), validation covers August--September 2015 (2{,}555 samples) and
 testing October--December 2015 (3{,}720 samples on 64 trading days, $51.3\%$ up).
 
@@ -292,8 +293,9 @@ days on which both labels occur:
 The median $\tilde p_t$ is taken over $\mathcal{S}_t$, and $T'=63$ of the 64 test
 days are scored. Shifting all of a day's predictions does not change the score, so
 it measures stock selection among the labelled stocks. It is conservative: the
-median split always predicts half of a day's stocks up, so on the 32 test days on
-which more than $80\%$ of labels agree, even a perfect ranking cannot reach $1$.
+median split always predicts half of a day's stocks up, so even a perfect ranking
+reaches $1$ only on days whose labels split evenly, and the cap is severe on the 32
+test days on which more than $80\%$ of labels agree.
 \emph{Day-collapse MCC} replaces every prediction by its day's mean $\bar p_t$,
 removing all differences between stocks, and so measures market timing:
 \begin{equation}
@@ -372,9 +374,10 @@ profitability.
 \begin{table*}[t]
 \caption{Test results on the standard StockNet test period (3{,}720 predictions over
 64 trading days). Mean $\pm$ standard deviation over ten runs unless marked. Best
-value per column in bold. The last column is the two-sided $p$-value of MMGT's MCC
-minus the model's MCC under the hierarchical block bootstrap (runs and 5-day blocks
-of test days resampled; Section~\ref{sec:eval}). Intervals for the stock-selection
+value per column in bold. The last column is the unadjusted two-sided $p$-value of
+MMGT's MCC minus the model's MCC under the hierarchical block bootstrap (runs and
+5-day blocks of test days resampled; Section~\ref{sec:eval}); Holm-adjusted values
+for the tuned baselines are in the text. Intervals for the stock-selection
 and timing columns are in the supplementary material.}
 \label{tab:main}
 \centering
@@ -536,7 +539,8 @@ $0.146$), so the differences between stocks in its predictions add nothing to th
 pooled score. Scored with one observation per day, the day's mean prediction calls
 the market's direction with an AUC of $0.66$ ($[0.54, 0.77]$), against $0.56$--$0.61$
 for the per-stock baselines and $0.55$ for a logistic regression on the market
-series alone, which we added after review as a reference. The diagnostics thus
+series alone, which we added after review as a reference; these intervals overlap,
+so the comparison is descriptive. The diagnostics thus
 indicate that market-level directional information is the predominant source of
 MMGT's pooled score. MMGT-D2 keeps most of this timing (daily AUC $0.65$) and is
 level with or above the best per-stock model on both stock-selection measures.
