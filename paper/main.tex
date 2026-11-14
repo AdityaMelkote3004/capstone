@@ -237,10 +237,12 @@ model that times the market.
 \textbf{3) Stocks attending to stocks.} The stocks of day $t$ form a fully connected
 graph whose edge weights are learned attention scores,
 \begin{equation}
-a_{ij,t}=\operatorname{softmax}_j\!\left(\frac{(W_Q h_{i,t})^{\top}W_K h_{j,t}}{\sqrt{d}}\right),
+a_{ij,t}=\operatorname{softmax}_{j\in\mathcal{V}_t}\!\left(\frac{(W_Q h_{i,t})^{\top}W_K h_{j,t}}{\sqrt{d}}\right),
 \end{equation}
-where $h_{i,t}$ is stock $i$'s representation from step~2. Each stock is updated
-with $\sum_j a_{ij,t}W_V h_{j,t}$ (four heads), followed by a residual connection
+where $h_{i,t}$ is stock $i$'s representation from step~2 and $\mathcal{V}_t$ is the
+set of stocks with a valid input window on day $t$, over which the softmax
+normalises. Each stock is updated with $\sum_{j\in\mathcal{V}_t} a_{ij,t}W_V h_{j,t}$
+(four heads), followed by a residual connection
 and a feed-forward layer, as in a transformer layer; hence a graph transformer. The
 explicit stock graph enters through the peer features; adding it to the attention
 as a bias did not help (Section~\ref{sec:ablation}).
@@ -280,10 +282,13 @@ $\bar p_t$, removing all differences between stocks, and so measures market timi
 As an established check on stock selection we also report the \emph{rank
 information coefficient} (Rank IC) used in quantitative finance: the daily Spearman
 correlation between predicted probabilities and realised returns of all stocks with
-a valid input window, averaged over days. In our setting the two agree: across the
-21 combinations of model and test period that we ran, they correlate at $r=0.73$
-($p<0.001$), and across training runs of the same model at $r=0.75$. With 21 points,
-we treat this as support for the diagnostic, not as proof that it can replace Rank IC.
+a valid input window, averaged over days. In our setting the two agree. We
+average each over the runs of every model with saved predictions in every
+out-of-sample test period: ten models, seven of them run in both periods and three in
+the standard period only, giving 17 combinations. Across these, within-day MCC and
+Rank IC correlate at $r=0.84$ ($p<0.001$); across the 115 individual runs, after
+removing each combination's mean, at $r=0.77$. With 17 combinations, we treat this
+as support for the diagnostic, not as proof that it can replace Rank IC.
 
 \textbf{Reliability.} Every model is trained ten times with different seeds; we
 report mean and standard deviation, and run-level $p$-values from Welch's
@@ -303,20 +308,24 @@ selection rule as MMGT (34 settings in total). We also include two models from o
 earlier work: an LSTM using tweet counts, and a relational graph convolutional
 network (RGCN) over sector and correlation graphs.
 
-\textbf{Walk-forward and trading.} We repeat the evaluation on two earlier periods,
-each with its own earlier training and validation data: period A tests June--July
-2015 (44 days, $48.3\%$ up) and period B August--September 2015 (42 days, $44.6\%$
-up), with the settings selected for the standard split and five seeds. Period A is
-a clean out-of-sample test. Period B is the standard split's validation period, on
-which those settings were chosen, so we treat it as a robustness check rather than
-a test. Finally, we turn daily predictions into portfolios over all stocks with
-a valid input window, rebalanced daily: a \emph{long--short} portfolio buys the 10
+\textbf{Walk-forward.} We repeat the evaluation on two earlier periods, each with
+its own earlier training and validation data and five seeds, keeping the settings
+selected for the standard split frozen: period A tests June--July 2015 (44 days,
+$48.3\%$ up) and period B August--September 2015 (42 days, $44.6\%$ up). Period A is
+out-of-sample. Period B is the standard split's validation period, on which the
+frozen settings were chosen, so it is \emph{in-sample} for those settings: we report
+it separately for reference only and exclude it from every average and test. The
+out-of-sample evidence therefore consists of period A and the standard test period.
+
+\textbf{Trading.} We turn daily predictions into portfolios over all stocks with a
+valid input window, rebalanced daily: a \emph{long--short} portfolio buys the 10
 stocks with the highest predicted probability and sells the 10 lowest, testing
-selection (we also report the long-only top 10); a \emph{timing} portfolio holds all stocks if the average predicted
-probability exceeds $0.5$ and sells them otherwise. We report annualised Sharpe
-ratios with and without a cost of 10 basis points per unit of turnover. Over 64
-days these are noisy: the simulation illustrates the two abilities and is not
-evidence of a deployable strategy.
+selection (we also report the long-only top 10); a \emph{timing} portfolio holds all
+stocks if the average predicted probability exceeds $0.5$ and sells them otherwise.
+Our primary figures are annualised Sharpe ratios net of a cost of 10 basis points
+(bps) per unit of turnover; gross figures are given for reference. Over 64 days
+these are noisy: the simulation illustrates the two abilities and is not evidence of
+a deployable strategy.
 
 % =====================================================================
 \section{Results}
@@ -346,7 +355,7 @@ RGCN graph$^{b}$ & $0.060\pm0.018$ & $52.7$ & $0.494$ & $0.541$ & $0.005$ & -- &
 MMGT-base (price only) & $0.139\pm0.049$ & $55.8$ & $0.534\pm0.060$ & $0.593$ & $0.008$ & $0.015$ & $0.130$ & $0.82$ \\
 \textbf{MMGT (ours)} & $0.146\pm0.029$ & $57.0$ & $0.565\pm0.018$ & $0.602$ & $0.023$ & $0.001$ & $\mathbf{0.219}$ & -- \\
 MMGT, federated$^{c}$ & $0.131\pm0.062$ & $56.6$ & $0.553\pm0.057$ & $0.598$ & $-0.004$ & $-0.024$ & $0.140$ & $0.66$ \\
-MMGT-D, index-only market head$^{d}$ & $0.064\pm0.033$ & $53.4$ & $0.526\pm0.014$ & $0.543$ & $0.027$ & $0.014$ & $0.080$ & $0.030$ \\
+MMGT-D, index-only market head$^{d}$ & $0.063\pm0.033$ & $53.4$ & $0.526\pm0.014$ & $0.543$ & $0.027$ & $0.014$ & $0.080$ & $0.030$ \\
 \textbf{MMGT-D2, two-branch (ours)}$^{d}$ & $\mathbf{0.151\pm0.037}$ & $\mathbf{57.2}$ & $\mathbf{0.568\pm0.023}$ & $\mathbf{0.612}$ & $\mathbf{0.031}$ & $\mathbf{0.027}$ & $0.205$ & $0.77$ \\
 \bottomrule
 \end{tabular}}
@@ -374,7 +383,9 @@ significantly better than logistic regression and the ALSTM ($p\le0.025$), while
 the 95\% interval of MMGT's advantage over the MLP ($+0.089$, $[-0.010, 0.172]$) and
 the LSTM ($+0.091$, $[-0.004, 0.174]$) just includes zero (MMGT-D2: $p=0.070$ and
 $0.072$). Attention between stocks is what lifts the pooled score: the RGCN performs
-on par with the MLP, whereas MMGT-base reaches $0.139$.
+on par with the MLP, whereas MMGT-base reaches $0.139$. All comparisons are within
+our protocol; our reproduction of the attention backbone scores below its published
+result (Section~\ref{sec:disc}).
 
 \subsection{What each part contributes}
 \label{sec:ablation}
@@ -504,7 +515,7 @@ defeat it.
 
 The market logit must retain MMGT's full pathway. A first version, MMGT-D, took $m_t$
 from the market summary alone: its stock selection improved, but its timing
-collapsed (day-collapse MCC $0.080$) and its MCC fell to $0.064$, failing its
+collapsed (day-collapse MCC $0.080$) and its MCC fell to $0.063$, failing its
 pre-registered criterion. MMGT's timing needs the market summary and stock
 attention together. MMGT-D2 therefore retains a full MMGT as its timing branch and
 uses only the day-average of its per-stock logits $l_{i,t}$:
@@ -524,13 +535,14 @@ against $0.146$, $p=0.77$) and timing (day-collapse $0.205$ against $0.219$), an
 the highest MCC, accuracy, macro-F1, AUC and within-day MCC in
 Table~\ref{tab:main}. Its Rank IC rises from $0.001$ to $0.027$ (run-level
 $p=0.002$; day-level $+0.026$, $[0.007, 0.047]$, $p=0.006$), level with the ALSTM,
-the best per-stock model. Over all 20 seed-matched runs of the three test periods,
-its Rank IC is above MMGT's in 15 ($p=0.005$); in period A it is no better than MMGT,
-and in period B, the robustness check, its MCC of $0.178$ is the best of any model
-(Table~\ref{tab:wf}). In the trading simulation its long--short portfolio reaches a
-Sharpe ratio of $1.39$ against MMGT's $-0.23$, while its timing portfolio retains
-most of MMGT's ($3.38$ against
-$4.24$; Table~\ref{tab:trade}).
+the best per-stock model. Over the 15 seed-matched runs of the two out-of-sample
+periods, its Rank IC is above MMGT's in 11 (paired $t$-test $p=0.011$, sign test
+$p=0.12$); in period A alone it is no better than MMGT (Table~\ref{tab:wf}). The
+pre-registered secondary test also included period B (15 of 20 runs, $p=0.005$); as
+B is in-sample, we no longer rely on it. In the trading simulation, net of costs,
+no long--short portfolio of either model is profitable (Sharpe $-2.27$ and $-4.23$),
+while MMGT-D2's timing portfolio retains a net Sharpe ratio of $2.45$ against MMGT's
+$3.16$ (Table~\ref{tab:trade}).
 
 \subsection{What the separation does and does not achieve}
 \label{sec:probe}
@@ -598,7 +610,10 @@ interval including $0.5$), as are the centred selection states of three of the f
 variants, with or without the adversary, and all intervals overlap. Yesterday's
 direction and the 10-day trend, which the inputs determine, are recovered almost
 perfectly from every representation, including the centred selection states ($0.97$
-and $1.00$).
+and $1.00$; every interval's lower end is at least $0.92$). Our conclusion about the
+hidden states rests on these two targets, which are far from chance despite the
+short test period. The next-day target is inconclusive, so we draw no conclusion from
+it, in particular not that the adversary removed next-day information.
 
 The zero-sum constraint thus provides output-level separation, not
 representation-level disentanglement. Although the excess logits cannot shift the
@@ -608,91 +623,98 @@ describe MMGT-D2 as separating market timing and stock selection at the output, 
 do not call it disentangled. This retained information need not be harmful: the
 recent market may be useful context for ranking stocks.
 
-\subsection{Results across three test periods}
+\subsection{Results across test periods}
 
 \begin{table}[t]
-\caption{Walk-forward evaluation in three consecutive test periods. Neural models
-averaged over five runs in A and B and ten in the standard period. $^{*}$Validation
-period of the standard split: a robustness check, not a test
+\caption{Walk-forward evaluation with frozen settings. Neural models averaged over
+five runs in A and B and ten in the standard period. The average and bold values
+cover the two out-of-sample periods only. $^{*}$Validation period of the standard
+split, on which the settings were chosen: in-sample, shown for reference only
 (Section~\ref{sec:eval}).}
 \label{tab:wf}
 \centering
 \resizebox{\columnwidth}{!}{%
-\begin{tabular}{lcccc}
+\begin{tabular}{lccc|c}
 \toprule
-Model & A: Jun--Jul & B$^{*}$: Aug--Sep & Oct--Dec & Average \\
+ & \multicolumn{3}{c|}{Out-of-sample} & In-sample \\
+Model & A: Jun--Jul & Oct--Dec & Average & B$^{*}$: Aug--Sep \\
 \midrule
 \multicolumn{5}{l}{\emph{MCC}} \\
-Logistic regression & $0.024$ & $0.115$ & $0.027$ & $0.055$ \\
-MLP & $0.003$ & $0.096$ & $0.057$ & $0.052$ \\
-LSTM & $0.029$ & $0.022$ & $0.055$ & $0.035$ \\
-MMGT-base & $\mathbf{0.135}$ & $0.111$ & $0.139$ & $\mathbf{0.128}$ \\
-MMGT & $0.048$ & $0.106$ & $0.146$ & $0.100$ \\
-MMGT-D & $0.074$ & $0.082$ & $0.064$ & $0.073$ \\
-MMGT-D2 & $0.052$ & $\mathbf{0.178}$ & $\mathbf{0.151}$ & $0.127$ \\
+Logistic regression & $0.024$ & $0.027$ & $0.026$ & $0.115$ \\
+MLP & $0.003$ & $0.057$ & $0.030$ & $0.096$ \\
+LSTM & $0.029$ & $0.055$ & $0.042$ & $0.022$ \\
+MMGT-base & $\mathbf{0.135}$ & $0.139$ & $\mathbf{0.137}$ & $0.111$ \\
+MMGT & $0.048$ & $0.146$ & $0.097$ & $0.106$ \\
+MMGT-D & $0.074$ & $0.063$ & $0.069$ & $0.082$ \\
+MMGT-D2 & $0.052$ & $\mathbf{0.151}$ & $0.101$ & $0.178$ \\
 \midrule
 \multicolumn{5}{l}{\emph{Rank IC (stock selection)}} \\
-Logistic regression & $-0.024$ & $0.014$ & $0.002$ & $-0.003$ \\
-MLP & $-0.018$ & $0.020$ & $0.004$ & $0.002$ \\
-LSTM & $0.004$ & $0.010$ & $0.020$ & $0.011$ \\
-MMGT-base & $0.008$ & $0.019$ & $0.015$ & $0.014$ \\
-MMGT & $0.023$ & $0.045$ & $0.001$ & $0.023$ \\
-MMGT-D & $\mathbf{0.033}$ & $\mathbf{0.069}$ & $0.014$ & $0.039$ \\
-MMGT-D2 & $0.025$ & $0.068$ & $\mathbf{0.027}$ & $\mathbf{0.040}$ \\
+Logistic regression & $-0.024$ & $0.002$ & $-0.011$ & $0.014$ \\
+MLP & $-0.017$ & $0.004$ & $-0.007$ & $0.020$ \\
+LSTM & $0.004$ & $0.020$ & $0.012$ & $0.010$ \\
+MMGT-base & $0.008$ & $0.015$ & $0.011$ & $0.019$ \\
+MMGT & $0.023$ & $0.001$ & $0.012$ & $0.045$ \\
+MMGT-D & $\mathbf{0.033}$ & $0.014$ & $0.023$ & $0.069$ \\
+MMGT-D2 & $0.025$ & $\mathbf{0.027}$ & $\mathbf{0.026}$ & $0.068$ \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-Table~\ref{tab:wf} repeats the comparison on two earlier periods. The models in
-which stocks attend to each other have the highest average MCC (MMGT-base $0.128$,
-MMGT-D2 $0.127$, MMGT $0.100$, against at most $0.055$ for the baselines), but the
-ranking changes between periods: in period A MMGT falls to $0.048$, and in period B
-logistic regression ($0.115$) is level with MMGT and MMGT-base. These swings follow
-market timing: MMGT's day-collapse MCC is $0.029$, $0.174$ and $0.219$ in the three
-periods.
+Table~\ref{tab:wf} repeats the comparison on an earlier out-of-sample period, A, and
+reports the in-sample period B separately. Averaged over the two out-of-sample
+periods, the models in which stocks attend to each other have the highest MCC
+(MMGT-base $0.137$, MMGT-D2 $0.101$, MMGT $0.097$, against at most $0.042$ for the
+baselines), but the ranking changes between periods: in period A, MMGT falls to
+$0.048$, below MMGT-base and MMGT-D. This swing follows market timing: MMGT's
+day-collapse MCC is $0.029$ in period A against $0.219$ in the standard period.
 
 Stock selection behaves differently. By within-day MCC, MMGT's gain over MMGT-base
-has the same sign in all three periods (positive in 15 of 20 paired runs, sign test
-$p=0.041$); by Rank IC it appears in periods A and B but not in the standard period,
-so MMGT's stock selection is real but uneven. The two models that separate timing
-and selection at the output, MMGT-D and MMGT-D2, have the highest average Rank IC.
+is positive in both out-of-sample periods (12 of 15 paired runs, sign test
+$p=0.035$); by Rank IC it appears in period A but not in the standard period, so
+MMGT's stock selection is real but uneven. The two models that separate timing and
+selection at the output, MMGT-D2 and MMGT-D, have the highest average Rank IC
+($0.026$ and $0.023$).
 
 \subsection{Trading simulation}
 
 \begin{table}[t]
 \caption{Trading simulation on the standard test period: annualised Sharpe ratios,
-mean over runs, without and with a cost of 10 basis points per unit of turnover.
-Equal-weight buy-and-hold: Sharpe $1.39$, return $+5.0\%$.}
+mean over runs. Primary figures are net of 10 bps per unit of turnover; gross
+figures (0 bps) for reference. Equal-weight buy-and-hold, which does not rebalance:
+Sharpe $1.39$, return $+5.0\%$.}
 \label{tab:trade}
 \centering
 \resizebox{\columnwidth}{!}{%
-\begin{tabular}{lcccccc}
+\begin{tabular}{lcccc|cc}
 \toprule
- & Long top-10 & \multicolumn{2}{c}{Long--short (selection)} & \multicolumn{3}{c}{Timing} \\
-Model & 0 bps & 0 bps & 10 bps & 0 bps & 10 bps & Return \\
+ & \multicolumn{4}{c|}{Net of 10 bps} & \multicolumn{2}{c}{Gross (0 bps)} \\
+Model & Long top-10 & Long--short & Timing & Timing return & Long--short & Timing \\
 \midrule
-Logistic regression & $2.11$ & $0.02$ & $-6.19$ & $1.62$ & $-0.04$ & $+5.9\%$ \\
-MLP & $1.59$ & $0.96$ & $-4.75$ & $2.02$ & $0.39$ & $+7.5\%$ \\
-LSTM & $1.42$ & $1.59$ & $-1.64$ & $0.96$ & $0.49$ & $+3.5\%$ \\
-ALSTM & $\mathbf{2.27}$ & $\mathbf{3.30}$ & $\mathbf{0.53}$ & $0.46$ & $0.04$ & $+1.5\%$ \\
-MMGT-base & $1.41$ & $0.28$ & $-2.94$ & $2.06$ & $1.59$ & $+7.6\%$ \\
-MMGT & $0.52$ & $-0.23$ & $-4.23$ & $\mathbf{4.24}$ & $\mathbf{3.16}$ & $\mathbf{+15.9\%}$ \\
-MMGT, federated & $0.24$ & $-2.32$ & $-6.31$ & $3.34$ & $2.56$ & $+12.5\%$ \\
-MMGT-D & $0.58$ & $0.34$ & $-3.27$ & $1.68$ & $1.27$ & $+6.1\%$ \\
-MMGT-D2 & $1.21$ & $1.39$ & $-2.27$ & $3.38$ & $2.45$ & $+12.7\%$ \\
+Logistic regression & $0.09$ & $-6.19$ & $-0.04$ & $-0.4\%$ & $0.02$ & $1.62$ \\
+MLP & $-0.44$ & $-4.75$ & $0.39$ & $+1.3\%$ & $0.96$ & $2.02$ \\
+LSTM & $0.30$ & $-1.64$ & $0.49$ & $+1.7\%$ & $1.59$ & $0.96$ \\
+ALSTM & $\mathbf{1.16}$ & $\mathbf{0.53}$ & $0.04$ & $-0.1\%$ & $3.30$ & $0.46$ \\
+MMGT-base & $0.25$ & $-2.94$ & $1.59$ & $+5.8\%$ & $0.28$ & $2.06$ \\
+MMGT & $-1.10$ & $-4.23$ & $\mathbf{3.16}$ & $\mathbf{+11.8\%}$ & $-0.23$ & $4.24$ \\
+MMGT, federated & $-1.49$ & $-6.31$ & $2.56$ & $+9.5\%$ & $-2.32$ & $3.34$ \\
+MMGT-D & $-1.01$ & $-3.27$ & $1.27$ & $+4.5\%$ & $0.34$ & $1.68$ \\
+MMGT-D2 & $-0.39$ & $-2.27$ & $2.45$ & $+9.1\%$ & $1.39$ & $3.38$ \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-Table~\ref{tab:trade} turns the predictions into portfolios. MMGT's timing portfolio
-has a Sharpe ratio of $4.24$ ($\pm1.73$ over runs), $3.16$ after costs, and returns
-$15.9\%$ over the period, against $1.39$ and $5.0\%$ for buying and holding all
-stocks. The baselines' timing portfolios reach at most $2.02$. The stock-picking
-portfolios follow stock selection: the ALSTM's long--short portfolio performs best
-(Sharpe $3.30$), MMGT's is flat, and MMGT-D2 improves it to $1.39$. Daily
-rebalancing of a long--short portfolio is costly: 10 basis points remove nearly all
-of every model's returns. At every cost we tried (0, 5, 10 and 20 basis points) the
-best timing portfolio remains MMGT's and the best stock-picking portfolios the
+Table~\ref{tab:trade} turns the predictions into portfolios, net of costs. Daily
+rebalancing of stock-picking portfolios is expensive: at 10 bps, every long--short
+portfolio loses money except the ALSTM's (Sharpe $0.53$), and only the ALSTM's
+long-only portfolio stays clearly positive ($1.16$). Stock-selection ability, as
+measured here, is therefore not economically exploitable at this cost. Timing
+portfolios trade rarely and survive costs: four of them exceed buying and holding
+(Sharpe $1.39$, return $5.0\%$), led by MMGT's (net Sharpe $3.16$, return $11.8\%$),
+followed by the federated model ($2.56$), MMGT-D2 ($2.45$) and MMGT-base ($1.59$).
+Before costs, the ranking of stock pickers follows stock selection (the ALSTM's
+long--short Sharpe is $3.30$; MMGT-D2 improves MMGT's from $-0.23$ to $1.39$), but
+these gross gains do not survive costs. At every cost we tried (0, 5, 10 and 20 bps)
+the best timing portfolio remains MMGT's and the best stock-picking portfolios the
 ALSTM's.
 
 \subsection{Federated training}
@@ -718,6 +740,7 @@ optimisation rather than providing privacy guarantees.
 
 % =====================================================================
 \section{Discussion}
+\label{sec:disc}
 
 \textbf{What a pooled score conceals.} A predictor that knows only each day's
 majority market direction would score $0.625$ on this test period, while per-stock
@@ -741,15 +764,31 @@ market input and cannot shift the day's average logit. The ablation attributes t
 gain to this structure rather than to the adversary, and the probe shows that the
 separation holds at the output but not in the hidden states.
 
-\textbf{Limitations.} We study one benchmark of 87 large US stocks over 2014--2015.
-Published results on it use different preprocessing and protocols, so we compare
+\textbf{Scope.} All results come from one benchmark: 87 large US stocks in
+2014--2015. Market structure has changed since, and a broader universe, such as all
+S\&P~500 or Russell~2000 constituents, would include smaller and less correlated
+stocks. We therefore do not claim that the MCC levels reported here, or the gains
+of MMGT and MMGT-D2, transfer to other markets or periods. The evaluation problem
+itself depends on how strongly stocks move together within a day, and this is present
+in every period we can measure: the market-direction oracle scores between $0.46$ and
+$0.65$ in each of the eight quarters of 2014--2015, and $0.61$ in period A. How much
+a pooled score rewards market timing will vary with the strength of co-movement;
+within-day and day-collapse MCC measure this directly on any dataset with daily
+cross-sections. Applying the diagnostics and MMGT-D2 to a contemporary and broader
+universe is the most important next step.
+
+\textbf{Limitations.} Published results on StockNet use different preprocessing and
+protocols, so we compare
 only with models trained under ours; our reproduction of the attention backbone
 (MMGT-base, $0.139$) is below the $0.191$ reported by its authors~\cite{yoo2021dtml},
 and we do not claim a new state of the art. Test periods of 42--64 days leave large
 day-level uncertainty: the advantage of MMGT and MMGT-D2 over the MLP and the LSTM is
 significant across runs but not at the level of test days. MMGT's own Rank IC is
 near zero on the standard period. The walk-forward periods reuse the standard
-settings, and period B is not fully out-of-sample. MMGT-D and MMGT-D2 were designed
+settings rather than re-tuning them: period B, the standard validation period, is
+in-sample and excluded from all averages and tests, and the settings used in period
+A were selected with models whose training data included A's dates, an indirect
+dependence. MMGT-D and MMGT-D2 were designed
 after MMGT's test results were known (MMGT-D2 also after MMGT-D's), and each was
 pre-registered before its own first test run; MMGT-D2's selection gain is absent in
 period A, its overall score is no better than an ensemble of two MMGTs, its

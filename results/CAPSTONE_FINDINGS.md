@@ -243,7 +243,7 @@ Not claimable:
   MMGT has the highest Rank IC of the compared models in walk-forward periods A and B.
 - **Experiment 12, disentangled MMGT (MMGT-D)**: separate market head + centred
   stock-ranking head + gradient-reversal adversary. Pre-registered; **failed its guard**
-  (pooled MCC 0.064 vs 0.146) because market timing collapsed. Stock selection improved
+  (pooled MCC 0.063 vs 0.146) because market timing collapsed. Stock selection improved
   in all three periods (Rank IC 0.014 / 0.033 / 0.069 vs MMGT 0.001 / 0.023 / 0.045).
   Takeaway: timing and selection trade off in these models.
 - Exhaustive leakage test (all 504 days) passes; EDGAR fundamentals are dated by filing date.

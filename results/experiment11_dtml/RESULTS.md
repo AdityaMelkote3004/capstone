@@ -171,7 +171,7 @@ gradient-reversal adversary. Selected on validation (D_adv, lambda_m = 1).
 
 | Period | MCC D / MMGT | Within-day D / MMGT | Rank IC D / MMGT | Day-collapse D / MMGT |
 |---|---|---|---|---|
-| Oct-Dec (10 seeds) | 0.064 / 0.146 (p = 1.4e-5) | 0.027 / 0.023 (p = 0.61) | 0.014 / 0.001 (p = 0.11) | 0.080 / 0.219 |
+| Oct-Dec (10 seeds) | 0.063 / 0.146 (p = 1.4e-5) | 0.027 / 0.023 (p = 0.61) | 0.014 / 0.001 (p = 0.11) | 0.080 / 0.219 |
 | A (5 seeds) | 0.074 / 0.048 | 0.043 / 0.037 | 0.033 / 0.023 | -0.002 / 0.029 |
 | B (5 seeds) | 0.082 / 0.106 | 0.060 / 0.017 (day-level p = 0.002) | 0.069 / 0.045 | 0.025 / 0.174 |
 
@@ -239,3 +239,32 @@ Next-day direction is near chance for the market input itself (64 days: no power
 The centred selection states encode yesterday's market and the trend. Per the
 pre-registered rule, MMGT-D2 is described as separating timing and selection at the
 output, NOT as disentangled. Paper title changed accordingly.
+
+## Review round 4: period B quarantined, net-of-cost trading, scope
+
+No new training. Script: `paper/rev4_oos.py` -> `paper/rev4_oos.json`.
+Period B (Aug-Sep 2015) is the standard split's validation period, on which the frozen
+walk-forward settings were chosen, so it is in-sample. It is now shown separately and
+excluded from every average and test. Out-of-sample = period A + standard (Oct-Dec).
+
+| Model | MCC A / Oct-Dec / avg (B) | Rank IC A / Oct-Dec / avg (B) |
+|---|---|---|
+| LR | 0.024 / 0.027 / 0.026 (0.115) | -0.024 / 0.002 / -0.011 (0.014) |
+| MLP | 0.003 / 0.057 / 0.030 (0.096) | -0.017 / 0.004 / -0.007 (0.020) |
+| LSTM | 0.029 / 0.055 / 0.042 (0.022) | 0.004 / 0.020 / 0.012 (0.010) |
+| MMGT-base | 0.135 / 0.139 / 0.137 (0.111) | 0.008 / 0.015 / 0.011 (0.019) |
+| MMGT | 0.048 / 0.146 / 0.097 (0.106) | 0.023 / 0.001 / 0.012 (0.045) |
+| MMGT-D | 0.074 / 0.063 / 0.069 (0.082) | 0.033 / 0.014 / 0.023 (0.069) |
+| MMGT-D2 | 0.052 / 0.151 / 0.101 (0.178) | 0.025 / 0.027 / 0.026 (0.068) |
+
+- MMGT vs MMGT-base within-day gain, out-of-sample seed-matched: 12/15 positive, sign p = 0.035
+  (was 15/20, p = 0.041 with B).
+- MMGT-D2 vs MMGT Rank IC, out-of-sample seed-matched: 11/15, paired t p = 0.011, sign p = 0.12
+  (pre-registered all-period version incl. B: 15/20, p = 0.005).
+- Within-day MCC vs Rank IC: 17 out-of-sample model x period cells (10 models), r = 0.84
+  (p = 2e-5); de-meaned runs r = 0.77 (n = 115). (Old: 21 cells incl. B, without D2, r = 0.73.)
+- Market-direction oracle MCC per quarter 2014Q1-2015Q4: 0.46-0.65; period A test 0.61,
+  standard test 0.625.
+- Trading now reported net of 10 bps first (paper Table V).
+- Rounding corrections: MMGT-D standard MCC 0.06348 -> 0.063 (was printed 0.064);
+  MLP period-A Rank IC -0.01747 -> -0.017 (was -0.018).
