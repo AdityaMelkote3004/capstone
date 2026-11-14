@@ -202,3 +202,40 @@ Capacity control (paper/exp12b_capacity_control.json): averaging two independent
 MMGTs (5 disjoint seed pairs, logit average) -> MCC 0.161 [0.109, 0.205], Rank IC 0.003
 [-0.004, 0.024]. Parameters: MMGT 132k, MMGT-D2 273k. So D2's MCC is no better than a
 two-MMGT ensemble; its Rank IC gain is not explained by capacity.
+
+## Experiment 13: MMGT-D2 ablation and market-information probe (review round 3)
+
+Pre-registered in PREREGISTRATION.md before any run. All 10 D2_final and 10 MMGT reruns
+(with --save-states) reproduce the original test MCC exactly. Scripts:
+`scripts/runs/exp13.sh`, `paper/exp13_ablation.py` -> `paper/exp13_ablation.json`,
+`paper/exp13_probe.py` -> `paper/exp13_probe.json`.
+
+**(a) Ablation (disclosed post-hoc; standard test, 10 seeds; Welch over runs vs MMGT)**
+
+| Variant | MCC | Within-day | Day-collapse | Rank IC (p vs MMGT) |
+|---|---|---|---|---|
+| MMGT | 0.146 +/- 0.029 | 0.023 | 0.219 | 0.001 |
+| 2xMMGT ensemble (5 pairs) | 0.161 +/- 0.040 | -- | -- | 0.003 |
+| D2_final (adv, lambda_aux 1) | 0.151 +/- 0.037 | 0.031 | 0.205 | 0.027 (0.002) |
+| D2adv_la0.5 (adv, 0.5) | 0.143 +/- 0.029 | 0.027 | 0.181 | 0.023 (0.008) |
+| D2_la1 (no adv, 1) | 0.155 +/- 0.027 | 0.030 | 0.173 | 0.023 (0.008) |
+| D2_la0.5 (no adv, 0.5) | 0.135 +/- 0.050 | 0.026 | 0.171 | 0.017 (0.036) |
+
+The Rank IC gain comes from the two-branch centred head; the adversary adds little. No
+variant changes MCC (p >= 0.49). Timing-branch logits l have Rank IC -0.004 to 0.008 in
+every variant (the logit's Rank IC equals e's by construction, since m is constant per day).
+
+**(b) Probe** (AUC on 64 test days of the seed-averaged probe score, 95% day bootstrap)
+
+| Representation | Next-day market | Yesterday's market | 10-day trend |
+|---|---|---|---|
+| Market-index input | 0.588 [0.44, 0.74] | 0.993 | 1.000 |
+| MMGT states | 0.692 [0.54, 0.83] | 0.990 | 0.983 |
+| D2 timing branch | 0.670 [0.53, 0.81] | 0.999 | 0.978 |
+| D2 selection, centred | 0.633 [0.48, 0.78] | 0.968 [0.92, 1.00] | 1.000 |
+| D2_la1 selection, centred (no adv) | 0.613 [0.46, 0.75] | 0.987 | 0.996 |
+
+Next-day direction is near chance for the market input itself (64 days: no power).
+The centred selection states encode yesterday's market and the trend. Per the
+pre-registered rule, MMGT-D2 is described as separating timing and selection at the
+output, NOT as disentangled. Paper title changed accordingly.

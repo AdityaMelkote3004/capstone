@@ -22,7 +22,7 @@
 
 \begin{document}
 
-\title{Multi-Modal Graph Transformer for\\Federated Financial Forecasting}
+\title{Beyond Pooled Scores: Separating Market Timing\\from Stock Selection with a Multi-Modal\\Graph Transformer}
 
 \author{\IEEEauthorblockN{Aditya M Hubli}
 \IEEEauthorblockA{\textit{Department of Computer Science and Engineering}\\
@@ -50,26 +50,28 @@ Bengaluru, India}}
 A model that predicts whether stocks will rise tomorrow can be right for two
 reasons: it can call the direction of the whole market on a day (market timing), or
 tell which stocks will do better than others (stock selection). The standard score
-on the StockNet benchmark does not separate the two. We present MMGT, a multi-modal
-graph transformer in which every stock attends to every other stock, and each stock
-is described by its recent prices and a profile of volatility, SEC EDGAR
-fundamentals, tweet volume and features from a graph of related stocks. On the
-standard StockNet test period (87 US stocks, 3{,}720 predictions), MMGT reaches a
-Matthews correlation coefficient (MCC) of $0.146$ and an accuracy of $57.0\%$ over
-ten runs, against at most $0.057$ for tuned baselines. Diagnostics checked against
-the rank information coefficient (Rank IC) show that this gain is almost all market
-timing, worth a Sharpe ratio of $4.2$ against $1.4$ for buying and holding, while
-MMGT's stock selection is weak. We therefore disentangle the two abilities. MMGT-D2
-takes its market call from a full MMGT and ranks stocks with a separate branch that
-cannot see the market. It keeps MMGT's score (MCC $0.151$, accuracy $57.2\%$) and
-raises the Rank IC from $0.001$ to $0.027$, level with the best per-stock model.
-Trained with federated averaging across nine sector clients, MMGT keeps its score
-but loses its stock selection.
+on the StockNet benchmark pools all predictions and rewards the first far more: a
+model that knew only each day's market direction would reach a Matthews correlation
+coefficient (MCC) of $0.625$. We propose two diagnostics, within-day and day-collapse
+MCC, that separate the abilities, and check the first against the rank information
+coefficient (Rank IC). We apply them to MMGT, a multi-modal graph transformer in
+which every stock attends to every other stock and is described by its prices,
+volatility, SEC EDGAR fundamentals, tweet volume and features from a graph of related
+stocks. On the standard test period (87 US stocks, 3{,}720 predictions), MMGT reaches
+an MCC of $0.146$ over ten runs, against at most $0.057$ for tuned baselines, but the
+diagnostics show this gain is almost all market timing; its Rank IC is $0.001$.
+MMGT-D2 separates the two at the output: it takes its market call from a full MMGT
+and ranks stocks with a branch whose outputs sum to zero each day. It keeps MMGT's
+score (MCC $0.151$) and raises the Rank IC to $0.027$, level with the best per-stock
+model. An ablation shows that this gain comes from the two-branch design, and a probe
+shows that the ranking branch still encodes recent market moves. Federated training
+across nine sector clients gives a further case: the score is kept while stock
+selection is lost.
 \end{abstract}
 
 \begin{IEEEkeywords}
-stock movement prediction, graph transformer, multi-modal learning,
-disentanglement, federated learning, StockNet
+stock movement prediction, evaluation, market timing, stock selection, graph
+transformer, multi-modal learning, federated learning, StockNet
 \end{IEEEkeywords}
 
 % =====================================================================
@@ -91,18 +93,22 @@ a model that knew only whether most stocks went up each day, and nothing about a
 single stock, would score an MCC of $0.625$ on the StockNet test set. A gain in one
 ability is therefore easily mistaken for a gain in the other. Our contributions are:
 \begin{enumerate}
-\item \textbf{MMGT}, a multi-modal graph transformer that describes each stock by its
-price history and a 47-feature profile and lets every stock attend to every other
-stock. It reaches an MCC of $0.146$ against $0.027$--$0.057$ for tuned baselines.
-\item \textbf{Timing and selection diagnostics}, validated against the rank
-information coefficient, a walk-forward evaluation over three test periods and a
-trading simulation, which show that MMGT's gain is almost all market timing.
-\item \textbf{MMGT-D2, a disentangled two-branch model} that takes market timing
-from MMGT and stock ranking from a market-blind branch. It keeps MMGT's score, has
-the highest MCC, accuracy, macro-F1 and AUC in our main comparison, and raises the
-Rank IC from $0.001$ to $0.027$.
-\item \textbf{A federated version} trained across nine sector clients, which matches
-centralised training on the standard score but loses stock selection.
+\item \textbf{The evaluation problem.} We show that the pooled score on StockNet
+rewards market timing far more than stock selection, and that rankings of models
+change across three test periods as their market timing does.
+\item \textbf{Diagnostics} that separate the two abilities, within-day and
+day-collapse MCC; in our setting the stock-selection diagnostic agrees with the rank
+information coefficient (Rank IC) used in finance.
+\item \textbf{MMGT and MMGT-D2.} MMGT, a multi-modal graph transformer, beats every
+tuned baseline (MCC $0.146$ against $0.027$--$0.057$), almost entirely by market
+timing. MMGT-D2 takes its market call from MMGT and ranks stocks with a branch whose
+outputs cannot move the day's call. It keeps MMGT's score, has the highest MCC,
+accuracy, macro-F1 and AUC in our main comparison, and raises the Rank IC from
+$0.001$ to $0.027$. An ablation and a probe of its hidden states show what the
+separation does and does not achieve (Section~\ref{sec:probe}).
+\item \textbf{Federated training as a further case.} Training across nine sector
+clients keeps the pooled score while stock selection is lost, another change the
+pooled score does not show.
 \end{enumerate}
 
 % =====================================================================
@@ -267,9 +273,10 @@ $\bar p_t$, removing all differences between stocks, and so measures market timi
 As an established check on stock selection we also report the \emph{rank
 information coefficient} (Rank IC) used in quantitative finance: the daily Spearman
 correlation between predicted probabilities and realised returns of all stocks with
-a valid input window, averaged over days. Across the 21 combinations of model and
-test period that we ran, Rank IC and within-day MCC correlate at $r=0.73$
-($p<0.001$), and across training runs of the same model at $r=0.75$.
+a valid input window, averaged over days. In our setting the two agree: across the
+21 combinations of model and test period that we ran, they correlate at $r=0.73$
+($p<0.001$), and across training runs of the same model at $r=0.75$. With 21 points,
+we treat this as support for the diagnostic, not as proof that it can replace Rank IC.
 
 \textbf{Reliability.} Every model is trained ten times with different seeds; we
 report mean and standard deviation, and run-level $p$-values from Welch's
@@ -278,9 +285,7 @@ capture uncertainty from the short test period we also resample the 64 test
 \emph{days} with replacement~\cite{kunsch1989}, keeping all stocks of a day together,
 and report the 95\% interval and two-sided $p$-value of the difference between two
 models' run-averaged scores (2{,}000 resamples). All settings were chosen on the
-validation period, where the learning rate matters most: at $10^{-4}$, all twelve
-combinations of window length, market weight and width reach a validation MCC of
-$0.14$--$0.26$. MMGT was fixed before any test run~\cite{nosek2018}; the two
+validation period. MMGT was fixed before any test run~\cite{nosek2018}; the two
 follow-ups of Section~\ref{sec:disent} were each pre-registered before their own
 first test run, but designed after earlier test results had been seen.
 
@@ -294,15 +299,17 @@ network (RGCN) over sector and correlation graphs.
 \textbf{Walk-forward and trading.} We repeat the evaluation on two earlier periods,
 each with its own earlier training and validation data: period A tests June--July
 2015 (44 days, $48.3\%$ up) and period B August--September 2015 (42 days, $44.6\%$
-up), with the settings selected for the standard split and five seeds. Period B is
-the standard split's validation period, so it is not fully out-of-sample; period A
-is cleaner. Finally, we turn daily predictions into portfolios over all stocks with
+up), with the settings selected for the standard split and five seeds. Period A is
+a clean out-of-sample test. Period B is the standard split's validation period, on
+which those settings were chosen, so we treat it as a robustness check rather than
+a test. Finally, we turn daily predictions into portfolios over all stocks with
 a valid input window, rebalanced daily: a \emph{long--short} portfolio buys the 10
 stocks with the highest predicted probability and sells the 10 lowest, testing
 selection (we also report the long-only top 10); a \emph{timing} portfolio holds all stocks if the average predicted
 probability exceeds $0.5$ and sells them otherwise. We report annualised Sharpe
-ratios, noisy over 64 days, with and without a cost of 10 basis points per unit of
-turnover.
+ratios with and without a cost of 10 basis points per unit of turnover. Over 64
+days these are noisy: the simulation illustrates the two abilities and is not
+evidence of a deployable strategy.
 
 % =====================================================================
 \section{Results}
@@ -350,7 +357,7 @@ $^{d}$Pre-registered follow-ups designed after MMGT's test results were known
 
 Table~\ref{tab:main} gives the main results. MMGT reaches an MCC of
 $0.146\pm0.029$, an accuracy of $57.0\%$, a macro-F1 of $0.565$ and an AUC of
-$0.602$, and its disentangled version MMGT-D2 (Section~\ref{sec:disent}) is higher
+$0.602$, and its two-branch version MMGT-D2 (Section~\ref{sec:disent}) is higher
 on all four ($0.151$, $57.2\%$, $0.568$, $0.612$). The tuned baselines score between
 $0.027$ and $0.057$ and our earlier RGCN $0.060$. Every one of MMGT's ten runs
 (lowest $0.097$) and MMGT-D2's ten runs (lowest $0.105$) scores above the best
@@ -477,8 +484,10 @@ e_{i,t}=w^{\top}\Bigl(h_{i,t}-\frac{1}{|\mathcal{V}_t|}\sum_{j\in\mathcal{V}_t}h
 where $\mathcal{V}_t$ are the stocks with a valid input window. The excess logits sum
 to zero every day, so they can only rank stocks, never call the day. Following
 earlier disentangled stock models~\cite{tang2020add}, an adversary trained through
-gradient reversal~\cite{ganin2015grl} tries to predict the market's direction from
-the centred states, and the stock branch learns to defeat it.
+gradient reversal~\cite{ganin2015grl} tries to predict the next day's market
+direction (whether the average return of the day's stocks is positive) from the
+spread of the centred states over the day's stocks, and the stock branch learns to
+defeat it.
 
 The market logit must keep MMGT's full pathway. A first version, MMGT-D, took $m_t$
 from the market summary alone: its stock selection improved, but its timing
@@ -491,8 +500,10 @@ m_t=\frac{1}{|\mathcal{V}_t|}\sum_{i\in\mathcal{V}_t} l_{i,t}.
 \end{equation}
 The day-average of MMGT-D2's logits is thus exactly MMGT's, while all differences
 between stocks come from the market-blind branch. Training adds MMGT's own loss on
-$l_{i,t}$ and applies the ranking term to $e_{i,t}$; of four variants, the one with
-the adversary had the best validation MCC ($0.258$). Its success criterion, fixed
+$l_{i,t}$ (weight $\lambda\in\{0.5,1\}$) and applies the ranking term to
+$e_{i,t}$; of four variants (with or without the adversary), the one with the
+adversary and $\lambda=1$ had the best validation MCC ($0.258$, against
+$0.245$--$0.257$). Its success criterion, fixed
 before its first test run, was better stock selection than MMGT (within-day MCC
 and Rank IC not lower, one significantly higher) without a significantly lower MCC.
 
@@ -503,21 +514,90 @@ Table~\ref{tab:main}. Its Rank IC rises from $0.001$ to $0.027$ (run-level
 $p=0.002$; day-level $+0.026$, $[0.007, 0.047]$, $p=0.006$), level with the ALSTM,
 the best per-stock model. Over all 20 seed-matched runs of the three test periods,
 its Rank IC is above MMGT's in 15 ($p=0.005$); in period A it is no better than MMGT,
-and in period B its MCC of $0.178$ is the best of any model (Table~\ref{tab:wf}). In
+and in period B, the robustness check, its MCC of $0.178$ is the best of any model
+(Table~\ref{tab:wf}). In
 money terms its long--short portfolio reaches a Sharpe ratio of $1.39$ against
 MMGT's $-0.23$, while its timing portfolio keeps most of MMGT's ($3.38$ against
-$4.24$; Table~\ref{tab:trade}). MMGT-D2 has about twice MMGT's parameters ($273$k
-against $132$k). Averages of two independently trained MMGTs reach an MCC of $0.161$
-but a Rank IC of only $0.003$: MMGT-D2's overall score is no better than such an
-ensemble, but its stock selection comes from the two-branch design, not from extra
-capacity.
+$4.24$; Table~\ref{tab:trade}).
+
+\subsection{What the separation does and does not achieve}
+\label{sec:probe}
+
+\begin{table}[t]
+\caption{MMGT-D2 ablation and market-information probe (standard test period).
+(a) Ten runs per row; $p$: Welch's test of Rank IC against MMGT over training
+runs. (b) AUC of a linear probe on test days, fitted on training days, for the
+seed-averaged probe score, with 95\% day-level interval for next-day direction; for
+the other two targets every interval's lower end is at least $0.92$.}
+\label{tab:probe}
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccccc}
+\toprule
+\multicolumn{6}{l}{\emph{(a) Ablation}} \\
+Variant & Adversary, $\lambda$ & MCC & Within-day & Rank IC & $p$ \\
+\midrule
+MMGT & -- & $0.146\pm0.029$ & $0.023$ & $0.001$ & -- \\
+Two-MMGT ensemble$^{a}$ & -- & $\mathbf{0.161\pm0.040}$ & -- & $0.003$ & -- \\
+\textbf{MMGT-D2} (selected) & yes, $1$ & $0.151\pm0.037$ & $\mathbf{0.031}$ & $\mathbf{0.027}$ & $0.002$ \\
+\quad variant & yes, $0.5$ & $0.143\pm0.029$ & $0.027$ & $0.023$ & $0.008$ \\
+\quad variant & no, $1$ & $0.155\pm0.027$ & $0.030$ & $0.023$ & $0.008$ \\
+\quad variant & no, $0.5$ & $0.135\pm0.050$ & $0.026$ & $0.017$ & $0.036$ \\
+\midrule
+\multicolumn{6}{l}{\emph{(b) Probe: what the representation reveals about the market}} \\
+Representation & \multicolumn{2}{c}{Next-day direction} & Yesterday & \multicolumn{2}{c}{10-day trend} \\
+\midrule
+Market-index input & \multicolumn{2}{c}{$0.59$ $[0.44, 0.74]$} & $0.99$ & \multicolumn{2}{c}{$1.00$} \\
+MMGT & \multicolumn{2}{c}{$0.69$ $[0.54, 0.83]$} & $0.99$ & \multicolumn{2}{c}{$0.98$} \\
+MMGT-D2 timing branch & \multicolumn{2}{c}{$0.67$ $[0.53, 0.81]$} & $1.00$ & \multicolumn{2}{c}{$0.98$} \\
+MMGT-D2 selection, centred & \multicolumn{2}{c}{$0.63$ $[0.48, 0.78]$} & $0.97$ & \multicolumn{2}{c}{$1.00$} \\
+\quad without adversary ($\lambda=1$) & \multicolumn{2}{c}{$0.61$ $[0.46, 0.75]$} & $0.99$ & \multicolumn{2}{c}{$1.00$} \\
+\bottomrule
+\end{tabular}}
+\\[3pt]
+\parbox{\columnwidth}{\footnotesize $^{a}$Average of two independently trained MMGTs,
+five pairs; about the same parameter count as MMGT-D2 ($273$k against $132$k for
+MMGT).}
+\end{table}
+
+Two questions remain: which part of MMGT-D2 brings the selection gain, and whether
+its ranking branch is really free of market information. After review we ran the
+three variants not selected on validation on the test period, and saved the hidden
+states of every model; both analyses were pre-registered before these runs, and the
+variants are a disclosed post-hoc ablation, not candidates for selection.
+
+\textbf{The two-branch design brings the gain; the adversary adds little.}
+Table~\ref{tab:probe}(a) shows that all four variants raise Rank IC above MMGT
+($0.017$--$0.027$ against $0.001$), while none changes MCC ($0.135$--$0.155$ against
+$0.146$, $p\ge0.49$). The variant without the adversary has a slightly higher MCC
+than the selected one and a Rank IC of $0.023$ against $0.027$. The timing branch's
+own logits $l_{i,t}$, a full MMGT, have a Rank IC near zero in every variant
+($-0.004$ to $0.008$), so the ranking comes from the market-blind branch. Extra
+capacity alone does not give it: an ensemble of two MMGTs has the highest MCC
+($0.161$) but a Rank IC of only $0.003$.
+
+\textbf{The ranking branch still encodes recent market moves.} For each test day we
+summarise a representation by the mean and spread of its states over the day's
+stocks (only the spread for centred states, whose mean is zero) and train a logistic
+probe on training days to predict three facts about the market. Next-day direction,
+the adversary's target, is too weakly predictable over 64 days to separate the
+representations: even the market-index input is near chance ($0.59$, interval
+including $0.5$), and so are the centred selection states with or without the
+adversary. Yesterday's direction and the 10-day trend, which the inputs determine,
+are read almost perfectly from every representation, including the centred selection
+states ($0.97$ and $1.00$). MMGT-D2 therefore separates timing and selection
+\emph{at the output}: its ranking cannot move the day's market call, but its
+internal states are not free of market information. By the rule we fixed before the
+probe, we do not call it disentangled. This need not be harmful: the recent market
+may be useful context for ranking stocks.
 
 \subsection{Results across three test periods}
 
 \begin{table}[t]
 \caption{Walk-forward evaluation in three consecutive test periods. Neural models
-averaged over five runs in A and B and ten in the standard period. $^{*}$Not fully
-out-of-sample (Section~\ref{sec:eval}).}
+averaged over five runs in A and B and ten in the standard period. $^{*}$Validation
+period of the standard split: a robustness check, not a test
+(Section~\ref{sec:eval}).}
 \label{tab:wf}
 \centering
 \resizebox{\columnwidth}{!}{%
@@ -556,7 +636,8 @@ periods. Stock selection behaves differently. By within-day MCC, MMGT's gain ove
 has the same sign in all three periods (positive in 15 of 20 paired runs, sign test
 $p=0.041$); by Rank IC it appears in periods A and B but not in the standard period,
 so MMGT's selection is real but uneven.
-The two disentangled models have the best average Rank IC.
+The two models that separate timing and selection at the output, MMGT-D and
+MMGT-D2, have the best average Rank IC.
 
 \subsection{Trading simulation}
 
@@ -588,7 +669,7 @@ MMGT-D2 & $1.21$ & $1.39$ & $-2.27$ & $3.38$ & $2.45$ & $+12.7\%$ \\
 Table~\ref{tab:trade} turns the predictions into portfolios. MMGT's timing portfolio
 has a Sharpe ratio of $4.24$ ($\pm1.73$ over runs), $3.16$ after costs, and returns
 $15.9\%$ over the period, against $1.39$ and $5.0\%$ for buying and holding all
-stocks; it loses at most $4.1\%$ from a peak, against $6.5\%$. The baselines' timing
+stocks. The baselines' timing
 portfolios reach at most $2.02$. The stock-picking portfolios follow stock selection:
 the ALSTM is the best stock picker (long--short Sharpe $3.30$), MMGT's long--short
 portfolio is flat, and MMGT-D2 lifts it to $1.39$. Daily rebalancing of a
@@ -599,8 +680,8 @@ timing portfolio remains MMGT's and the best stock-picking portfolios the ALSTM'
 \subsection{Federated training}
 \label{sec:fed}
 
-We trained MMGT (without the ranking term) with federated
-averaging~\cite{mcmahan2017fedavg}
+Federated training gives a further case of what the pooled score hides. We trained
+MMGT (without the ranking term) with federated averaging~\cite{mcmahan2017fedavg}
 across nine clients, one per sector, each holding 7--10 stocks. Each round, every
 client trains on its own stocks and labels, and a server averages the weights in
 proportion to each client's data. We fixed in advance that federated training stays
@@ -632,9 +713,11 @@ share one representation, the market signal dominates and stock selection is sma
 and uneven. Separating them at the output works only if the market call keeps the
 full model: MMGT-D, whose market head sees only the market summary, loses the
 timing, while MMGT-D2 keeps it and gains stock selection level with the best
-per-stock model by Rank IC. The market call needs the market summary and attention over all
-stocks; the ranking of stocks is better learned by a branch that never sees the
-market.
+per-stock model by Rank IC. The market call needs the market summary and attention
+over all stocks; the ranking of stocks is better learned by a branch that cannot
+shift the day's call. The ablation locates the gain in this structure rather than in
+the adversary, and the probe shows that the separation holds at the output, not in
+the hidden states.
 
 \textbf{Limitations.} We study one benchmark of 87 large US stocks over 2014--2015.
 Published results on it use different preprocessing and protocols, so we compare
@@ -647,7 +730,10 @@ near zero on the standard period. The walk-forward periods reuse the standard
 settings, and period B is not fully out-of-sample. MMGT-D and MMGT-D2 were designed
 after MMGT's test results were known (MMGT-D2 also after MMGT-D's), and each was
 pre-registered before its own first test run; MMGT-D2's selection gain is absent in
-period A, and its overall score is no better than an ensemble of two MMGTs. The
+period A, its overall score is no better than an ensemble of two MMGTs, its
+ablation variants were run on the test period after review, and its ranking branch
+still encodes recent market moves. With 64 test days, the probe cannot tell whether
+any representation predicts the next day's market. The
 trading simulation ignores market impact and borrowing costs, and federated
 training was simulated on one machine.
 
@@ -659,11 +745,12 @@ volatility, fundamentals, tweet volume and features from a graph of related stoc
 and lets every stock attend to every other stock. On the standard StockNet test
 period it reaches an MCC of $0.146$ and an accuracy of $57.0\%$, above every tuned
 baseline. Separating market timing from stock selection shows that this gain is
-mostly market timing, worth a timing portfolio with a Sharpe ratio of $4.2$. The
-disentangled MMGT-D2, which takes its market call from MMGT and ranks stocks with a
-market-blind branch, keeps the score (MCC $0.151$, accuracy $57.2\%$) and raises the
-Rank IC from $0.001$ to $0.027$, combining MMGT's timing with a Rank IC level with
-the best per-stock model's. We recommend reporting stock-selection and market-timing
+mostly market timing, worth a timing portfolio with a Sharpe ratio of $4.2$. MMGT-D2,
+which takes its market call from MMGT and ranks stocks with a branch whose outputs
+sum to zero each day, keeps the score (MCC $0.151$, accuracy $57.2\%$) and raises the
+Rank IC from $0.001$ to $0.027$, level with the best per-stock model. This gain comes
+from separating the two at the output; the ranking branch's states still reflect
+recent market moves. We recommend reporting stock-selection and market-timing
 scores, and more than one test period, in future work on this benchmark.
 
 \section*{Acknowledgment}

@@ -23,7 +23,10 @@ stocks better. Experiment 12 separates the two at the output: MMGT-D (market hea
 on the market index alone) loses the timing and failed its pre-registered criterion
 (MCC 0.064); MMGT-D2 (Experiment 12b) takes its market call from a full MMGT and ranks
 stocks with a market-blind branch, and met its criterion: MCC 0.151, Rank IC 0.027
-(MMGT 0.001), level with the best per-stock model. Pooled-MCC rankings shift
+(MMGT 0.001), level with the best per-stock model. Experiment 13 (ablation + probe of
+hidden states) shows the gain comes from the two-branch design, not the adversary, and
+that the ranking branch still encodes recent market moves: the separation holds at the
+output, so the paper does not call MMGT-D2 disentangled. Pooled-MCC rankings shift
 between periods with market timing, and the advantage over the tuned MLP and LSTM
 is not significant at the level of test days. Hand-built graphs inside the
 attention layer add nothing. Federated training across nine sector clients matches

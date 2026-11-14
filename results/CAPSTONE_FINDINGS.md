@@ -253,3 +253,9 @@ Not claimable:
   (MMGT 0.001, day-level p = 0.006), level with the best per-stock model (ALSTM 0.027),
   long-short Sharpe 1.39 (MMGT -0.23). Lesson: give timing and selection separate
   outputs, but keep MMGT's full pathway for the market call.
+- **Experiment 13, ablation + market-information probe** (review round 3, pre-registered):
+  all four MMGT-D2 variants raise Rank IC (0.017-0.027 vs 0.001), none changes MCC; the
+  gain comes from the two-branch design, not the adversary. A linear probe reads
+  yesterday's market direction (AUC 0.97) and the 10-day trend (1.00) from the centred
+  ranking states, so MMGT-D2 separates timing and selection at the output only; the
+  paper does not call it disentangled.
