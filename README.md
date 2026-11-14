@@ -15,9 +15,9 @@ stock graph), reaches a pooled MCC of 0.146 on the standard test period, above e
 baseline (at most 0.057) and our earlier RGCN (0.060). This is within our own
 protocol, not a new state of the art. Pooled MCC, however, mixes two skills: calling the whole
 market's direction on a day, and ranking stocks against each other. MMGT's gain is
-mostly market timing (its timing portfolio has a Sharpe ratio of 4.2 against 1.4
-for buy-and-hold). Its stock selection is weak and uneven: by within-day MCC its
-gain over the price-only base has the same sign in all three test periods, but by
+mostly market timing (net of 10 bps, its timing portfolio has a Sharpe ratio of 3.2
+against 1.4 for buy-and-hold). Its stock selection is weak and uneven: by within-day MCC its
+gain over the price-only base is positive in both out-of-sample test periods, but by
 Rank IC it is near zero on the standard period, where the per-stock LSTM/ALSTM pick
 stocks better. Experiment 12 separates the two at the output: MMGT-D (market head
 on the market index alone) loses the timing and failed its pre-registered criterion

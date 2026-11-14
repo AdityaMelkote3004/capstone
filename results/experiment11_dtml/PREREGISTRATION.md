@@ -301,3 +301,13 @@ Timing branch l: Rank IC ~ 0 in every variant (-0.004 to 0.008), as for MMGT (0.
 p 0.49-0.80). D2_la1 (no adversary) has MCC 0.155, IC 0.023. The selection gain comes from
 the two-branch, centred head; the adversary adds little on these metrics. Disclosed
 as post-hoc; D2_final stays the headline model. Output: paper/exp13_ablation.json.
+
+### Review round 4 note (no new runs)
+
+Walk-forward period B is the standard split's validation period, on which the frozen
+settings were chosen, so it is in-sample for them. From this round the paper reports B
+separately and excludes it from all averages and tests. The pre-registered Exp 12b
+secondary test (MMGT-D2 vs MMGT, seed-matched over all periods incl. B: Rank IC higher
+in 15/20, p = 0.005) is still disclosed, but the paper now relies on the out-of-sample
+version (period A + standard: 11/15, paired t p = 0.011, sign p = 0.12). The primary
+endpoint (standard period) is unchanged. Script: paper/rev4_oos.py.

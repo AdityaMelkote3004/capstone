@@ -286,8 +286,9 @@ a valid input window, averaged over days. In our setting the two agree. We
 average each over the runs of every model with saved predictions in every
 out-of-sample test period: ten models, seven of them run in both periods and three in
 the standard period only, giving 17 combinations. Across these, within-day MCC and
-Rank IC correlate at $r=0.84$ ($p<0.001$); across the 115 individual runs, after
-removing each combination's mean, at $r=0.77$. With 17 combinations, we treat this
+Rank IC correlate at $r=0.84$ ($p<0.001$; $r=0.79$ over all 24 combinations,
+including the in-sample period B); across the 115 individual runs, after removing
+each combination's mean, at $r=0.77$. With 17 combinations, we treat this
 as support for the diagnostic, not as proof that it can replace Rank IC.
 
 \textbf{Reliability.} Every model is trained ten times with different seeds; we
@@ -312,7 +313,8 @@ network (RGCN) over sector and correlation graphs.
 its own earlier training and validation data and five seeds, keeping the settings
 selected for the standard split frozen: period A tests June--July 2015 (44 days,
 $48.3\%$ up) and period B August--September 2015 (42 days, $44.6\%$ up). Period A is
-out-of-sample. Period B is the standard split's validation period, on which the
+out-of-sample for its models (with one indirect dependence through the frozen
+settings, Section~\ref{sec:disc}). Period B is the standard split's validation period, on which the
 frozen settings were chosen, so it is \emph{in-sample} for those settings: we report
 it separately for reference only and exclude it from every average and test. The
 out-of-sample evidence therefore consists of period A and the standard test period.
@@ -634,9 +636,10 @@ split, on which the settings were chosen: in-sample, shown for reference only
 \label{tab:wf}
 \centering
 \resizebox{\columnwidth}{!}{%
-\begin{tabular}{lccc|c}
+\begin{tabular}{lcccc}
 \toprule
- & \multicolumn{3}{c|}{Out-of-sample} & In-sample \\
+ & \multicolumn{3}{c}{Out-of-sample} & In-sample \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-5}
 Model & A: Jun--Jul & Oct--Dec & Average & B$^{*}$: Aug--Sep \\
 \midrule
 \multicolumn{5}{l}{\emph{MCC}} \\
@@ -685,9 +688,10 @@ Sharpe $1.39$, return $+5.0\%$.}
 \label{tab:trade}
 \centering
 \resizebox{\columnwidth}{!}{%
-\begin{tabular}{lcccc|cc}
+\begin{tabular}{lcccccc}
 \toprule
- & \multicolumn{4}{c|}{Net of 10 bps} & \multicolumn{2}{c}{Gross (0 bps)} \\
+ & \multicolumn{4}{c}{Net of 10 bps} & \multicolumn{2}{c}{Gross (0 bps)} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-7}
 Model & Long top-10 & Long--short & Timing & Timing return & Long--short & Timing \\
 \midrule
 Logistic regression & $0.09$ & $-6.19$ & $-0.04$ & $-0.4\%$ & $0.02$ & $1.62$ \\
@@ -705,12 +709,14 @@ MMGT-D2 & $-0.39$ & $-2.27$ & $2.45$ & $+9.1\%$ & $1.39$ & $3.38$ \\
 
 Table~\ref{tab:trade} turns the predictions into portfolios, net of costs. Daily
 rebalancing of stock-picking portfolios is expensive: at 10 bps, every long--short
-portfolio loses money except the ALSTM's (Sharpe $0.53$), and only the ALSTM's
-long-only portfolio stays clearly positive ($1.16$). Stock-selection ability, as
-measured here, is therefore not economically exploitable at this cost. Timing
-portfolios trade rarely and survive costs: four of them exceed buying and holding
-(Sharpe $1.39$, return $5.0\%$), led by MMGT's (net Sharpe $3.16$, return $11.8\%$),
-followed by the federated model ($2.56$), MMGT-D2 ($2.45$) and MMGT-base ($1.59$).
+portfolio loses money except the ALSTM's (Sharpe $0.53$), and the ALSTM's long-only
+portfolio has by far the highest net Sharpe ratio ($1.16$, against at most $0.30$ for
+the others). The timing
+portfolios of the four strongest market timers trade less often and exceed buying
+and holding (Sharpe $1.39$, return $5.0\%$) after costs: MMGT's (net Sharpe $3.16$,
+return $11.8\%$), the federated model's ($2.56$), MMGT-D2's ($2.45$) and
+MMGT-base's ($1.59$). Those of logistic regression and the MLP, which switch almost
+daily, do not survive costs.
 Before costs, the ranking of stock pickers follows stock selection (the ALSTM's
 long--short Sharpe is $3.30$; MMGT-D2 improves MMGT's from $-0.23$ to $1.39$), but
 these gross gains do not survive costs. At every cost we tried (0, 5, 10 and 20 bps)
