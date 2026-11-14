@@ -247,3 +247,35 @@ in 15/20 (t p = 0.005, sign p = 0.041); within-day higher in 14/20 (t p = 0.058)
 Fold A: MCC 0.052 vs 0.048, IC 0.025 vs 0.023. Fold B: MCC 0.178 vs 0.106, IC 0.068 vs 0.045.
 Per the rule, MMGT-D2 is presented as the paper's disentangled model, with the disclosure
 that it is the second follow-up designed after test results were seen.
+
+## Experiment 13 -- MMGT-D2 ablation and market-information probe (review round 3), pre-registered before any run
+
+Requested by an external review after the paper's MMGT-D2 results were known. Nothing here
+changes the headline model: **D2_final (two-branch + adversary, lambda_aux = 1) stays the
+paper's model whatever the numbers below show**, because it was selected on validation.
+
+(a) Ablation (DISCLOSED POST-HOC). The three MMGT-D2 configurations NOT selected in
+Experiment 12b (D2_la0.5, D2_la1 without adversary; D2adv_la0.5) are run on the standard
+test period, seeds 0-9, exactly as D2_final. Reported side by side with MMGT, the
+two-MMGT ensemble control (Exp 12b) and D2_final; MCC, within-day MCC, day-collapse MCC,
+Rank IC. No winner is picked from this table.
+
+(b) Probe. D2_final (seeds 0-9) and MMGT (R_mmgt, seeds 0-9) are retrained with the
+exact original settings and thread counts, with --save-states (states saved after
+training, in eval mode, no gradients; no effect on training). The ablation runs also save
+states. Reproduction is checked by comparing each rerun's test MCC with the original CSV;
+if they differ, the probe is reported as a property of the training recipe, with the
+reruns' own scores, never mixed into Table I.
+Representations: MMGT final stock states; D2 timing-branch states; D2 selection-branch
+states, uncentred and centred (what the excess head sees). Day feature: [mean, std] over
+window-valid stocks (std only for centred). Probe: L2 logistic regression fitted on
+training days, C by 5-fold blocked CV on training days, scored by AUC on the 64 test
+days. Targets: next-day market direction (training label of the adversary), yesterday's
+market direction and the 10-day market trend (both determined by the inputs).
+Interval: 95% day-level bootstrap (2,000) of the AUC of the seed-averaged probe score.
+Rule: a representation is "near chance" for a target if this interval includes 0.5.
+Reference: the same probe on the raw market-index input window.
+Wording rule for the paper: if D2_final's centred selection states are near chance on
+all three targets, the paper may call MMGT-D2 "disentangled"; otherwise it describes it
+as separating timing and selection AT THE OUTPUT and reports which targets leak.
+Script: paper/exp13_probe.py -> paper/exp13_probe.json; runs: scripts/runs/exp13.sh.

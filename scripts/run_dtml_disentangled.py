@@ -98,6 +98,8 @@ def main():
     ap.add_argument("--eval-test", action="store_true")
     ap.add_argument("--save-preds", action="store_true")
     ap.add_argument("--out-prefix", default="exp12_")
+    ap.add_argument("--save-states", action="store_true",
+                    help="Exp 13: save day-level hidden-state summaries for the probe")
     args = ap.parse_args()
 
     data = load_acl18(window=args.window, fold=args.fold)
@@ -143,6 +145,10 @@ def main():
                 from src.eval.predictions import collect, save
                 save(os.path.join(OUT_DIR, "preds", f"{args.tag}_{args.fold}_s{seed}.npz"),
                      collect(model, data, idx["test"], extra), data["dates"])
+            if args.save_states:
+                from src.eval.states import collect_states, save_states
+                save_states(os.path.join(OUT_DIR, "states", f"{args.tag}_{args.fold}_s{seed}.npz"),
+                            collect_states(model, data, extra, idx))
             msg += (f" || TEST mcc={tm['mcc']:+.4f} acc={tm['acc']:.4f} "
                     f"wd={tm['within_day_mcc']:+.4f} collapse={tm['collapse_mcc']:+.4f}")
         pd.DataFrame([row]).to_csv(out_csv, mode="a", header=not os.path.exists(out_csv), index=False)

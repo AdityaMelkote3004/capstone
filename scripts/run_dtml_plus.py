@@ -104,6 +104,8 @@ def main() -> None:
     ap.add_argument("--fold", default="main", choices=["main", "A", "B"])
     ap.add_argument("--save-preds", action="store_true")
     ap.add_argument("--out-prefix", default="")
+    ap.add_argument("--save-states", action="store_true",
+                    help="Exp 13: save day-level hidden-state summaries for the probe")
     args = ap.parse_args()
 
     data = load_acl18(window=args.window, fold=args.fold)
@@ -153,6 +155,10 @@ def main() -> None:
                 from src.eval.predictions import collect, save
                 save(os.path.join(OUT_DIR, "preds", f"{args.tag}_{args.fold}_s{seed}.npz"),
                      collect(model, data, idx["test"], extra, adj), data["dates"])
+            if args.save_states:
+                from src.eval.states import collect_states, save_states
+                save_states(os.path.join(OUT_DIR, "states", f"{args.tag}_{args.fold}_s{seed}.npz"),
+                            collect_states(model, data, extra, idx))
             msg += (f" || TEST mcc={tm['mcc']:+.4f} acc={tm['acc']:.4f} auc={tm['auc']:.4f} "
                     f"wd={tm['within_day_mcc']:+.4f} collapse={tm['collapse_mcc']:+.4f}")
         if args.out_prefix:
