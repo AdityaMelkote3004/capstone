@@ -48,3 +48,5 @@ Crossref lists no page range, so none is printed.
 |---|---|
 | tang2020add | arXiv listing 2012.06289 and Microsoft Research publication page: H. Tang, L. Wu, W. Liu, J. Bian, "ADD: Augmented Disentanglement Distillation Framework for Improving Stock Trend Forecasting", arXiv 2020 (no peer-reviewed venue found). |
 | ganin2015grl | PMLR v37 page (proceedings.mlr.press/v37/ganin15): Y. Ganin, V. Lempitsky, "Unsupervised Domain Adaptation by Backpropagation", Proc. 32nd ICML, PMLR 37:1180-1189, 2015. |
+| holm1979 | JSTOR record (stable/4615733, doi 10.2307/4615733) via web search, review round 5: S. Holm, "A Simple Sequentially Rejective Multiple Test Procedure", Scand. J. Statist. 6(2):65-70, 1979. |
+| grinold2000active | Library catalogue records (e.g. Texas A&M, econbiz) via web search, review round 5: R. C. Grinold, R. N. Kahn, Active Portfolio Management, 2nd ed., New York: McGraw-Hill, 2000. Subtitle omitted because catalogues disagree ("producing" vs "providing"). |

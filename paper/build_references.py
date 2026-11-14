@@ -55,6 +55,9 @@ REFS = {
     "kingma2015adam": r"D.~P. Kingma and J.~Ba, ``Adam: A method for stochastic optimization,'' in \emph{Proc. 3rd Int. Conf. Learn. Represent. (ICLR)}, San Diego, CA, USA, 2015.",
     "welch1947": r"B.~L. Welch, ``The generalization of `Student's' problem when several different population variances are involved,'' \emph{Biometrika}, vol.~34, no.~1--2, pp. 28--35, 1947, doi: 10.1093/biomet/34.1-2.28.",
     "kunsch1989": r"H.~R. K{\"u}nsch, ``The jackknife and the bootstrap for general stationary observations,'' \emph{Ann. Statist.}, vol.~17, no.~3, pp. 1217--1241, 1989, doi: 10.1214/aos/1176347265.",
+    # added in review round 5
+    "holm1979": r"S.~Holm, ``A simple sequentially rejective multiple test procedure,'' \emph{Scand. J. Statist.}, vol.~6, no.~2, pp. 65--70, 1979, doi: 10.2307/4615733.",
+    "grinold2000active": r"R.~C. Grinold and R.~N. Kahn, \emph{Active Portfolio Management}, 2nd~ed. New York, NY, USA: McGraw-Hill, 2000.",
     "nosek2018": r"B.~A. Nosek, C.~R. Ebersole, A.~C. DeHaven, and D.~T. Mellor, ``The preregistration revolution,'' \emph{Proc. Nat. Acad. Sci.}, vol.~115, no.~11, pp. 2600--2606, 2018, doi: 10.1073/pnas.1708274114.",
     # added in review round 2 (verified: arXiv listing / Microsoft Research page; PMLR v37 page)
     "tang2020add": r"H.~Tang, L.~Wu, W.~Liu, and J.~Bian, ``ADD: Augmented disentanglement distillation framework for improving stock trend forecasting,'' 2020, \emph{arXiv:2012.06289}.",

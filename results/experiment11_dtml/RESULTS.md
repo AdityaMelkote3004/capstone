@@ -268,3 +268,17 @@ excluded from every average and test. Out-of-sample = period A + standard (Oct-D
 - Trading now reported net of 10 bps first (paper Table V).
 - Rounding corrections: MMGT-D standard MCC 0.06348 -> 0.063 (was printed 0.064);
   MLP period-A Rank IC -0.01747 -> -0.017 (was -0.018).
+
+## Review round 5: block/hierarchical bootstrap, daily market evaluation (no new training)
+
+Script `paper/rev5_stats.py` -> `paper/rev5_stats.json`; full tables in `paper/SUPPLEMENT.md` (S3-S4).
+Primary day-level method: hierarchical bootstrap (runs + circular 5-day blocks, 2,000 reps).
+- MMGT vs LR / LSTM / ALSTM / MLP pooled MCC: p = 0.040 / 0.030 / 0.006 / 0.098;
+  Holm 0.090 / 0.090 / 0.024 / 0.098.
+- MMGT-D2 - MMGT: Rank IC +0.026 [0.004, 0.051] p = 0.027 (1-day blocks 0.071);
+  pooled MCC +0.005 [-0.043, 0.060]; within-day +0.008 [-0.019, 0.035].
+- Daily market-direction AUC (one obs/day): MMGT 0.660 [0.54, 0.77], MMGT-D2 0.654,
+  MMGT-base 0.640, LSTM 0.609, ALSTM 0.579, MLP 0.569, LR 0.557; market-only LR 0.547.
+- Within-day MCC: T' = 63/64 days; 32 days > 80% one-directional; no ties; all-stock
+  sign-of-return variant near zero for every model.
+- Agreement (17 oos cells): r = 0.84, model-cluster 95% CI [0.66, 0.92].

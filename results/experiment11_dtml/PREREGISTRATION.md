@@ -342,3 +342,16 @@ Dropped before running: label-threshold sensitivity (the saved close-to-close re
 not reproduce the adjusted-close labels exactly: 130 up-labels at <= +0.55%, 191
 unlabelled outside the band), so relabelling would not be valid.
 Script: paper/rev5_stats.py -> paper/rev5_stats.json.
+
+### Review round 5 -- outcome (rules applied unchanged; paper/rev5_stats.json)
+
+Run-level values reproduce the reported ones exactly. Under the primary method
+(hierarchical, 5-day blocks): MMGT vs LR p=0.040, LSTM 0.030, ALSTM 0.006, MLP 0.098;
+Holm-adjusted 0.090 / 0.090 / 0.024 / 0.098 -> only ALSTM survives. MMGT-D2 primary
+endpoint (Rank IC vs MMGT): +0.026 [0.004, 0.051], p=0.027 (sensitivity: 1-day blocks
+p=0.071, 10-day 0.031, days-only 0.0005). MMGT-D2 - MMGT pooled MCC +0.005
+[-0.043, 0.060]: no margin pre-specified, so no non-inferiority claim; reported as the
+smallest excluded loss (0.043). The paper's former i.i.d. day-level numbers are replaced
+by these. The Exp 13 probe intervals keep their own pre-registered i.i.d. method.
+Day-removed counterfactual (stock above its day's mean) is reported in the supplement
+but not interpreted: mean-thresholding does not force a balanced daily split.
