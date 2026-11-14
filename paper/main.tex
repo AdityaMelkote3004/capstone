@@ -102,7 +102,7 @@ information coefficient (Rank IC) used in finance.
 \item \textbf{MMGT and MMGT-D2.} MMGT, a multi-modal graph transformer, beats every
 tuned baseline (MCC $0.146$ against $0.027$--$0.057$), almost entirely by market
 timing. MMGT-D2 takes its market call from MMGT and ranks stocks with a branch whose
-outputs cannot move the day's call. It keeps MMGT's score, has the highest MCC,
+outputs cannot shift the day's average logit. It keeps MMGT's score, has the highest MCC,
 accuracy, macro-F1 and AUC in our main comparison, and raises the Rank IC from
 $0.001$ to $0.027$. An ablation and a probe of its hidden states show what the
 separation does and does not achieve (Section~\ref{sec:probe}).
@@ -482,7 +482,8 @@ e_{i,t}=w^{\top}\Bigl(h_{i,t}-\frac{1}{|\mathcal{V}_t|}\sum_{j\in\mathcal{V}_t}h
 \qquad \mathrm{logit}_{i,t}=m_t+e_{i,t},
 \end{equation}
 where $\mathcal{V}_t$ are the stocks with a valid input window. The excess logits sum
-to zero every day, so they can only rank stocks, never call the day. Following
+to zero every day, so they rank stocks but cannot shift the day's average logit.
+Following
 earlier disentangled stock models~\cite{tang2020add}, an adversary trained through
 gradient reversal~\cite{ganin2015grl} tries to predict the next day's market
 direction (whether the average return of the day's stocks is positive) from the
@@ -498,8 +499,8 @@ uses only the day-average of its per-stock logits $l_{i,t}$:
 \begin{equation}
 m_t=\frac{1}{|\mathcal{V}_t|}\sum_{i\in\mathcal{V}_t} l_{i,t}.
 \end{equation}
-The day-average of MMGT-D2's logits is thus exactly MMGT's, while all differences
-between stocks come from the market-blind branch. Training adds MMGT's own loss on
+The day-average of MMGT-D2's logits is thus exactly its timing branch's, while all
+differences between stocks come from the stock branch, which has no market input. Training adds MMGT's own loss on
 $l_{i,t}$ (weight $\lambda\in\{0.5,1\}$) and applies the ranking term to
 $e_{i,t}$; of four variants (with or without the adversary), the one with the
 adversary and $\lambda=1$ had the best validation MCC ($0.258$, against
@@ -569,10 +570,10 @@ variants are a disclosed post-hoc ablation, not candidates for selection.
 \textbf{The two-branch design brings the gain; the adversary adds little.}
 Table~\ref{tab:probe}(a) shows that all four variants raise Rank IC above MMGT
 ($0.017$--$0.027$ against $0.001$), while none changes MCC ($0.135$--$0.155$ against
-$0.146$, $p\ge0.49$). The variant without the adversary has a slightly higher MCC
+$0.146$, $p\ge0.48$). The variant without the adversary has a slightly higher MCC
 than the selected one and a Rank IC of $0.023$ against $0.027$. The timing branch's
 own logits $l_{i,t}$, a full MMGT, have a Rank IC near zero in every variant
-($-0.004$ to $0.008$), so the ranking comes from the market-blind branch. Extra
+($-0.004$ to $0.008$), so the ranking comes from the stock branch. Extra
 capacity alone does not give it: an ensemble of two MMGTs has the highest MCC
 ($0.161$) but a Rank IC of only $0.003$.
 
@@ -582,11 +583,11 @@ stocks (only the spread for centred states, whose mean is zero) and train a logi
 probe on training days to predict three facts about the market. Next-day direction,
 the adversary's target, is too weakly predictable over 64 days to separate the
 representations: even the market-index input is near chance ($0.59$, interval
-including $0.5$), and so are the centred selection states with or without the
-adversary. Yesterday's direction and the 10-day trend, which the inputs determine,
+including $0.5$), as are the centred selection states of three of the four variants,
+with or without the adversary, and all intervals overlap. Yesterday's direction and the 10-day trend, which the inputs determine,
 are read almost perfectly from every representation, including the centred selection
 states ($0.97$ and $1.00$). MMGT-D2 therefore separates timing and selection
-\emph{at the output}: its ranking cannot move the day's market call, but its
+\emph{at the output}: its ranking cannot shift the day's average logit, but its
 internal states are not free of market information. By the rule we fixed before the
 probe, we do not call it disentangled. This need not be harmful: the recent market
 may be useful context for ranking stocks.
@@ -714,8 +715,8 @@ and uneven. Separating them at the output works only if the market call keeps th
 full model: MMGT-D, whose market head sees only the market summary, loses the
 timing, while MMGT-D2 keeps it and gains stock selection level with the best
 per-stock model by Rank IC. The market call needs the market summary and attention
-over all stocks; the ranking of stocks is better learned by a branch that cannot
-shift the day's call. The ablation locates the gain in this structure rather than in
+over all stocks; the ranking of stocks is better learned by a branch that has no
+market input and cannot shift the day's average logit. The ablation locates the gain in this structure rather than in
 the adversary, and the probe shows that the separation holds at the output, not in
 the hidden states.
 
@@ -732,8 +733,9 @@ after MMGT's test results were known (MMGT-D2 also after MMGT-D's), and each was
 pre-registered before its own first test run; MMGT-D2's selection gain is absent in
 period A, its overall score is no better than an ensemble of two MMGTs, its
 ablation variants were run on the test period after review, and its ranking branch
-still encodes recent market moves. With 64 test days, the probe cannot tell whether
-any representation predicts the next day's market. The
+still encodes recent market moves. With 64 test days, the probe's intervals for the
+next day's market all overlap, so this target cannot tell the representations
+apart. The
 trading simulation ignores market impact and borrowing costs, and federated
 training was simulated on one machine.
 

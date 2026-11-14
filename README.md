@@ -22,7 +22,7 @@ Rank IC it is near zero on the standard period, where the per-stock LSTM/ALSTM p
 stocks better. Experiment 12 separates the two at the output: MMGT-D (market head
 on the market index alone) loses the timing and failed its pre-registered criterion
 (MCC 0.064); MMGT-D2 (Experiment 12b) takes its market call from a full MMGT and ranks
-stocks with a market-blind branch, and met its criterion: MCC 0.151, Rank IC 0.027
+stocks with a branch that has no market input, and met its criterion: MCC 0.151, Rank IC 0.027
 (MMGT 0.001), level with the best per-stock model. Experiment 13 (ablation + probe of
 hidden states) shows the gain comes from the two-branch design, not the adversary, and
 that the ranking branch still encodes recent market moves: the separation holds at the
