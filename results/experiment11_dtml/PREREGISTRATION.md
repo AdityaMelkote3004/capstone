@@ -311,3 +311,34 @@ secondary test (MMGT-D2 vs MMGT, seed-matched over all periods incl. B: Rank IC 
 in 15/20, p = 0.005) is still disclosed, but the paper now relies on the out-of-sample
 version (period A + standard: 11/15, paired t p = 0.011, sign p = 0.12). The primary
 endpoint (standard period) is unchanged. Script: paper/rev4_oos.py.
+
+## Review round 5 -- statistical robustness re-analysis (no new training), rules fixed BEFORE any computation
+
+Requested by a reviewer: the i.i.d. day bootstrap ignores temporal dependence. All
+analyses below use only the saved test predictions; no model is retrained.
+
+Primary day-level method (replaces the i.i.d. day bootstrap everywhere in the paper):
+hierarchical bootstrap, 2,000 replicates; each replicate resamples (i) training runs
+with replacement within each model and (ii) the 64 test days as a circular
+moving-block bootstrap with block length 5 trading days. Statistic: difference of
+run-averaged scores. 95% percentile interval; two-sided p = 2*min(P(d<=0), P(d>=0)),
+floored at 1/2000. Sensitivity (reported, not used for claims): block length 1
+(i.i.d. days) and 10, and days-only (no run resampling) with block length 5.
+Applies to pooled MCC, within-day MCC, day-collapse MCC and Rank IC.
+Multiplicity: MMGT vs the four tuned baselines is one family, Holm-adjusted. The
+pre-registered primary endpoint for MMGT-D2 (Rank IC and within-day MCC vs MMGT) is
+reported unadjusted as the confirmatory test.
+"Retains pooled performance": no non-inferiority margin was pre-specified, so none is
+claimed; the paper reports the interval of MMGT-D2 minus MMGT pooled MCC and the
+smallest margin that interval excludes.
+Additional descriptive analyses: daily market-direction evaluation (one observation
+per day; score = mean predicted probability over window-valid stocks; target = mean
+return over window-valid stocks > 0; AUC primary, MCC at 0.5 secondary); counterfactual
+pooled MCC with stock-level differences removed (day-mean probability) vs day-level
+differences removed (stock above its day's mean probability); within-day MCC
+characterisation (days scored, per-day distribution, tercile and all-stock variants);
+model-cluster bootstrap interval for the within-day MCC / Rank IC correlation.
+Dropped before running: label-threshold sensitivity (the saved close-to-close returns do
+not reproduce the adjusted-close labels exactly: 130 up-labels at <= +0.55%, 191
+unlabelled outside the band), so relabelling would not be valid.
+Script: paper/rev5_stats.py -> paper/rev5_stats.json.
