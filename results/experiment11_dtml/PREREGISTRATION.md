@@ -279,3 +279,25 @@ Wording rule for the paper: if D2_final's centred selection states are near chan
 all three targets, the paper may call MMGT-D2 "disentangled"; otherwise it describes it
 as separating timing and selection AT THE OUTPUT and reports which targets leak.
 Script: paper/exp13_probe.py -> paper/exp13_probe.json; runs: scripts/runs/exp13.sh.
+
+### Experiment 13 -- outcome (rules applied unchanged)
+
+Reproduction: all 10 D2_final and 10 MMGT reruns reproduce the original test MCC exactly
+(max |diff| = 0.0). The probe therefore describes the paper's models.
+
+(b) Probe, D2_final centred selection states, AUC of the seed-averaged score [95% CI]:
+next 0.633 [0.48, 0.78] (near chance), yday 0.968 [0.92, 1.00] (NOT near chance),
+trend 1.000 [1.00, 1.00] (NOT near chance). -> **Wording rule: MMGT-D2 is NOT called
+"disentangled".** The paper describes it as separating timing and selection at the
+output (e sums to zero each day by construction) and reports that the selection states
+still encode past market moves.
+Observation (not a change to the rule): with 64 test days the next-day target has little
+power -- the raw market input itself is near chance (0.588 [0.44, 0.74]) and every centred
+selection state except D2_la0.5 passes, adversary or not. Evidence rests on yday/trend.
+Timing branch l: Rank IC ~ 0 in every variant (-0.004 to 0.008), as for MMGT (0.0007).
+
+(a) Ablation, test, 10 seeds (Welch over runs vs MMGT): all four D2 variants raise Rank IC
+(0.017-0.027 vs 0.0007, p 0.002-0.036); none changes MCC (0.135-0.155 vs 0.146,
+p 0.49-0.80). D2_la1 (no adversary) has MCC 0.155, IC 0.023. The selection gain comes from
+the two-branch, centred head; the adversary adds little on these metrics. Disclosed
+as post-hoc; D2_final stays the headline model. Output: paper/exp13_ablation.json.
