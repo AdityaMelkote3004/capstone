@@ -32,7 +32,7 @@ is not significant at the level of test days. Hand-built graphs inside the
 attention layer add nothing. Federated training across nine sector clients matches
 centralised MCC but loses stock selection.
 
-**Paper:** [`paper/main.tex`](paper/main.tex) (IEEE conference format).
+**Paper:** [`paper/main.tex`](paper/main.tex), "Beyond Pooled Scores: Separating Market Timing and Stock Selection in Multimodal Stock Forecasting" (IEEE conference format).
 **All numbers:** [`results/experiment11_dtml/RESULTS.md`](results/experiment11_dtml/RESULTS.md).
 **Protocol and its history:** [`results/experiment11_dtml/PREREGISTRATION.md`](results/experiment11_dtml/PREREGISTRATION.md).
 **How the project got here (Experiments 1–10):** [`results/CAPSTONE_FINDINGS.md`](results/CAPSTONE_FINDINGS.md).

@@ -51,21 +51,22 @@ A model that predicts whether stocks will rise tomorrow can be right for two
 reasons: it can forecast the direction of the whole market on a day (market timing),
 or distinguish the stocks that will outperform others on the same day (stock
 selection). Standard pooled evaluation does not separate these abilities. On the
-StockNet benchmark, a predictor that knows only each day's majority market direction,
-and nothing about individual stocks, reaches a Matthews correlation coefficient (MCC)
-of $0.625$. We introduce within-day and day-collapse MCC to measure stock selection
+StockNet benchmark, an oracle that knew only each day's majority market direction,
+and nothing about individual stocks, would reach a Matthews correlation coefficient
+(MCC) of $0.625$. We introduce within-day and day-collapse MCC to measure stock selection
 and market timing separately, and relate the former to the rank information
 coefficient (Rank IC). Using these diagnostics, we analyse MMGT, a multimodal graph
-transformer whose pooled MCC ($0.146$) is well above that of tuned baselines (at most
+transformer whose pooled MCC ($0.146$) is above that of tuned baselines (at most
 $0.057$), and find that its gain comes primarily from market timing: its Rank IC is
 $0.001$. We then propose MMGT-D2, which decomposes each prediction into a day-level
 market logit and stock-level excess logits that sum to zero within each day. MMGT-D2
 retains MMGT's pooled performance (MCC $0.151$) and improves the Rank IC from $0.001$
 to $0.027$. An ablation attributes this gain to the two-branch structure, and a probe
 shows that the zero-sum constraint provides output-level separation, not
-representation-level disentanglement. Pooled scores can thus conceal large
-differences in stock selection, and the two abilities should be evaluated
-separately.
+representation-level disentanglement. Sector-partitioned federated training gives a
+further case: it preserves pooled MCC while losing stock selection. Pooled scores can
+thus conceal large differences in stock selection, and the two abilities should be
+evaluated separately.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -460,7 +461,7 @@ baselines ($0.020$ and $0.027$), but weak and unstable market timing
 MMGT-base the pattern is reversed: its day-collapse MCC ($0.130$) accounts for nearly
 all of its pooled $0.139$, while its within-day MCC ($0.008$) is near zero.
 
-The reason lies in the architecture. The market summary is the same for every stock
+A likely reason lies in the architecture. The market summary is the same for every stock
 on a day, so it shifts all of that day's predictions in the same direction; it
 supplies a strong day-level signal but no means of telling stocks apart.
 
@@ -730,9 +731,8 @@ timing, while MMGT-D2 retains it and gains stock selection level with the best
 per-stock model by Rank IC. The market call needs the market summary and attention
 over all stocks; the ranking of stocks is better learned by a branch that has no
 market input and cannot shift the day's average logit. The ablation attributes the
-gain to this structure rather than to the adversary. The probe shows that the
-separation holds at the output but not in the hidden states: output-level
-separation does not imply representation-level disentanglement.
+gain to this structure rather than to the adversary, and the probe shows that the
+separation holds at the output but not in the hidden states.
 
 \textbf{Limitations.} We study one benchmark of 87 large US stocks over 2014--2015.
 Published results on it use different preprocessing and protocols, so we compare
@@ -757,8 +757,8 @@ impact and borrowing costs, and federated training was simulated on one machine.
 
 Pooled scores on StockNet mix two abilities: forecasting the market's direction on a
 day and distinguishing stocks within that day. MMGT, a multimodal graph transformer,
-illustrates the problem: its pooled MCC of $0.146$ is well above every tuned
-baseline, yet within-day and day-collapse MCC show that this gain comes primarily
+illustrates the problem: its pooled MCC of $0.146$ is above every tuned baseline,
+yet within-day and day-collapse MCC show that this gain comes primarily
 from market timing, with a Rank IC of $0.001$. MMGT-D2 shows that separating the two
 at the output helps: with a day-level market logit and stock-level excess logits
 that sum to zero each day, it retains the pooled score (MCC $0.151$) and improves
