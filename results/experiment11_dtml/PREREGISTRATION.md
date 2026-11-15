@@ -355,3 +355,55 @@ smallest excluded loss (0.043). The paper's former i.i.d. day-level numbers are 
 by these. The Exp 13 probe intervals keep their own pre-registered i.i.d. method.
 Day-removed counterfactual (stock above its day's mean) is reported in the supplement
 but not interpreted: mean-thresholding does not force a balanced daily split.
+
+## Review round 6 -- logit/probability alignment, ranking quality, probe intervals (no new training), rules fixed BEFORE any computation
+
+Requested by a reviewer. Inputs: saved test predictions (preds/, which hold every
+window-valid stock and, for MMGT-D2, m_t and e_{i,t}) and saved hidden states. No model
+is retrained. Populations: S_t (labelled) is a subset of V_t (window-valid). The metrics
+as defined in the paper are NOT changed; everything below is reported alongside them.
+
+1. Logit vs probability (MMGT-D2, standard period, 10 runs). Identity check:
+   |mean_{V_t} e| per day (expected ~0 up to float error). Per run-day: mean_{S_t} e;
+   |mean_{S_t} p - sigma(m_t)| and |mean_{V_t} p - sigma(m_t)| (median, 95th percentile,
+   max); days per run on which the 0.5 call of sigma(m_t) differs from that of mean_{S_t} p
+   and of mean_{V_t} p. Market branch scored directly: day-collapse MCC with every
+   labelled stock of day t predicted 1[m_t >= 0], and daily AUC with score m_t.
+   Sensitivity for all principal models (descriptive): day-collapse MCC under four
+   aggregations -- mean probability over S_t (the defined metric), mean probability over
+   V_t, mean logit over S_t >= 0, mean logit over V_t >= 0 (logits from the saved
+   probabilities, clipped to [1e-6, 1-1e-6]; for MMGT-D2 the last equals m_t >= 0) --
+   and daily AUC with the mean logit over V_t as score. Daily market target unchanged:
+   M_t = 1[mean_{V_t} r_{i,t} > 0]. Intervals: round-5 primary method.
+2. Ranking quality on S_t (descriptive): pairwise accuracy = per-day AUC of p over S_t
+   (share of up/down pairs ordered correctly, ties count 1/2), averaged over the T' days
+   with both labels; normalised within-day MCC = mean within-day MCC / mean MCC_max, where
+   MCC_max is the within-day MCC of a perfect ranking under the same median rule on the
+   same days (the mean of per-day ratios is not used: it explodes on lopsided days);
+   per-day distribution (quartiles, share positive) of run-averaged within-day MCC.
+   Intervals and the MMGT-D2 - MMGT difference in pairwise accuracy: round-5 primary
+   method, exploratory.
+3. Probe intervals: the Exp 13 seed-averaged probe AUCs, same fits, with a circular
+   moving-block bootstrap of the test days (block 5; 10 as sensitivity; 2,000). The
+   pre-registered i.i.d. intervals remain on record. Rule: if, with 5-day blocks, the
+   interval of the centred selection states for yesterday's direction or the 10-day trend
+   includes 0.5, the paper says so and weakens the probe conclusion.
+4. Paired Rank IC, MMGT-D2 - MMGT, by seed (standard period 10 pairs; period A 5): the
+   individual differences, mean, median, Wilcoxon signed-rank p, and a 95% bootstrap
+   interval over seed pairs (10,000). Run-level only, exploratory; the primary endpoint
+   and its test are unchanged.
+5. Block length check (reported only; the primary block length of 5 is not changed):
+   Politis-White automatic block length (arch, circular) for the per-day series of the
+   run-averaged MMGT-D2 - MMGT Rank IC difference, MMGT's per-day accuracy, and the daily
+   mean return of V_t.
+6. Walk-forward averages: Table IV's out-of-sample average is the equally weighted mean
+   of periods A (44 days) and standard (64 days); the day-weighted mean is reported in
+   the supplement.
+7. Fig. 2 intervals: round-5 primary level intervals of within-day and day-collapse MCC,
+   adding the profile model and the federated model.
+
+Confirmatory set (no new tests): the Exp 11 test ladder for MMGT, the federated
+keep/remove rule, the pre-registered criteria of MMGT-D and MMGT-D2 (MMGT-D2's primary
+endpoint), and the round-5 Holm family. Every other test in the paper is exploratory
+and unadjusted.
+Script: paper/rev6_stats.py -> paper/rev6_stats.json.
