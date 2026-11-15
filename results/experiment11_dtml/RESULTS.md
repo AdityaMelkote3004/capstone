@@ -282,3 +282,21 @@ Primary day-level method: hierarchical bootstrap (runs + circular 5-day blocks, 
 - Within-day MCC: T' = 63/64 days; 32 days > 80% one-directional; no ties; all-stock
   sign-of-return variant near zero for every model.
 - Agreement (17 oos cells): r = 0.84, model-cluster 95% CI [0.66, 0.92].
+
+## Review round 6: logit vs probability, ranking quality, probe intervals (no new training)
+Script `paper/rev6_stats.py` -> `paper/rev6_stats.json`; tables in `paper/SUPPLEMENT.md` (S3-S4).
+- MMGT-D2 zero-sum holds exactly over V_t (|mean e| = 0). Its market branch scored
+  directly (1[m_t >= 0]): day-collapse MCC 0.179 [0.045, 0.297]; the defined metric
+  (mean probability over labelled S_t) gives 0.205, +0.026 [-0.001, 0.067]. Daily AUC
+  0.652 (m_t) vs 0.654. Day-level call differs from sigma(m_t) on 1-5 of 64 days per run.
+- Models without a market logit: aggregation (prob vs logit, S_t vs V_t) changes
+  day-collapse MCC by <= 0.015 (MMGT 0.219 -> 0.214).
+- Pairwise accuracy (per-day AUC over S_t): D2 0.525, MMGT 0.521, ALSTM 0.514, LSTM
+  0.513, profile 0.529, MMGT-base 0.503; D2 - MMGT +0.004, p = 0.67. Perfect-ranking
+  ceiling of within-day MCC: 0.515 on average.
+- Probe with 5-day blocks: conclusion unchanged (centred selection states >= 0.937 on
+  yesterday / trend).
+- Rank IC D2 - MMGT by seed: standard 8/10, +0.026 [0.013, 0.038], Wilcoxon p = 0.010;
+  period A 3/5, +0.001.
+- Politis-White block length for the primary endpoint's daily series: 5.6 days.
+- Trading simulation moved from the paper to the supplement (page limit); numbers unchanged.

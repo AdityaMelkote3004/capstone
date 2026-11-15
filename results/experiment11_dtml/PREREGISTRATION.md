@@ -407,3 +407,29 @@ keep/remove rule, the pre-registered criteria of MMGT-D and MMGT-D2 (MMGT-D2's p
 endpoint), and the round-5 Holm family. Every other test in the paper is exploratory
 and unadjusted.
 Script: paper/rev6_stats.py -> paper/rev6_stats.json.
+
+### Review round 6 -- outcome (rules applied unchanged; paper/rev6_stats.json)
+
+1. |mean_V e| = 0 to float precision (identity holds). mean_S e: median |.| 0.039, max
+   0.93. |mean_S p - sigma(m)|: median 0.016, max 0.159; over V: median 0.011, max 0.052.
+   0.5 call differs from sigma(m_t) on 1-5 of 64 days per run (S), 0-1 (V). Market branch
+   scored directly: day-collapse 0.179 [0.045, 0.297] vs the defined 0.205 [0.071, 0.320]
+   (defined - branch +0.026 [-0.001, 0.067], p=0.07); daily AUC 0.652 vs 0.654. The paper
+   now reports 0.179 for MMGT-D2's market branch. Other models without a market logit:
+   aggregation changes day-collapse MCC by <= 0.015 (MMGT 0.219 -> 0.214); MMGT-D 0.080
+   -> 0.040.
+2. Pairwise accuracy: MMGT-D2 0.525 [0.493, 0.557], MMGT 0.521, ALSTM 0.514, LSTM 0.513,
+   profile 0.529, MMGT-base 0.503, MLP 0.501, LR 0.491; D2 - MMGT +0.004 p=0.67. MCC_max
+   mean 0.515 (min 0.11); normalised within-day MCC D2 0.060, MMGT 0.044. Per-day medians
+   -0.014 to 0.020 for every model.
+3. Probe with 5-day blocks: centred selection states yday/trend lower bounds >= 0.937;
+   rule NOT triggered, conclusion unchanged. Lowest bound over all representations 0.903
+   (5-day) / 0.885 (10-day). Next-day still inconclusive.
+4. Paired Rank IC by seed: standard 8/10 positive, mean +0.026 [0.013, 0.038], Wilcoxon
+   p=0.010; A 3/5, mean +0.001 [-0.016, 0.018]; both 11/15, p=0.015.
+5. Politis-White circular block length: D2 - MMGT IC difference 5.6; MMGT accuracy 0.8;
+   daily market return 1.2. Primary block length unchanged.
+6. Day-weighted walk-forward averages: MCC ordering unchanged; Rank IC only near-tied
+   LSTM / MMGT-base / MMGT swap.
+Also this round: the trading simulation was moved from the paper to the supplement to
+meet the page limit (no change to its numbers).

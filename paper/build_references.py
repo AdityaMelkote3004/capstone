@@ -58,6 +58,9 @@ REFS = {
     # added in review round 5
     "holm1979": r"S.~Holm, ``A simple sequentially rejective multiple test procedure,'' \emph{Scand. J. Statist.}, vol.~6, no.~2, pp. 65--70, 1979, doi: 10.2307/4615733.",
     "grinold2000active": r"R.~C. Grinold and R.~N. Kahn, \emph{Active Portfolio Management}, 2nd~ed. New York, NY, USA: McGraw-Hill, 2000.",
+    # added in review round 6 (verified: Taylor & Francis / RePEc record; first page of the correction)
+    "politis2004": r"D.~N. Politis and H.~White, ``Automatic block-length selection for the dependent bootstrap,'' \emph{Econometric Rev.}, vol.~23, no.~1, pp. 53--70, 2004, doi: 10.1081/ETC-120028836.",
+    "patton2009": r"A.~Patton, D.~N. Politis, and H.~White, ``Correction to `Automatic block-length selection for the dependent bootstrap' by D.~Politis and H.~White,'' \emph{Econometric Rev.}, vol.~28, no.~4, pp. 372--375, 2009, doi: 10.1080/07474930802459016.",
     "nosek2018": r"B.~A. Nosek, C.~R. Ebersole, A.~C. DeHaven, and D.~T. Mellor, ``The preregistration revolution,'' \emph{Proc. Nat. Acad. Sci.}, vol.~115, no.~11, pp. 2600--2606, 2018, doi: 10.1073/pnas.1708274114.",
     # added in review round 2 (verified: arXiv listing / Microsoft Research page; PMLR v37 page)
     "tang2020add": r"H.~Tang, L.~Wu, W.~Liu, and J.~Bian, ``ADD: Augmented disentanglement distillation framework for improving stock trend forecasting,'' 2020, \emph{arXiv:2012.06289}.",
