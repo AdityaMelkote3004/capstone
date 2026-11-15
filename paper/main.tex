@@ -299,14 +299,15 @@ than $80\%$ of labels agree even a perfect ranking scores far below $1$; it woul
 score $0.515$ on average, and $0.11$ on the most lopsided day. As a check that does not
 depend on the daily class balance, we also report \emph{pairwise accuracy}, the share
 of a day's up/down pairs that a model orders correctly ($0.5$ by chance).
-\emph{Day-collapse MCC} replaces every prediction by its day's mean $\bar p_t$,
-removing all differences between stocks, and so measures market timing:
+\emph{Day-collapse MCC} replaces every prediction by its day's mean
+$\bar p_t=|\mathcal{S}_t|^{-1}\sum_{i\in\mathcal{S}_t}p_{i,t}$, removing all
+differences between stocks, and so measures market timing:
 \begin{equation}
 \mathrm{MCC}_{\mathrm{dc}}=\mathrm{MCC}\bigl(\{(y_{i,t},\,\mathbf{1}[\bar p_t\ge 0.5])\}_{t,\,i\in\mathcal{S}_t}\bigr).
 \end{equation}
 It weighs days by their labelled stocks and depends on calibration; averaging logits
 over $\mathcal{V}_t$ instead of probabilities over $\mathcal{S}_t$ changes it by at
-most $0.015$ for models without a separate market logit. We therefore also score
+most $0.015$ for models without a separate market logit. We also score
 the mean prediction over $\mathcal{V}_t$ with one observation per day (daily AUC)
 against the market's direction
 $M_t=\mathbf{1}\bigl[|\mathcal{V}_t|^{-1}\sum_{i\in\mathcal{V}_t}r_{i,t}>0\bigr]$,
@@ -334,10 +335,11 @@ days~\cite{kunsch1989}, keeping each day's stocks together and using the same bl
 for both models of a comparison. For the primary endpoint below, the automatic
 block-length estimate~\cite{politis2004,patton2009} is $5.6$ days. We report the
 95\% interval and two-sided $p$-value of the difference of run-averaged scores (block
-lengths 1 and 10 in the supplementary material). The four comparisons of MMGT with
-the tuned baselines are Holm-adjusted~\cite{holm1979}; they, MMGT-D2's pre-registered
-primary endpoint and the pre-registered rule for federated training are our
-confirmatory tests, and all other tests are exploratory and unadjusted.
+lengths 1 and 10 in the supplementary material). Our confirmatory tests are those
+fixed in advance: MMGT's test ladder, the criteria of MMGT-D and MMGT-D2 (including
+MMGT-D2's primary endpoint), the rule for federated training, and the four
+comparisons of MMGT with the tuned baselines, Holm-adjusted as one
+family~\cite{holm1979}. All other tests are exploratory and unadjusted.
 
 \textbf{Protocol.} All settings were chosen on the validation period, and MMGT was
 fixed before any test run~\cite{nosek2018}. The follow-ups of
@@ -406,8 +408,8 @@ graph was built from the labelled stocks of each day and may be optimistic.
 $^{c}$Without the ranking term; five runs, trained with federated averaging over
 nine sector clients (Section~\ref{sec:fed}).
 $^{d}$Pre-registered follow-ups designed after MMGT's test results were known
-(Section~\ref{sec:disent}); scored from its market logit alone, MMGT-D2's
-day-collapse MCC is $0.179$.}
+(Section~\ref{sec:disent}); scored from the market logit alone, day-collapse MCC is
+$0.040$ for MMGT-D and $0.179$ for MMGT-D2.}
 \end{table*}
 
 \subsection{Pooled performance}
@@ -538,8 +540,8 @@ neutral band, whereas Rank IC ranks all of them. Pairwise accuracy agrees with
 within-day MCC: $0.513$--$0.529$ for the per-stock LSTMs, MMGT, MMGT-D2 and the
 profile model, against $0.491$--$0.503$ for logistic regression, the MLP, MMGT-base and
 the federated model. On a typical day every model's within-day MCC is close to zero
-(per-day medians $-0.014$ to $0.020$), so these means reflect a modest excess of good
-days over bad, not a consistent daily edge. Replacing each of MMGT's
+(per-day medians $-0.014$ to $0.020$), so the positive means come from a longer upper
+tail of good days, not a consistent daily edge. Replacing each of MMGT's
 predictions by its day's mean does not lower its pooled MCC ($0.219$ against
 $0.146$), so the differences between stocks in its predictions add nothing to the
 pooled score. Its daily AUC for the market's direction is $0.66$ ($[0.54, 0.77]$),
@@ -565,7 +567,7 @@ explicit market-summary input) gives states $h_{i,t}$ that are centred over the
 day's stocks before a linear head without bias:
 \begin{equation}
 e_{i,t}=w^{\top}\Bigl(h_{i,t}-\frac{1}{|\mathcal{V}_t|}\sum_{j\in\mathcal{V}_t}h_{j,t}\Bigr),
-\qquad \mathrm{logit}_{i,t}=m_t+e_{i,t},
+\qquad z_{i,t}=m_t+e_{i,t},
 \end{equation}
 where $\mathcal{V}_t$ are the stocks with a valid input window. The excess logits sum
 to zero over $\mathcal{V}_t$, so they rank stocks but cannot shift the day's average
@@ -610,7 +612,10 @@ that day-level call on 1--5 of the 64 days per run, while the daily AUC moves by
 $0.002$. Its Rank IC, the pre-registered primary
 endpoint, rises from $0.001$ to $0.027$ (run-level $p=0.002$; block bootstrap
 $+0.026$, $[0.004, 0.051]$, $p=0.027$, or $p=0.071$ with independently resampled
-days), level with the ALSTM, the best per-stock model. The gain is not replicated in
+days), level with the ALSTM, the best per-stock model. Within-day MCC and pairwise
+accuracy do not separate MMGT-D2 from MMGT ($+0.008$, $p=0.51$; $+0.004$, $p=0.67$):
+the gain appears only in Rank IC, which also ranks the neutral-band stocks. It is
+not replicated in
 period A, where MMGT-D2 is no better than MMGT (Table~\ref{tab:wf}). Paired by seed,
 the gain is positive in 8 of 10 runs on the standard period (mean $+0.026$, interval
 over seeds $[0.013, 0.038]$, Wilcoxon $p=0.010$) but in only 3 of 5 in period A
