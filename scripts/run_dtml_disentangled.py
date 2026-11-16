@@ -81,6 +81,10 @@ def main():
     ap.add_argument("--adv", action="store_true")
     ap.add_argument("--two-branch", action="store_true",
                     help="Exp 12b: timing from a full MMGT branch, selection from MMGT-D's stock branch")
+    ap.add_argument("--unconstrained", action="store_true",
+                    help="Exp 14 control: excess head on uncentred states, with bias (no zero-sum)")
+    ap.add_argument("--no-select-attention", action="store_true",
+                    help="Exp 14 control: selection branch without stock-to-stock attention")
     ap.add_argument("--lambda-aux", type=float, default=1.0)
     ap.add_argument("--lambda-m", type=float, default=1.0)
     ap.add_argument("--lambda-adv", type=float, default=0.1)
@@ -113,7 +117,8 @@ def main():
         if args.two_branch:
             model = DTMLTwoBranch(n_stocks=len(data["tickers"]), hidden=args.hidden, heads=4,
                                   beta=1.0, dropout=args.dropout, extra_dim=extra.shape[-1],
-                                  adversary=args.adv)
+                                  adversary=args.adv, constrained=not args.unconstrained,
+                                  select_attention=not args.no_select_attention)
         else:
             model = DTMLDisentangled(n_stocks=len(data["tickers"]), hidden=args.hidden, heads=4,
                                      dropout=args.dropout, extra_dim=extra.shape[-1],
@@ -133,7 +138,8 @@ def main():
         model.load_state_dict(state)
         row = {"tag": args.tag, "seed": seed, "fold": args.fold, "mode": args.mode,
                "adv": args.adv, "lambda_m": args.lambda_m, "two_branch": args.two_branch,
-               "lambda_aux": args.lambda_aux, "best_epoch": best_epoch,
+               "lambda_aux": args.lambda_aux, "unconstrained": args.unconstrained,
+               "select_attention": not args.no_select_attention, "best_epoch": best_epoch,
                "minutes": round((time.time() - t0) / 60, 2)}
         row.update({f"val_{k}": v for k, v in best_val.items()})
         msg = (f"[{args.tag}] seed={seed} fold={args.fold} ep={best_epoch} "

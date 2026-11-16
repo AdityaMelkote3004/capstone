@@ -433,3 +433,69 @@ Script: paper/rev6_stats.py -> paper/rev6_stats.json.
    LSTM / MMGT-base / MMGT swap.
 Also this round: the trading simulation was moved from the paper to the supplement to
 meet the page limit (no change to its numbers).
+
+## Experiment 14 / review round 7 -- architectural controls (new training) and evaluation re-analysis, rules fixed BEFORE any run or computation
+
+Requested by the round-7 review; the authors approved new training for the three
+controls below (2026-11-16). **D2_final stays the paper's model whatever these show**;
+the controls are disclosed post-hoc comparisons, never candidates for selection.
+
+(a) Controls. Standard split, seeds 0-9, selected on validation MCC exactly as before,
+test evaluated once, predictions saved (D2 controls also save hidden states). Settings
+identical to D2_final (two-branch, adversary, lambda_aux 1, lambda_adv 0.1, rank weight 1,
+reg 1, lr 1e-4, hidden 64, dropout 0.15, window 10, <= 200 epochs, patience 30) except:
+  C1 D2_unc     no zero-sum constraint: the excess head reads the UNcentred selection
+                states and has a bias (L2-penalised like the other head biases). The
+                adversary still sees the centred states, so only the output constraint
+                changes. e no longer sums to zero; logit = m_t + e.
+  C2 D2_noatt   selection branch without stock-to-stock attention (each stock's state
+                comes from its own price history and profile); centring, head and
+                adversary unchanged. Its hidden states are probed with the Exp 13 probe.
+  C3 MMGT_wide  single-branch MMGT (R_mmgt settings) with hidden size 92: 262k
+                parameters, against 273k for MMGT-D2 and 132k for MMGT.
+  Reproduction check: D2_final seed 0 rerun with the modified code (2 threads, as in
+  Exp 13) must reproduce the original test MCC; otherwise this is reported.
+Metrics: pooled MCC, within-day MCC, pairwise accuracy, Rank IC, day-collapse MCC,
+market-logit day-collapse MCC, daily AUC. Tests: each control against D2_final and
+against MMGT, hierarchical block bootstrap (round-5 primary method) and Welch over runs;
+all exploratory (the confirmatory set is unchanged).
+Wording rules (Rank IC, block bootstrap, two-sided 0.05):
+  R1 constraint: "the zero-sum constraint contributes" only if D2_final - C1 > 0
+     significantly; "the gain does not require the constraint" if C1 - MMGT > 0
+     significantly and the D2_final - C1 interval includes 0; otherwise "not resolved".
+  R2 attention: the same rule with C2 ("cross-stock attention contributes" / "does not
+     require cross-stock attention" / "not resolved"). Probe: if C2's centred selection
+     states are near chance (5-day block interval includes 0.5) for yesterday's
+     direction or the 10-day trend, the paper says that attention is the route by which
+     these states acquire market information; otherwise it says that removing attention
+     does not remove it.
+  R3 capacity: "capacity alone does not produce the gain" if D2_final - C3 > 0
+     significantly; otherwise "not resolved by this control".
+
+(b) Re-analysis of saved predictions (no training).
+1. Market columns of Table I for every model with saved predictions, with 95% intervals
+   (round-5 primary method): day-collapse MCC as defined (mean probability over S_t);
+   market-logit day-collapse MCC (the mean logit over V_t >= 0, which is m_t exactly for
+   MMGT-D and MMGT-D2); daily AUC of the mean logit over V_t against M_t. Paired MMGT-D2 -
+   MMGT differences for the last two.
+2. Pairwise accuracy, as implemented in round 6: per-day AUC of p over S_t (ties 1/2),
+   macro-averaged over the T' days with both labels; neutral stocks excluded; days
+   without both labels skipped. Intervals for every model.
+3. Rank IC by subset: V_t (as reported), S_t (labelled stocks only) and N_t = V_t minus
+   S_t (neutral band); a day enters a subset average only if the subset has >= 5 stocks.
+   Intervals for MMGT, MMGT-D2 and the controls; paired MMGT-D2 - MMGT difference per
+   subset. Check: every unlabelled window-valid stock has a return inside StockNet's
+   band (counts reported).
+4. Returns: M_t and Rank IC use the close-to-close change of the (split-adjusted,
+   dividend-unadjusted) close. Sensitivity: both recomputed with the adjusted-close
+   change (feature z_adj_close); differences reported.
+5. Market representation (descriptive): the market-only logistic-regression timing
+   reference (fitted on training days with the Exp 13 probe procedure, daily AUC on
+   test days, 5-day block interval) on (i) the 10-day window of the 11-feature proxy
+   (as before), (ii) the 10-day window of the equal-weighted mean return, (iii) the
+   10-day window of an equal-weighted index built by cumulating the mean return: its
+   daily change and its level relative to its 5- to 30-day moving averages.
+6. Probe, incremental next-day information (descriptive): next-day direction probe on
+   the market-proxy summary alone vs the proxy summary plus the centred selection
+   states; difference of daily AUC with a 5-day block interval.
+Script: paper/rev7_stats.py -> paper/rev7_stats.json; runs: scripts/runs/exp14.sh.

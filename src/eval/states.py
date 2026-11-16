@@ -31,8 +31,11 @@ from src.models.dtml_disentangled import DTMLTwoBranch
 
 
 def _hook_targets(model):
+    # The selection branch's final states are read from model.select.parts["hidden"]
+    # after each forward pass (identical to its out_norm output when it has stock
+    # attention, and still defined for the Exp 14 control without attention).
     if isinstance(model, DTMLTwoBranch):
-        return {"timing": model.timing.out_norm, "select": model.select.out_norm}
+        return {"timing": model.timing.out_norm}
     return {"mmgt": model.out_norm}
 
 
@@ -55,6 +58,8 @@ def collect_states(model, data, extra, split_idx):
                                torch.from_numpy(data["market"][i]),
                                None if extra is None else torch.from_numpy(extra[i]))
                 reps = {k: v[valid] for k, v in captured.items()}
+                if isinstance(model, DTMLTwoBranch):
+                    reps["select"] = model.select.parts["hidden"].detach()[valid]
                 if "select" in reps:
                     reps["select_centred"] = reps["select"] - reps["select"].mean(0, keepdim=True)
                 for k, r in reps.items():

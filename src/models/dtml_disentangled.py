@@ -43,13 +43,15 @@ class _GradReverse(torch.autograd.Function):
 
 class DTMLDisentangled(DTML):
     def __init__(self, *args, mode: str = "struct", adversary: bool = False,
-                 adv_weight: float = 1.0, **kwargs):
+                 adv_weight: float = 1.0, centre: bool = True, **kwargs):
         kwargs["use_mc"] = False                      # market never enters the stock branch
         super().__init__(*args, **kwargs)
         h = self.output.in_features
-        self.mode, self.adv_weight = mode, adv_weight
+        self.mode, self.adv_weight, self.centre = mode, adv_weight, centre
         del self.output
-        self.excess_head = nn.Linear(h, 1, bias=False)
+        # centre=False (Exp 14 control): the excess head sees the UNcentred states and
+        # has a bias, so e_{i,t} no longer sums to zero and can shift the day's mean.
+        self.excess_head = nn.Linear(h, 1, bias=not centre)
         self.market_head = nn.Linear(h, 1)
         self.beta_head = nn.Linear(h, 1) if mode == "beta" else None
         self.adversary = (nn.Sequential(nn.Linear(2 * h, h), nn.ReLU(), nn.Linear(h, 1))
@@ -72,7 +74,7 @@ class DTMLDisentangled(DTML):
             hidden = self.out_norm(torch.tanh(combined + self.mlp(combined)))
 
         centred = hidden - hidden[valid].mean(0, keepdim=True)
-        e = self.excess_head(centred).squeeze(-1)                       # S
+        e = self.excess_head(centred if self.centre else hidden).squeeze(-1)   # S
         hm = self.market_encoder(market.unsqueeze(0))                   # 1, h
         m = self.market_head(self.dropout(hm)).squeeze()                # scalar
         if self.mode == "beta":
@@ -86,11 +88,13 @@ class DTMLDisentangled(DTML):
             z = _GradReverse.apply(centred[valid], self.adv_weight)
             stats = torch.cat([z.abs().mean(0), z.std(0)])
             adv = self.adversary(stats).squeeze()
-        self.parts = {"m": m.expand_as(e), "e": e, "b": b, "adv": adv}
+        self.parts = {"m": m.expand_as(e), "e": e, "b": b, "adv": adv, "hidden": hidden}
         return logit
 
     def selective_penalty(self) -> torch.Tensor:
         pen = self.excess_head.weight.pow(2).sum()
+        if self.excess_head.bias is not None:
+            pen = pen + self.excess_head.bias.pow(2).sum()
         pen = pen + self.market_head.weight.pow(2).sum() + self.market_head.bias.pow(2).sum()
         if self.beta_head is not None:
             pen = pen + self.beta_head.weight.pow(2).sum() + self.beta_head.bias.pow(2).sum()
@@ -112,13 +116,18 @@ class DTMLTwoBranch(nn.Module):
     """
 
     def __init__(self, n_stocks: int, hidden: int = 64, heads: int = 4, beta: float = 1.0,
-                 dropout: float = 0.15, extra_dim: int = 0, adversary: bool = False):
+                 dropout: float = 0.15, extra_dim: int = 0, adversary: bool = False,
+                 constrained: bool = True, select_attention: bool = True):
+        """constrained=False / select_attention=False are the Exp 14 controls: an
+        unconstrained excess head (no centring, with bias) and a selection branch
+        without stock-to-stock attention. Defaults reproduce MMGT-D2 exactly."""
         super().__init__()
         self.timing = DTML(n_stocks=n_stocks, hidden=hidden, heads=heads, beta=beta,
                            dropout=dropout, extra_dim=extra_dim)
         self.select = DTMLDisentangled(n_stocks=n_stocks, hidden=hidden, heads=heads,
                                        dropout=dropout, extra_dim=extra_dim, mode="struct",
-                                       adversary=adversary)
+                                       adversary=adversary, centre=constrained,
+                                       use_sa=select_attention)
         self.parts = {}
 
     def forward(self, x, valid, market, extra=None, adj=None):
@@ -131,4 +140,7 @@ class DTMLTwoBranch(nn.Module):
         return m + e
 
     def selective_penalty(self) -> torch.Tensor:
-        return self.timing.selective_penalty() + self.select.excess_head.weight.pow(2).sum()
+        pen = self.timing.selective_penalty() + self.select.excess_head.weight.pow(2).sum()
+        if self.select.excess_head.bias is not None:
+            pen = pen + self.select.excess_head.bias.pow(2).sum()
+        return pen
