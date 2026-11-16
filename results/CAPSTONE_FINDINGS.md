@@ -248,14 +248,22 @@ Not claimable:
   Takeaway: timing and selection trade off in these models.
 - Exhaustive leakage test (all 504 days) passes; EDGAR fundamentals are dated by filing date.
 - **Experiment 12b, two-branch MMGT-D2** (second and last follow-up, pre-registered):
-  market call = mean of a full MMGT's logits, stock ranking from the market-blind
-  centred branch. **Met its criterion**: MCC 0.151 (MMGT 0.146), Rank IC 0.027
+  market call = mean of a full MMGT's logits, stock ranking from a centred branch
+  without the market summary. **Met its criterion**: MCC 0.151 (MMGT 0.146), Rank IC 0.027
   (MMGT 0.001; hierarchical block bootstrap p = 0.027, 0.071 with i.i.d. days), level with the best per-stock model (ALSTM 0.027),
   long-short Sharpe 1.39 (MMGT -0.23). Lesson: give timing and selection separate
   outputs, but keep MMGT's full pathway for the market call.
 - **Experiment 13, ablation + market-information probe** (review round 3, pre-registered):
   all four MMGT-D2 variants raise Rank IC (0.017-0.027 vs 0.001), none changes MCC; the
-  gain comes from the two-branch design, not the adversary. A linear probe reads
+  adversary adds little. A linear probe reads
   yesterday's market direction (AUC 0.97) and the 10-day trend (1.00) from the centred
   ranking states, so MMGT-D2 separates timing and selection at the output only; the
   paper does not call it disentangled.
+- **Experiment 14, architectural controls** (review round 7, pre-registered, 10 seeds each):
+  without the zero-sum constraint the two branches give Rank IC 0.003 (vs 0.027 for
+  MMGT-D2, block p = 0.027): the constraint contributes. A parameter-matched single MMGT
+  (hidden 92) also gives 0.003 (p = 0.033; 0.077 with i.i.d. days). Without cross-stock
+  attention in the selection branch Rank IC is 0.020 (not resolved), and its states
+  still encode past market moves, so attention is not how they get there. MMGT-D2 also
+  does not improve up/down discrimination (pairwise accuracy +0.004) and its gain is not
+  replicated in period A: a proof of concept.

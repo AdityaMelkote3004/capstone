@@ -64,7 +64,8 @@ each day. On the standard test period it raises Rank IC to $0.027$ ($p=0.027$ wi
 5-day block resampling, $0.071$ with independent days), with no detectable change in
 pooled MCC ($0.151$; non-inferiority not established) or in up/down discrimination,
 and not in an earlier period. In post-hoc controls, removing the zero-sum constraint
-or matching capacity with a wider single model removes the gain. The decomposition is
+removes the gain, and a single MMGT of the same size does not reproduce it. The
+decomposition is
 additive in logits, not in probabilities or hidden representations. Market timing and
 stock selection should therefore be evaluated separately.
 \end{abstract}
@@ -116,7 +117,8 @@ decomposition that keeps a day-level market logit and constrains stock-level exc
 logits to sum to zero within each day. On the standard test period it improves
 full-universe Rank IC from $0.001$ to $0.027$, but not up/down discrimination, and
 not in an earlier period, so we present it as a proof of concept. Controls indicate
-that the zero-sum constraint, not extra capacity, contributes to this gain.
+that the zero-sum constraint contributes to this gain and that extra capacity alone
+does not produce it.
 \item \textbf{An exploratory secondary study: federated training.} Sector-partitioned federated
 training keeps the pooled score while within-day MCC falls (significantly across
 runs only), and we cannot yet separate federated averaging from the
@@ -291,7 +293,8 @@ of rising. Training combines the classification loss with a ranking
 term~\cite{burges2005ranknet} that rewards placing the stocks that rose above those
 that fell on the same day. Each mini-batch is one trading day. We train with
 Adam~\cite{kingma2015adam} (learning rate $10^{-4}$, hidden size 64, dropout $0.15$,
-ranking weight 1) on a CPU for up to 200 epochs and keep the version with the best
+ranking weight 1, L2 penalty 1 on the output layer) on a CPU for up to 200 epochs,
+stopping after 30 epochs without improvement, and keep the version with the best
 validation MCC. \emph{MMGT-base} is the same
 model without the profile and the ranking term; it uses prices only.
 
@@ -375,7 +378,7 @@ Blocks of 1 or 10 days change four conclusions: MMGT's advantage over the LSTM
 ($p=0.067$, $0.082$) and MMGT-D2's over the ALSTM ($p=0.078$ with 10-day blocks)
 lose significance, as does MMGT-D2's Rank IC gain with independent days ($p=0.071$),
 while MMGT-D2's advantage over logistic regression gains it with independent days
-($p=0.021$). Our confirmatory tests are those
+($p=0.021$); Section~\ref{sec:probe} notes one more. Our confirmatory tests are those
 fixed in advance: MMGT's test ladder, the criteria of MMGT-D and MMGT-D2 (including
 MMGT-D2's primary endpoint), the rule for federated training, and the four
 comparisons of MMGT with the tuned baselines, Holm-adjusted as one
@@ -426,27 +429,27 @@ for every model.}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lcccccccccc}
 \toprule
- & \multicolumn{3}{c}{Pooled} & \multicolumn{3}{c}{Stock selection} & \multicolumn{3}{c}{Market timing} & Bootstrap $p$ \
+ & \multicolumn{3}{c}{Pooled} & \multicolumn{3}{c}{Stock selection} & \multicolumn{3}{c}{Market timing} & Bootstrap $p$ \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
-Model & MCC & Acc. (\%) & AUC & Within-day MCC & Pairwise acc. & Rank IC & Day-collapse MCC & Market-logit MCC & Daily AUC & vs MMGT \
+Model & MCC & Acc. (\%) & AUC & Within-day MCC & Pairwise acc. & Rank IC & Day-collapse MCC & Market-logit MCC & Daily AUC & vs MMGT \\
 \midrule
-Always predict ``up'' & $0$ & $51.3$ & $0.500$ & -- & -- & -- & -- & -- & -- & -- \
+Always predict ``up'' & $0$ & $51.3$ & $0.500$ & -- & -- & -- & -- & -- & -- & -- \\
 \midrule
-Logistic regression$^{a}$ & $0.027$ & $51.5$ & $0.513$ & $-0.012$ & $0.491$ & $0.002$ & $0.061$ & $0.056$ & $0.555$ & $0.040$ \
-LSTM & $0.055\pm0.026$ & $51.9$ & $0.535$ & $0.025$ & $0.513$ & $0.020$ & $0.082$ & $0.094$ & $0.609$ & $0.030$ \
-Attention LSTM (ALSTM) & $0.041\pm0.031$ & $51.9$ & $0.530$ & $0.018$ & $0.514$ & $\mathbf{0.027}$ & $0.022$ & $0.016$ & $0.579$ & $0.006$ \
-MLP & $0.057\pm0.020$ & $52.8$ & $0.536$ & $0.000$ & $0.501$ & $0.004$ & $0.110$ & $0.102$ & $0.567$ & $0.098$ \
-Tweet-count LSTM$^{b}$ & $0.002\pm0.011$ & -- & -- & -- & -- & -- & -- & -- & -- & -- \
-RGCN graph$^{b}$ & $0.060\pm0.018$ & $52.7$ & $0.541$ & $0.005$ & -- & -- & -- & -- & -- & -- \
+Logistic regression$^{a}$ & $0.027$ & $51.5$ & $0.513$ & $-0.012$ & $0.491$ & $0.002$ & $0.061$ & $0.056$ & $0.555$ & $0.040$ \\
+LSTM & $0.055\pm0.026$ & $51.9$ & $0.535$ & $0.025$ & $0.513$ & $0.020$ & $0.082$ & $0.094$ & $0.609$ & $0.030$ \\
+Attention LSTM (ALSTM) & $0.041\pm0.031$ & $51.9$ & $0.530$ & $0.018$ & $0.514$ & $\mathbf{0.027}$ & $0.022$ & $0.016$ & $0.579$ & $0.006$ \\
+MLP & $0.057\pm0.020$ & $52.8$ & $0.536$ & $0.000$ & $0.501$ & $0.004$ & $0.110$ & $0.102$ & $0.567$ & $0.098$ \\
+Tweet-count LSTM$^{b}$ & $0.002\pm0.011$ & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+RGCN graph$^{b}$ & $0.060\pm0.018$ & $52.7$ & $0.541$ & $0.005$ & -- & -- & -- & -- & -- & -- \\
 \midrule
-MMGT-base (price only) & $0.139\pm0.049$ & $55.8$ & $0.593$ & $0.008$ & $0.503$ & $0.015$ & $0.130$ & $0.144$ & $0.640$ & $0.80$ \
-\textbf{MMGT (ours)} & $0.146\pm0.029$ & $57.0$ & $0.602$ & $0.023$ & $0.521$ & $0.001$ & $\mathbf{0.219}$ & $\mathbf{0.214}$ & $\mathbf{0.659}$ & -- \
-MMGT, federated$^{c}$ & $0.131\pm0.062$ & $56.6$ & $0.598$ & $-0.004$ & $0.498$ & $-0.024$ & $0.140$ & $0.135$ & $0.646$ & $0.71$ \
-MMGT-D, market-summary-only head$^{d}$ & $0.063\pm0.033$ & $53.4$ & $0.543$ & $0.027$ & $0.520$ & $0.014$ & $0.080$ & $0.040$ & $0.593$ & $0.029$ \
-\textbf{MMGT-D2, two-branch (ours)}$^{d}$ & $\mathbf{0.151\pm0.037}$ & $\mathbf{57.2}$ & $\mathbf{0.612}$ & $\mathbf{0.031}$ & $\mathbf{0.525}$ & $\mathbf{0.027}$ & $0.205$ & $0.179$ & $0.652$ & $0.88$ \
+MMGT-base (price only) & $0.139\pm0.049$ & $55.8$ & $0.593$ & $0.008$ & $0.503$ & $0.015$ & $0.130$ & $0.144$ & $0.640$ & $0.80$ \\
+\textbf{MMGT (ours)} & $0.146\pm0.029$ & $57.0$ & $0.602$ & $0.023$ & $0.521$ & $0.001$ & $\mathbf{0.219}$ & $\mathbf{0.214}$ & $\mathbf{0.659}$ & -- \\
+MMGT, federated$^{c}$ & $0.131\pm0.062$ & $56.6$ & $0.598$ & $-0.004$ & $0.498$ & $-0.024$ & $0.140$ & $0.135$ & $0.646$ & $0.71$ \\
+MMGT-D, market-summary-only head$^{d}$ & $0.063\pm0.033$ & $53.4$ & $0.543$ & $0.027$ & $0.520$ & $0.014$ & $0.080$ & $0.040$ & $0.593$ & $0.029$ \\
+\textbf{MMGT-D2, two-branch (ours)}$^{d}$ & $\mathbf{0.151\pm0.037}$ & $\mathbf{57.2}$ & $\mathbf{0.612}$ & $\mathbf{0.031}$ & $\mathbf{0.525}$ & $\mathbf{0.027}$ & $0.205$ & $0.179$ & $0.652$ & $0.88$ \\
 \bottomrule
 \end{tabular}}
-\[3pt]
+\\[3pt]
 \parbox{\textwidth}{\footnotesize $^{a}$Deterministic, single run.
 $^{b}$Our earlier work, five runs, untuned and without saved predictions; the RGCN's
 graph was built from the labelled stocks of each day and may be optimistic.
@@ -637,8 +640,10 @@ branch's, while all
 differences between stocks come from the stock branch. That branch has no explicit
 market-summary input, but its states can still reflect market-wide movements
 (Section~\ref{sec:probe}).
-Training adds MMGT's own loss on $l_{i,t}$ (weight $\lambda\in\{0.5,1\}$) and applies
-the ranking term to $e_{i,t}$; of four variants (with or without the adversary), the
+Training adds MMGT's own loss on $l_{i,t}$ (weight $\lambda\in\{0.5,1\}$), applies
+the ranking term to $e_{i,t}$ and, with the adversary, adds its loss with weight $0.1$
+(gradient-reversal factor $1$); the output heads take the same L2 penalty as MMGT's
+output layer, and all other settings are MMGT's. Of four variants (with or without the adversary), the
 one with the adversary and $\lambda=1$ had the best validation MCC ($0.258$, against
 $0.245$--$0.257$). Its success criterion, fixed before its first test run, was
 better stock selection than MMGT (within-day MCC and Rank IC not lower, one
@@ -653,19 +658,19 @@ all from the hierarchical block bootstrap (Section~\ref{sec:eval}).}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{lcccc}
 \toprule
-Measure & MMGT & MMGT-D2 & Difference & $p$ \
+Measure & MMGT & MMGT-D2 & Difference & $p$ \\
 \midrule
-Pooled MCC & $0.146$ $[0.068, 0.214]$ & $0.151$ $[0.047, 0.239]$ & $+0.005$ $[-0.043, 0.060]$ & $0.88$ \
+Pooled MCC & $0.146$ $[0.068, 0.214]$ & $0.151$ $[0.047, 0.239]$ & $+0.005$ $[-0.043, 0.060]$ & $0.88$ \\
 \midrule
-Within-day MCC & $0.023$ $[-0.003, 0.046]$ & $0.031$ $[0.001, 0.059]$ & $+0.008$ $[-0.019, 0.035]$ & $0.51$ \
-Pairwise accuracy & $0.521$ $[0.497, 0.545]$ & $0.525$ $[0.493, 0.557]$ & $+0.004$ $[-0.018, 0.026]$ & $0.67$ \
-Rank IC, all stocks $\mathcal{V}_t$ & $0.001$ $[-0.028, 0.028]$ & $0.027$ $[-0.001, 0.056]$ & $+0.026$ $[0.004, 0.051]$ & $0.027$ \
-\quad labelled stocks $\mathcal{S}_t$ & $0.006$ $[-0.029, 0.042]$ & $0.032$ $[-0.003, 0.072]$ & $+0.026$ $[-0.003, 0.056]$ & $0.082$ \
-\quad neutral-band stocks & $-0.021$ $[-0.062, 0.019]$ & $-0.006$ $[-0.044, 0.032]$ & $+0.015$ $[-0.018, 0.047]$ & $0.37$ \
+Within-day MCC & $0.023$ $[-0.003, 0.046]$ & $0.031$ $[0.001, 0.059]$ & $+0.008$ $[-0.019, 0.035]$ & $0.51$ \\
+Pairwise accuracy & $0.521$ $[0.497, 0.545]$ & $0.525$ $[0.493, 0.557]$ & $+0.004$ $[-0.018, 0.026]$ & $0.67$ \\
+Rank IC, all stocks $\mathcal{V}_t$ & $0.001$ $[-0.028, 0.028]$ & $0.027$ $[-0.001, 0.056]$ & $+0.026$ $[0.004, 0.051]$ & $0.027$ \\
+\quad labelled stocks $\mathcal{S}_t$ & $0.006$ $[-0.029, 0.042]$ & $0.032$ $[-0.003, 0.072]$ & $+0.026$ $[-0.003, 0.056]$ & $0.082$ \\
+\quad neutral-band stocks & $-0.021$ $[-0.062, 0.019]$ & $-0.006$ $[-0.044, 0.032]$ & $+0.015$ $[-0.018, 0.047]$ & $0.37$ \\
 \midrule
-Day-collapse MCC & $0.219$ $[0.107, 0.324]$ & $0.205$ $[0.071, 0.320]$ & $-0.015$ $[-0.108, 0.078]$ & $0.76$ \
-Market-logit MCC & $0.214$ $[0.095, 0.327]$ & $0.179$ $[0.045, 0.297]$ & $-0.035$ $[-0.129, 0.064]$ & $0.44$ \
-Daily AUC & $0.659$ $[0.534, 0.770]$ & $0.652$ $[0.515, 0.772]$ & $-0.007$ $[-0.056, 0.044]$ & $0.73$ \
+Day-collapse MCC & $0.219$ $[0.107, 0.324]$ & $0.205$ $[0.071, 0.320]$ & $-0.015$ $[-0.108, 0.078]$ & $0.76$ \\
+Market-logit MCC & $0.214$ $[0.095, 0.327]$ & $0.179$ $[0.045, 0.297]$ & $-0.035$ $[-0.129, 0.064]$ & $0.44$ \\
+Daily AUC & $0.659$ $[0.534, 0.770]$ & $0.652$ $[0.515, 0.772]$ & $-0.007$ $[-0.056, 0.044]$ & $0.73$ \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -719,33 +724,33 @@ for the other two targets every interval's lower end exceeds $0.88$.}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{lcccccc}
 \toprule
-\multicolumn{7}{l}{\emph{(a) Ablation and controls}} \
-Variant & Adv., $\lambda$ & MCC & Within-day & Rank IC & $p$ vs MMGT & $p$ vs D2 \
+\multicolumn{7}{l}{\emph{(a) Ablation and controls}} \\
+Variant & Adv., $\lambda$ & MCC & Within-day & Rank IC & $p$ vs MMGT & $p$ vs D2 \\
 \midrule
-MMGT & -- & $0.146\pm0.029$ & $0.023$ & $0.001$ & -- & $0.027$ \
-Two-MMGT ensemble$^{a}$ & -- & $\mathbf{0.161\pm0.040}$ & -- & $0.003$ & -- & -- \
-\textbf{MMGT-D2} (selected) & yes, $1$ & $0.151\pm0.037$ & $\mathbf{0.031}$ & $\mathbf{0.027}$ & $0.002$ & -- \
-\quad variant & yes, $0.5$ & $0.143\pm0.029$ & $0.027$ & $0.023$ & $0.008$ & -- \
-\quad variant & no, $1$ & $0.155\pm0.027$ & $0.030$ & $0.023$ & $0.008$ & -- \
-\quad variant & no, $0.5$ & $0.135\pm0.050$ & $0.026$ & $0.017$ & $0.036$ & -- \
+MMGT & -- & $0.146\pm0.029$ & $0.023$ & $0.001$ & -- & $0.027$ \\
+Two-MMGT ensemble$^{a}$ & -- & $0.161\pm0.040$ & -- & $0.003$ & -- & -- \\
+\textbf{MMGT-D2} (selected) & yes, $1$ & $0.151\pm0.037$ & $\mathbf{0.031}$ & $\mathbf{0.027}$ & $0.002$ & -- \\
+\quad variant & yes, $0.5$ & $0.143\pm0.029$ & $0.027$ & $0.023$ & $0.008$ & -- \\
+\quad variant & no, $1$ & $0.155\pm0.027$ & $0.030$ & $0.023$ & $0.008$ & -- \\
+\quad variant & no, $0.5$ & $0.135\pm0.050$ & $0.026$ & $0.017$ & $0.036$ & -- \\
 \midrule
-\multicolumn{7}{l}{\quad\emph{Controls: MMGT-D2 (selected setting) with one change}} \
-\quad no zero-sum constraint & yes, $1$ & $0.158\pm0.036$ & $0.018$ & $0.003$ & $0.82$ & $0.027$ \
-\quad no cross-stock attention & yes, $1$ & $0.164\pm0.046$ & $0.029$ & $0.020$ & $0.011$ & $0.71$ \
-Single MMGT, hidden 92$^{b}$ & -- & $0.130\pm0.023$ & $0.021$ & $0.003$ & $0.79$ & $0.033$ \
+\multicolumn{7}{l}{\quad\emph{Controls: MMGT-D2 (selected setting) with one change}} \\
+\quad no zero-sum constraint & yes, $1$ & $0.158\pm0.036$ & $0.018$ & $0.003$ & $0.82$ & $0.027$ \\
+\quad no cross-stock attention & yes, $1$ & $\mathbf{0.164\pm0.046}$ & $0.029$ & $0.020$ & $0.011$ & $0.71$ \\
+Single MMGT, hidden 92$^{b}$ & -- & $0.130\pm0.023$ & $0.021$ & $0.003$ & $0.79$ & $0.033$ \\
 \midrule
-\multicolumn{7}{l}{\emph{(b) Probe: what the representation reveals about the market}} \
-Representation & \multicolumn{3}{c}{Next-day direction} & Yesterday & \multicolumn{2}{c}{10-day trend} \
+\multicolumn{7}{l}{\emph{(b) Probe: what the representation reveals about the market}} \\
+Representation & \multicolumn{3}{c}{Next-day direction} & Yesterday & \multicolumn{2}{c}{10-day trend} \\
 \midrule
-Market-proxy input & \multicolumn{3}{c}{$0.59$ $[0.48, 0.68]$} & $0.99$ & \multicolumn{2}{c}{$1.00$} \
-MMGT & \multicolumn{3}{c}{$0.69$ $[0.55, 0.83]$} & $0.99$ & \multicolumn{2}{c}{$0.98$} \
-MMGT-D2 timing branch & \multicolumn{3}{c}{$0.67$ $[0.52, 0.81]$} & $1.00$ & \multicolumn{2}{c}{$0.98$} \
-MMGT-D2 selection, centred & \multicolumn{3}{c}{$0.63$ $[0.48, 0.79]$} & $0.97$ & \multicolumn{2}{c}{$1.00$} \
-\quad without adversary ($\lambda=1$) & \multicolumn{3}{c}{$0.61$ $[0.49, 0.72]$} & $0.99$ & \multicolumn{2}{c}{$1.00$} \
-\quad without cross-stock attention & \multicolumn{3}{c}{$0.62$ $[0.51, 0.72]$} & $0.93$ & \multicolumn{2}{c}{$0.99$} \
+Market-proxy input & \multicolumn{3}{c}{$0.59$ $[0.48, 0.68]$} & $0.99$ & \multicolumn{2}{c}{$1.00$} \\
+MMGT & \multicolumn{3}{c}{$0.69$ $[0.55, 0.83]$} & $0.99$ & \multicolumn{2}{c}{$0.98$} \\
+MMGT-D2 timing branch & \multicolumn{3}{c}{$0.67$ $[0.52, 0.81]$} & $1.00$ & \multicolumn{2}{c}{$0.98$} \\
+MMGT-D2 selection, centred & \multicolumn{3}{c}{$0.63$ $[0.48, 0.79]$} & $0.97$ & \multicolumn{2}{c}{$1.00$} \\
+\quad without adversary ($\lambda=1$) & \multicolumn{3}{c}{$0.61$ $[0.49, 0.72]$} & $0.99$ & \multicolumn{2}{c}{$1.00$} \\
+\quad without cross-stock attention & \multicolumn{3}{c}{$0.62$ $[0.51, 0.72]$} & $0.93$ & \multicolumn{2}{c}{$0.99$} \\
 \bottomrule
 \end{tabular}}
-\[3pt]
+\\[3pt]
 \parbox{\columnwidth}{\footnotesize $^{a}$Average of two independently trained MMGTs,
 five pairs. $^{b}$Parameter-matched: $262$k parameters, against $273$k for MMGT-D2
 and $132$k for MMGT.}
@@ -763,12 +768,15 @@ MMGT ($0.017$--$0.027$ against $0.001$), while none changes MCC ($0.135$--$0.155
 run-level $p\ge0.48$). Removing the zero-sum constraint, so that the stock branch's
 excess logits come from uncentred states through a head with a bias, keeps the two
 branches and the ranking objective but returns Rank IC to MMGT's level ($0.003$;
-$-0.025$ against MMGT-D2, $[-0.049, -0.002]$, $p=0.027$), with an unchanged MCC
-($0.158$). A single MMGT widened to MMGT-D2's size also stays at $0.003$ ($p=0.033$),
-as does the two-MMGT ensemble, so capacity alone does not produce the gain. Without
+$-0.025$ against MMGT-D2, $[-0.049, -0.002]$, $p=0.027$, and $p\le0.032$ with 1- or
+10-day blocks), with an unchanged MCC ($0.158$). A single MMGT widened to MMGT-D2's
+size also stays at $0.003$ ($p=0.033$, though $0.077$ with independent days), as does
+the two-MMGT ensemble, so capacity alone does not produce the gain. Without
 cross-stock attention in the selection branch, Rank IC is $0.020$, significantly
 different from neither MMGT nor MMGT-D2 under the block bootstrap ($p=0.36$ and
-$0.71$), so whether that attention contributes is not resolved. The adversary's
+$0.71$), so whether that attention contributes is not resolved; this control has the
+highest pooled MCC ($0.164$) and pairwise accuracy ($0.532$) of any model here,
+neither significantly above MMGT-D2 ($p=0.62$, $0.52$). The adversary's
 contribution is not demonstrated: the variant without it has a slightly higher MCC
 and a Rank IC of $0.023$. The timing branch's own logits $l_{i,t}$ have a Rank IC near
 zero in every variant ($-0.004$ to $0.008$), so the ranking comes from the stock branch.
@@ -936,7 +944,8 @@ full-universe Rank IC to $0.027$ on the standard test period, level with the bes
 per-stock model, without a detectable change in pooled MCC ($0.151$; non-inferiority
 not established). The gain is not replicated in an earlier period and is not
 accompanied by better up/down discrimination; controls indicate that the zero-sum
-constraint, not extra capacity, contributes to it. The decomposition is
+constraint contributes to it and that extra capacity alone does not produce it. The
+decomposition is
 additive in logits; it fixes neither the day's mean probability nor what the hidden
 states encode. Confirming the gain on an untouched period or market is the next step. We recommend
 reporting stock-selection and market-timing scores, block-resampled intervals and

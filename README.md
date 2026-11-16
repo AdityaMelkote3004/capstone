@@ -23,14 +23,18 @@ stocks better. Experiment 12 separates the two at the output: MMGT-D (market hea
 on the market index alone) loses the timing and failed its pre-registered criterion
 (MCC 0.063); MMGT-D2 (Experiment 12b) takes its market call from a full MMGT and ranks
 stocks with a branch that has no market input, and met its criterion: MCC 0.151, Rank IC 0.027
-(MMGT 0.001), level with the best per-stock model. Experiment 13 (ablation + probe of
-hidden states) shows the gain comes from the two-branch design, not the adversary, and
+(MMGT 0.001), level with the best per-stock model, though not in the earlier period A
+and not in up/down discrimination (pairwise accuracy), so it is a proof of concept.
+Experiment 13 (ablation + probe of hidden states) shows the adversary adds little and
 that the ranking branch still encodes recent market moves: the separation holds at the
-output, so the paper does not call MMGT-D2 disentangled. Pooled-MCC rankings shift
+output, so the paper does not call MMGT-D2 disentangled. Experiment 14 (pre-registered
+controls) shows the zero-sum constraint contributes: without it, the same two branches
+rank no better than MMGT (Rank IC 0.003), and a parameter-matched single MMGT does not
+reproduce the gain either. Pooled-MCC rankings shift
 between periods with market timing. Under a hierarchical block bootstrap over runs
 and test days, MMGT's advantage over the tuned baselines survives Holm adjustment only
 against the ALSTM, and MMGT-D2's Rank IC gain has p = 0.027 (0.071 with i.i.d. days);
-full statistics and implementation details are in [`paper/SUPPLEMENT.md`](paper/SUPPLEMENT.md). Hand-built graphs inside the
+full statistics are in [`results/experiment11_dtml/RESULTS.md`](results/experiment11_dtml/RESULTS.md). Hand-built graphs inside the
 attention layer add nothing. Federated training across nine sector clients matches
 centralised MCC but loses stock selection.
 

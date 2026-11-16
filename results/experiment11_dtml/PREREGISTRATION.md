@@ -547,3 +547,7 @@ C2 probe (centred selection states, 5-day block CI): yesterday 0.933 [0.89, 0.97
 information** (attention is not the route). Next-day 0.617 [0.51, 0.72]; adding these
 states to the market input does not improve the next-day probe (-0.015 [-0.109, 0.088]).
 All Experiment 14 comparisons are exploratory; the confirmatory set is unchanged.
+Block-length sensitivity (reported only; rules were applied at 5 days; paper/rev7_blocks.json):
+C1 - MMGT-D2 Rank IC p = 0.032 / 0.027 / 0.026 (blocks 1 / 5 / 10): R1 holds at every length.
+C3 - MMGT-D2 p = 0.077 / 0.033 / 0.036: not significant with i.i.d. days (stated in the paper).
+C2 - MMGT-D2 p = 0.71 / 0.71 / 0.69.
