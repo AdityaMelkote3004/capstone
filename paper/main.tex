@@ -53,21 +53,21 @@ or distinguish the stocks that will outperform others on the same day (stock
 selection). Pooled evaluation does not separate them: on the StockNet benchmark, a
 hindsight oracle that knew only each day's realised majority direction would reach a
 Matthews correlation coefficient (MCC) of $0.625$. We introduce within-day and
-day-collapse MCC to measure the two abilities separately, alongside pairwise
+day-collapse MCC to measure each separately, alongside pairwise
 accuracy, a market-logit score and the rank information coefficient (Rank IC). With
 these diagnostics, the pooled MCC of MMGT, a multimodal graph transformer ($0.146$,
-against at most $0.057$ for tuned baselines, significant against only some of them
-over 64 test days), comes predominantly from market-level directional information;
+against at most $0.057$ for tuned baselines, significant against only some over 64
+test days), comes predominantly from market-level directional information;
 its Rank IC is $0.001$. As a proof of concept, MMGT-D2 decomposes each prediction
 into a day-level market logit and stock-level excess logits that sum to zero within
-each day. On the standard test period it raises Rank IC to $0.027$ ($p=0.027$ with
-5-day block resampling, $0.071$ with independent days), with no detectable change in
-pooled MCC ($0.151$; non-inferiority not established) or in up/down discrimination,
-and not in an earlier period. In post-hoc controls, removing the zero-sum constraint
+each day. On the standard test period it raises full-universe Rank IC to $0.027$
+($p=0.027$ under 5-day block resampling, $0.071$ with independent days). It does not
+detectably change pooled MCC ($0.151$; non-inferiority is not established) or up/down
+discrimination, and the gain does not recur in an earlier period. In post-hoc controls, removing the zero-sum constraint
 removes the gain, and a single MMGT of the same size does not reproduce it. The
 decomposition is
-additive in logits, not in probabilities or hidden representations. Market timing and
-stock selection should therefore be evaluated separately.
+additive in logits, not in probabilities or hidden representations. The two abilities
+should therefore be evaluated separately.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -330,7 +330,9 @@ labelled up and down on day $t$,
 \begin{equation}
 \mathrm{PA}=\frac{1}{T'}\sum_{t}\frac{1}{|\mathcal{U}_t||\mathcal{D}_t|}\sum_{i\in\mathcal{U}_t}\sum_{j\in\mathcal{D}_t}\Bigl(\mathbf{1}[p_{i,t}>p_{j,t}]+\tfrac{1}{2}\mathbf{1}[p_{i,t}=p_{j,t}]\Bigr),
 \end{equation}
-the daily AUC over $\mathcal{S}_t$, averaged over the same days ($0.5$ by chance).
+which is exactly the daily AUC over the labelled stocks, with ties counting half,
+averaged over the same days ($0.5$ by chance). We use it as a cross-sectional reading
+of that AUC, not as an independent measure.
 The \emph{rank information coefficient} (Rank IC)~\cite{grinold2000active}, an
 established ranking measure, is the daily Spearman correlation between predicted
 probabilities and realised returns, averaged over days. We compute it over all of
@@ -414,8 +416,9 @@ test.
 \begin{table*}[t]
 \caption{Test results on the standard StockNet test period (3{,}720 predictions over
 64 trading days). Mean $\pm$ standard deviation over ten runs unless marked; best
-value per column in bold. Stock selection: within-day MCC, pairwise accuracy and Rank
-IC over all window-valid stocks. Market timing: day-collapse MCC from the day's mean
+value per column in bold. Stock selection: within-day MCC and pairwise accuracy over
+the labelled stocks $\mathcal{S}_t$, Rank IC over all window-valid stocks
+$\mathcal{V}_t$. Market timing: day-collapse MCC from the day's mean
 probability over the labelled stocks $\mathcal{S}_t$; market-logit MCC and daily AUC
 from the day's mean logit over $\mathcal{V}_t$, which for MMGT-D and MMGT-D2 is their
 market logit $m_t$ (Section~\ref{sec:eval}). The last column is the unadjusted
@@ -705,8 +708,10 @@ logit times less well.} Its market-logit MCC is $0.179$ against $0.214$ for MMGT
 day-collapse MCC of $0.205$ is higher than its own market-logit MCC ($+0.026$,
 $[-0.001, 0.067]$) because it averages probabilities over $\mathcal{S}_t$: the stock
 branch changes that day-level call on 1--5 of the 64 days per run, while the daily
-AUC moves by only $0.002$. For a model with a separate market logit, day-collapse MCC
-therefore slightly overstates what the market branch alone achieves.
+AUC moves by only $0.002$. The two scores play different roles: day-collapse MCC is
+defined for every model and compares their timing on equal terms, while market-logit
+MCC isolates what a separate market branch achieves, which day-collapse MCC slightly
+overstates for MMGT-D2.
 
 \subsection{What the separation does and does not achieve}
 \label{sec:probe}
@@ -766,8 +771,9 @@ post-hoc comparisons on the standard period only, not candidates for selection.
 gain.} Table~\ref{tab:probe}(a) shows that all four variants improve Rank IC over
 MMGT ($0.017$--$0.027$ against $0.001$), while none changes MCC ($0.135$--$0.155$,
 run-level $p\ge0.48$). Removing the zero-sum constraint, so that the stock branch's
-excess logits come from uncentred states through a head with a bias, keeps the two
-branches and the ranking objective but returns Rank IC to MMGT's level ($0.003$;
+excess logits come from uncentred states through a head with a bias (so it tests
+centring and the bias-free head together), keeps the two branches and the ranking
+objective but returns Rank IC to MMGT's level ($0.003$;
 $-0.025$ against MMGT-D2, $[-0.049, -0.002]$, $p=0.027$, and $p\le0.032$ with 1- or
 10-day blocks), with an unchanged MCC ($0.158$). A single MMGT widened to MMGT-D2's
 size also stays at $0.003$ ($p=0.033$, though $0.077$ with independent days), as does
