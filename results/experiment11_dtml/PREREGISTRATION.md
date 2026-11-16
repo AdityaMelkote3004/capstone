@@ -499,3 +499,26 @@ Wording rules (Rank IC, block bootstrap, two-sided 0.05):
    the market-proxy summary alone vs the proxy summary plus the centred selection
    states; difference of daily AUC with a 5-day block interval.
 Script: paper/rev7_stats.py -> paper/rev7_stats.json; runs: scripts/runs/exp14.sh.
+
+### Review round 7 (b) -- outcome (rules applied unchanged; paper/rev7_stats.json)
+
+Checks: all 1,848 unlabelled window-valid test stock-days have an adjusted return inside
+StockNet's band (-0.5%, 0.55%], and no labelled one does; neutral stocks per day 28.9 on
+average (min 4, so 63 of 64 days enter the neutral-band Rank IC). Returns: the released
+"close" change is split-adjusted, not dividend-adjusted (AAPL's 7:1 split day shows
++1.6%); 62 of 5,568 test stock-days differ from the adjusted change by > 0.05 points;
+M_t is identical on all 64 test days. Pooled MCC recomputed from the predictions equals
+Table I for every model.
+1. Market columns (day-collapse / market-logit MCC / daily AUC): MMGT 0.219 / 0.214 /
+   0.659 [0.534, 0.770]; MMGT-D2 0.205 / 0.179 / 0.652 [0.515, 0.772]. D2 - MMGT:
+   market-logit MCC -0.035 [-0.129, 0.064] p=0.44; daily AUC -0.007 [-0.056, 0.044] p=0.73.
+2. Pairwise accuracy intervals are about +-0.03 for every model; D2 - MMGT +0.004 p=0.67.
+3. Rank IC by subset, D2 - MMGT: all V_t +0.026 [0.004, 0.051] p=0.027; labelled S_t
+   +0.026 [-0.003, 0.056] p=0.082; neutral +0.015 [-0.018, 0.047] p=0.37. The gain is not
+   confined to the neutral band; with no change in pairwise accuracy it reflects the
+   ordering of return sizes rather than up/down separation.
+4. Adjusted returns: D2 - MMGT Rank IC +0.027 [0.004, 0.053] p=0.025 (unchanged).
+5. Market representation, daily AUC [5-day block CI]: 11-feature proxy 0.588 [0.48, 0.68];
+   mean return 0.566 [0.46, 0.67]; equal-weighted index features 0.616 [0.50, 0.71].
+6. Incremental next-day probe (market input + states vs market input): D2_final centred
+   selection states -0.035 [-0.115, 0.048]; MMGT states +0.100 [-0.036, 0.240].
