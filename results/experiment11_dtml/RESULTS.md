@@ -300,3 +300,25 @@ Script `paper/rev6_stats.py` -> `paper/rev6_stats.json`; tables in `paper/SUPPLE
   period A 3/5, +0.001.
 - Politis-White block length for the primary endpoint's daily series: 5.6 days.
 - Trading simulation moved from the paper to the supplement (page limit); numbers unchanged.
+
+## Review round 7 and Experiment 14 (architectural controls)
+
+Re-analysis (`paper/rev7_stats.py` -> `paper/rev7_stats.json`, no training): Table I now
+reports pairwise accuracy, market-logit MCC and daily AUC for every model; MMGT-D2 vs
+MMGT with intervals for every measure (paper Table III); Rank IC by subset (D2 - MMGT:
+all +0.026 p=0.027, labelled +0.026 p=0.082, neutral +0.015 p=0.37); dividend-adjusted
+returns change nothing (M_t identical on all 64 days; D2 - MMGT Rank IC +0.027 p=0.025);
+alternative market inputs give overlapping daily AUCs (0.566-0.616).
+
+Experiment 14 (pre-registered, 10 seeds each, `scripts/runs/exp14.sh`):
+
+| Model | Pooled MCC | Within-day | Pairwise | Rank IC | Rank IC vs MMGT-D2 (block p) |
+|---|---|---|---|---|---|
+| MMGT-D2 | 0.151 +- 0.037 | 0.031 | 0.525 | 0.027 | -- |
+| no zero-sum constraint | 0.158 +- 0.036 | 0.018 | 0.522 | 0.003 | -0.025 (0.027) |
+| no cross-stock attention in selection branch | 0.164 +- 0.046 | 0.029 | 0.532 | 0.020 | -0.007 (0.71) |
+| single MMGT, hidden 92 (262k params) | 0.130 +- 0.023 | 0.021 | 0.527 | 0.003 | -0.024 (0.033) |
+
+Pre-registered wording: the zero-sum constraint contributes; attention not resolved;
+capacity alone does not produce the gain. The no-attention selection states still
+encode yesterday's direction (0.93) and the 10-day trend (0.99).

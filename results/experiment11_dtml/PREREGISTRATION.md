@@ -522,3 +522,28 @@ Table I for every model.
    mean return 0.566 [0.46, 0.67]; equal-weighted index features 0.616 [0.50, 0.71].
 6. Incremental next-day probe (market input + states vs market input): D2_final centred
    selection states -0.035 [-0.115, 0.048]; MMGT states +0.100 [-0.036, 0.240].
+
+### Experiment 14 -- outcome (rules applied unchanged; paper/rev7_stats.json)
+
+Reproduction: D2_final seed 0 rerun with the modified code gives test MCC 0.16998,
+identical to the original (|diff| = 0.0).
+Standard test, 10 seeds each (pooled MCC +- s.d. / within-day / pairwise acc. / Rank IC):
+  MMGT-D2 (D2_final)   0.151 +- 0.037 / 0.031 / 0.525 / 0.027
+  C1 D2_unc            0.158 +- 0.036 / 0.018 / 0.522 / 0.003
+  C2 D2_noatt          0.164 +- 0.046 / 0.029 / 0.532 / 0.020
+  C3 MMGT_wide         0.130 +- 0.023 / 0.021 / 0.527 / 0.003
+  MMGT                 0.146 +- 0.029 / 0.023 / 0.521 / 0.001
+Rank IC, control - MMGT-D2 (block bootstrap): C1 -0.025 [-0.049, -0.002] p=0.027;
+C2 -0.007 [-0.047, 0.027] p=0.71; C3 -0.024 [-0.046, -0.002] p=0.033.
+Rank IC, control - MMGT: C1 +0.002 p=0.86; C2 +0.019 [-0.023, 0.056] p=0.36; C3 +0.002 p=0.84.
+Welch over runs (Rank IC): C1 vs D2 p=0.001, C2 vs MMGT p=0.011, C3 vs D2 p=0.0004.
+No control changes pooled MCC significantly (block p >= 0.43).
+Wording rules: **R1 "the zero-sum constraint contributes"; R2 "not resolved";
+R3 "capacity alone does not produce the gain".**
+C1 identity: without the constraint the excess logits shift the day's mean logit
+(median |mean_V e| = 0.18).
+C2 probe (centred selection states, 5-day block CI): yesterday 0.933 [0.89, 0.97], trend
+0.990 [0.97, 1.00] -> not near chance: **removing attention does not remove the market
+information** (attention is not the route). Next-day 0.617 [0.51, 0.72]; adding these
+states to the market input does not improve the next-day probe (-0.015 [-0.109, 0.088]).
+All Experiment 14 comparisons are exploratory; the confirmatory set is unchanged.
