@@ -43,6 +43,13 @@ centralised MCC but loses stock selection.
 **Protocol and its history:** [`results/experiment11_dtml/PREREGISTRATION.md`](results/experiment11_dtml/PREREGISTRATION.md).
 **How the project got here (Experiments 1–10):** [`results/CAPSTONE_FINDINGS.md`](results/CAPSTONE_FINDINGS.md).
 
+## Demo
+
+`streamlit run demo/app.py` opens an interactive replay of the paper's saved test
+predictions: the hindsight-oracle trap, a day-by-day view of market timing versus
+stock selection, the full scoreboard, MMGT-D2's market and stock parts, and the
+controls. Walkthrough: [`demo/DEMO_SCRIPT.md`](demo/DEMO_SCRIPT.md).
+
 ## Repository map
 
 | Path | What |
