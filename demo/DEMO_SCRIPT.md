@@ -30,8 +30,8 @@ It opens in the browser at http://localhost:8501. The first load takes a few sec
 **2. One trading day (about 1.5 min).**
 - It opens on a mixed day. In the scatter, left/right is market timing and the upward
   slope is stock selection.
-- With MMGT-D2 selected, scroll to the bar chart: one market number for the day, plus 87
-  stock parts that add up to exactly 0.000.
+- With MMGT-D2 selected, scroll to the bar chart: one market number for the day, plus one
+  stock part per stock, adding up to exactly 0.000.
 - Switch the model to "Control: no zero-sum constraint". The sum is no longer zero, and
   a warning appears.
 - Optional: pick the day named in the caption, where every labelled stock moved the same
