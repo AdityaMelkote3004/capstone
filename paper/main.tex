@@ -78,116 +78,119 @@ selection, multimodal learning, graph transformer, federated learning, StockNet
 % =====================================================================
 \section{Introduction}
 
-A stock movement prediction model can achieve a high pooled score without being good
-at selecting stocks. Such scores are computed over all predictions of a test period
-at once, and can be earned in two different ways. A model can \emph{time the
-market}, predicting the days on which most stocks rise, or \emph{select stocks},
-predicting which stocks do better than others on the same day. In this work, stock
-selection refers specifically to this cross-sectional discrimination within a
-prediction day, not to a portfolio strategy.
+A model that guesses how stocks will move can get a high pooled score and still be bad
+at picking stocks. Pooled scores are worked out over all the guesses in a test period
+at once, and a model can earn them in two different ways. It can \emph{time the
+market}, getting right the days when most stocks go up. Or it can \emph{select
+stocks}, getting right which stocks do better than others on a given day. In this
+paper, stock selection means this second kind of within-day sorting. We do not mean a
+portfolio plan.
 
-The distinction matters for multimodal models. The StockNet benchmark~\cite{xu2018stocknet} pairs price histories with tweets for 87
-large US stocks, and many models have since combined these
-sources~\cite{feng2019advalstm,sawhney2020mansf,sawhney2021fast,ang2022guided},
-often with graphs that connect related
-companies~\cite{chen2018gcn,feng2019rsr,cheng2022multimodality,wang2021review}.
-Such models share information across stocks, and so can learn a common day-level
-signal as easily as stock-specific differences.
+This gap matters most for models that use more than one kind of input. The StockNet
+benchmark~\cite{xu2018stocknet} pairs price histories with tweets for 87 US stocks. A
+long line of models has since mixed the two
+sources~\cite{feng2019advalstm,sawhney2020mansf,sawhney2021fast,ang2022guided}, often
+adding graphs that tie firms
+together~\cite{chen2018gcn,feng2019rsr,cheng2022multimodality,wang2021review}. These
+models pass information between stocks, so they can pick up a shared day-level signal
+as easily as they pick up differences between stocks.
 
-On StockNet, the first ability is rewarded heavily: a hindsight oracle that knew
-whether most stocks went up each day, and nothing about any single stock, would score
-an MCC of $0.625$ on the test period. It uses realised labels, so it is neither a
-predictor nor a bound on achievable performance, but it shows how much a pooled score
-can reward the market's direction alone. A gain in one ability is therefore easily
-mistaken for a gain in the other. Our main contribution is the evaluation; the model
-results illustrate it. Our contributions are as follows:
+StockNet pays well for the first skill. Picture an oracle that knows, after the fact,
+whether most stocks rose each day but knows nothing about any single stock. On the test
+period it would score an MCC of $0.625$. This oracle uses realised labels, so it is not
+a predictor and does not cap what a model can reach. What it does show is how much a
+pooled score can hand out for the market's direction alone. It also shows how easily
+progress on one skill can be taken for progress on the other. The evaluation is our
+main contribution; the model results are there to show it. Our contributions are:
 \begin{enumerate}
 \item \textbf{Evaluation diagnosis.} We show that, on StockNet, pooled stock-day
-evaluation can strongly reward market timing even when stock-specific discrimination
-is absent, and that the ranking of models changes across test periods as their market
-timing changes.
-\item \textbf{Separated diagnostics.} We introduce within-day MCC and day-collapse
-MCC to distinguish stock selection from market timing, complement them with pairwise
-accuracy and a market-logit score, and relate within-day MCC empirically to the
-established rank information coefficient (Rank IC).
-\item \textbf{Model analysis and a proof of concept.} We show that market-level
-directional information is the predominant source of the pooled performance of MMGT,
-a multimodal graph transformer. We then propose MMGT-D2, a two-branch output
-decomposition that keeps a day-level market logit and constrains stock-level excess
-logits to sum to zero within each day. On the standard test period it improves
-full-universe Rank IC from $0.001$ to $0.027$, but not up/down discrimination, and
-not in an earlier period, so we present it as a proof of concept. Controls indicate
-that the zero-sum constraint contributes to this gain and that extra capacity alone
-does not produce it.
-\item \textbf{An exploratory secondary study: federated training.} Sector-partitioned federated
-training keeps the pooled score while within-day MCC falls (significantly across
-runs only), and we cannot yet separate federated averaging from the
-sector-restricted training context.
+evaluation can strongly reward market timing even when a model has no stock-specific
+skill at all. We also show that the ranking of models moves from one test period to
+another as their market timing moves.
+\item \textbf{Separated diagnostics.} We bring in within-day MCC and day-collapse MCC to
+tell stock selection apart from market timing, and add pairwise accuracy and a
+market-logit score next to them. We also tie within-day MCC in practice to the known
+rank information coefficient (Rank IC).
+\item \textbf{Model analysis and a proof of concept.} For MMGT, a multimodal graph
+transformer, we show that most of its pooled performance comes from market-level
+directional information. We then put forward MMGT-D2, a two-branch output split. One
+branch keeps a day-level market logit; the other makes stock-level logits that must sum
+to zero within each day. On the standard test period it lifts full-universe Rank IC
+from $0.001$ to $0.027$. It does not detectably improve up/down sorting, though, and the
+gain does not hold in an earlier period, so we offer it only as a proof of concept. Our
+controls suggest that the zero-sum constraint is part of why it helps and that extra
+capacity by itself does not explain it.
+\item \textbf{An exploratory side study: federated training.} Under sector-partitioned
+federated training, the pooled score holds up while within-day MCC falls (significant
+across runs only). We cannot yet say whether this comes from federated averaging itself
+or from the sector-limited setting each client is trained in.
 \end{enumerate}
 
 % =====================================================================
 \section{Related Work}
 
-\textbf{Multimodal stock prediction.} StockNet~\cite{xu2018stocknet} introduced
-the benchmark used here. Adv-ALSTM~\cite{feng2019advalstm} trained an attentive
-LSTM with adversarial examples, MAN-SF~\cite{sawhney2020mansf} combined tweets,
-prices and company relations, and FAST~\cite{sawhney2021fast} modelled the timing
-of news and tweets. Later work adds news at several levels~\cite{ang2022guided},
-macroeconomic events~\cite{zhang2025camef} and sentiment-aware
+\textbf{Multimodal stock prediction.} StockNet~\cite{xu2018stocknet} brought in the
+benchmark we use. Adv-ALSTM~\cite{feng2019advalstm} trained an attentive LSTM with
+adversarial examples. MAN-SF~\cite{sawhney2020mansf} pulled together tweets, prices and
+firm links. FAST~\cite{sawhney2021fast} modelled when news and tweets show up. More
+recent work adds news at several levels~\cite{ang2022guided}, macroeconomic
+events~\cite{zhang2025camef} and sentiment-aware
 graphs~\cite{zhang2025gnnsentiment,nguyen2025dasf}.
 
-\textbf{Graphs, transformers and disentanglement.} Graph models connect stocks
+\textbf{Graphs, transformers and disentanglement.} Graph models tie stocks together
 through industry links~\cite{chen2018gcn,feng2019rsr} or learned
-relations~\cite{cheng2022multimodality,liu2025multimodal,hu2025differential,niu2025ngat},
-often combined with recurrent or transformer
-encoders~\cite{sonani2025hybrid,zhu2025msgformer}, but can suffer from
-over-smoothing~\cite{li2018deeper}. Transformer models avoid a fixed graph by
-letting stocks attend to each other directly~\cite{yoo2021dtml,li2024master}.
-Disentangled models separate market-wide from stock-specific information, for
-example with separate encoders trained adversarially~\cite{tang2020add}.
+links~\cite{cheng2022multimodality,liu2025multimodal,hu2025differential,niu2025ngat},
+often pairing them with recurrent or transformer
+encoders~\cite{sonani2025hybrid,zhu2025msgformer}, though they can suffer from
+over-smoothing~\cite{li2018deeper}. Transformer models skip a fixed graph by letting
+stocks attend to one another~\cite{yoo2021dtml,li2024master}. Disentangled models split
+market-wide information from stock-specific information, for example by training
+separate encoders adversarially~\cite{tang2020add}.
 
 \textbf{Federated finance.} Federated averaging~\cite{mcmahan2017fedavg} trains one
-model across parties without sharing their data, and has been used for stock
-prediction~\cite{kumarappan2024federated,noseda2025federated} and financial
+model across parties without any of them sharing their data. It has been used for stock
+prediction~\cite{kumarappan2024federated,noseda2025federated} and for financial
 sentiment~\cite{zhong2025financial}.
 
 % =====================================================================
 \section{Data}
 
-\textbf{Benchmark.} We use StockNet~\cite{xu2018stocknet} with the price features
-released by~\cite{feng2019advalstm}: 87 US stocks from 2014 to 2015. StockNet's
-authors chose all eight Conglomerates stocks and the ten largest by capitalisation in
-each of eight other industries, without stating a selection date; the universe is
-thus a hand-picked set of large, surviving stocks, and our results describe that set.
-We keep StockNet's labels: a stock-day is \emph{up} if the adjusted close rose by more than
-$0.55\%$ and \emph{down} if it fell by $0.5\%$ or more; smaller moves (the \emph{neutral
-band}) are left out. StockNet's authors chose these asymmetric thresholds to balance the two classes. Training runs until July 2015
-(20{,}309 samples), validation covers August--September 2015 (2{,}555 samples) and
-testing October--December 2015 (3{,}720 samples on 64 trading days, $51.3\%$ up).
+\textbf{Benchmark.} We use StockNet~\cite{xu2018stocknet} with the price features put
+out by~\cite{feng2019advalstm}: 87 US stocks over 2014 and 2015. The StockNet authors
+took all eight Conglomerates stocks plus the ten largest stocks by capitalisation in
+each of eight other industries. They do not say on what date they made this pick. The
+universe is therefore a hand-picked set of stocks that survived, and our results
+describe that set. We keep StockNet's labels. A stock-day counts as \emph{up} if the
+adjusted close rose by more than $0.55\%$ and as \emph{down} if it fell by $0.5\%$ or
+more. Anything in between (the \emph{neutral band}) is dropped. StockNet's authors set
+these thresholds so the two classes would be balanced. Training runs until July 2015
+(20{,}309 samples). Validation covers August--September 2015 (2{,}555 samples).
+Testing covers October--December 2015 (3{,}720 samples over 64 trading days, $51.3\%$
+up).
 
 \textbf{Inputs.} For each stock, the model sees the 10 trading days before the day
-it predicts, with 11 price features per day (open, high and low relative to the
-close, the daily change, and the price relative to its 5- to 30-day moving
-averages). Each stock also has a 47-feature profile: \emph{volatility} (6: movement
-over the last 5, 10 and 20 days, a weighted recent volatility and yesterday's
-return); \emph{fundamentals} (20: 13 SEC EDGAR figures such as revenue, earnings per
-share and debt-to-equity, with missing-value flags); \emph{tweet volume} (5: tweet
-counts on each of the previous four days and in total); and \emph{peer features}
-(16: from a daily graph linking stocks in the same sector, stocks whose returns
-moved together over the last 60 days, and stocks mentioned together in tweets,
-summarising how a stock's neighbours moved yesterday, how the stock differs from
-them, and its sector). We use tweet volume rather than tweet content because, in
-preliminary experiments on the same split (not reported here), embeddings of the
-tweets from a financial language model did not raise the score above prices alone.
+being predicted, with 11 price features per day (open, high and low relative to the
+close, the daily change, and the price relative to its 5- to 30-day moving averages).
+Each stock also carries a 47-feature profile in four groups. \emph{Volatility} (6)
+covers movement over the last 5, 10 and 20 days, a weighted measure of recent
+volatility and yesterday's return. \emph{Fundamentals} (20) are 13 SEC EDGAR figures,
+such as revenue, earnings per share and debt-to-equity, along with missing-value flags.
+\emph{Tweet volume} (5) gives tweet counts for each of the previous four days and in
+total. \emph{Peer features} (16) come from a graph that links stocks in the same
+sector, stocks whose returns moved together over the previous 60 days and stocks
+mentioned together in tweets. They sum up how a stock's neighbours moved yesterday,
+how the stock differs from them and which sector it belongs to. We use tweet volume
+rather than tweet content because, in early tests on the same split (not reported
+here), tweet embeddings from a financial language model did not lift the score above
+what prices alone got.
 
-\textbf{No look-ahead.} The prediction for day $t$ is the direction of the
-close-to-close return from day $t-1$ to day $t$, and uses only information
-available at the close of day $t-1$. Fundamentals are dated by their SEC filing date
-and first used the day after filing. Which stocks are labelled on day $t$ depends
-on day $t$'s move, so the graph and the peer features are built over all stocks
-with prices on $t-1$, labelled or not. For every one of the 504 target days, we
-deleted all information from that day onward, rebuilt the features and the graph,
-and confirmed that they do not change.
+\textbf{No look-ahead.} The guess for day $t$ is the direction of the close-to-close
+return from day $t-1$ to day $t$, and it draws only on information available at the
+close of day $t-1$. Fundamentals are dated by their SEC filing date and are first used
+the day after filing. Which stocks get a label on day $t$ depends on day $t$'s move, so
+we build the graph and the peer features over every stock with a price on $t-1$,
+labelled or not. For each of the 504 target days, we deleted all information from that
+day onward, rebuilt the features and the graph, and checked that they do not change.
 
 % =====================================================================
 \section{The MMGT Model}
@@ -263,7 +266,7 @@ the most recent one.
 
 \textbf{2) Profile and market.} The encoded 47-feature profile is added to this
 summary. A market summary is then added to every stock. The released data contain
-no market index or capitalisations, so we use an equal-weighted proxy for the
+no market index or capitalizations, so we use an equal-weighted proxy for the
 87-stock universe,
 $\bar{x}_{\tau}=|\mathcal{P}_{\tau}|^{-1}\sum_{i\in\mathcal{P}_{\tau}}x_{i,\tau}$,
 where $x_{i,\tau}$ holds stock $i$'s 11 price features on day $\tau$ and
@@ -282,7 +285,7 @@ a_{ij,t}=\operatorname{softmax}_{j\in\mathcal{V}_t}\!\left(\frac{(W_Q h_{i,t})^{
 \end{equation}
 where $h_{i,t}$ is stock $i$'s representation from step~2 and $\mathcal{V}_t$ is the
 set of stocks with a valid input window on day $t$, over which the softmax
-normalises. Each stock is updated with $\sum_{j\in\mathcal{V}_t} a_{ij,t}W_V h_{j,t}$
+normalizes. Each stock is updated with $\sum_{j\in\mathcal{V}_t} a_{ij,t}W_V h_{j,t}$
 (four heads), followed by a residual connection
 and a feed-forward layer, as in a transformer layer; hence a graph transformer. The
 explicit stock graph enters through the peer features; adding it to the attention
@@ -326,16 +329,16 @@ split always predicts half of a day's stocks up, so on the 32 test days on which
 than $80\%$ of labels agree even a perfect ranking scores far below $1$ ($0.515$ on
 average, $0.11$ on the most lopsided day). \emph{Pairwise accuracy} does not depend
 on the daily class balance. With $\mathcal{U}_t$ and $\mathcal{D}_t$ the stocks
-labelled up and down on day $t$,
+labeled up and down on day $t$,
 \begin{equation}
 \mathrm{PA}=\frac{1}{T'}\sum_{t}\frac{1}{|\mathcal{U}_t||\mathcal{D}_t|}\sum_{i\in\mathcal{U}_t}\sum_{j\in\mathcal{D}_t}\Bigl(\mathbf{1}[p_{i,t}>p_{j,t}]+\tfrac{1}{2}\mathbf{1}[p_{i,t}=p_{j,t}]\Bigr),
 \end{equation}
-which is exactly the daily AUC over the labelled stocks, with ties counting half,
+which is exactly the daily AUC over the labeled stocks, with ties counting half,
 averaged over the same days ($0.5$ by chance). We use it as a cross-sectional reading
 of that AUC, not as an independent measure.
 The \emph{rank information coefficient} (Rank IC)~\cite{grinold2000active}, an
 established ranking measure, is the daily Spearman correlation between predicted
-probabilities and realised returns, averaged over days. We compute it over all of
+probabilities and realized returns, averaged over days. We compute it over all of
 $\mathcal{V}_t$ (the default), which includes the neutral-band stocks that the two
 measures above leave out, and separately over $\mathcal{S}_t$ and over the
 neutral-band stocks $\mathcal{V}_t\setminus\mathcal{S}_t$ (on days with at least
@@ -349,11 +352,11 @@ all differences between stocks:
 \begin{equation}
 \mathrm{MCC}_{\mathrm{dc}}=\mathrm{MCC}\bigl(\{(y_{i,t},\,\mathbf{1}[\bar p_t\ge 0.5])\}_{t,\,i\in\mathcal{S}_t}\bigr).
 \end{equation}
-It weighs days by their labelled stocks and depends on calibration, and because it
-averages probabilities over the labelled stocks, differences between stocks can still
+It weighs days by their labeled stocks and depends on calibration, and because it
+averages probabilities over the labeled stocks, differences between stocks can still
 move it (Section~\ref{sec:disent}). We therefore also score each day's \emph{market
 logit} $\bar z_t=|\mathcal{V}_t|^{-1}\sum_{i\in\mathcal{V}_t}z_{i,t}$:
-\emph{market-logit MCC} predicts every labelled stock of day $t$ as
+\emph{market-logit MCC} predicts every labeled stock of day $t$ as
 $\mathbf{1}[\bar z_t\ge 0]$, and \emph{daily AUC} scores $\bar z_t$, one observation
 per day, against the market's direction
 $M_t=\mathbf{1}\bigl[|\mathcal{V}_t|^{-1}\sum_{i\in\mathcal{V}_t}r_{i,t}>0\bigr]$,
@@ -888,76 +891,55 @@ prices, the experiment studies federated optimisation, not privacy.
 \section{Discussion}
 \label{sec:disc}
 
-\textbf{What a pooled score conceals.} On this test period, the hindsight oracle of
-each day's majority direction scores $0.625$, while per-stock models with measurable
-stock selection score around $0.05$. MMGT, which beat every baseline on the pooled
-score, was primarily a market timer; rankings changed between test periods as market
-timing did; and models kept their pooled score while losing stock selection
-(MMGT-base, and possibly the federated model). Reporting stock-selection and
-market-timing scores alongside the pooled score costs little and makes these
-effects visible.
+\textbf{What a pooled score conceals.} On this test period, an oracle that knows
+only each day's realised majority direction scores $0.625$, while the per-stock
+models that show measurable stock selection sit around $0.05$. MMGT beat every
+baseline on the pooled score, yet it was mainly a market timer. Model rankings
+shifted between test periods as their market timing did, and some models kept their
+pooled score while losing stock selection (MMGT-base, and possibly the federated
+model). Reporting stock-selection and market-timing scores next to the pooled one
+is cheap, and it brings these effects into view.
 
-\textbf{Constraining the output may help ranking.} In MMGT the market signal
-dominates a shared representation. Separating timing and selection at the output
-raised Rank IC only when the market logit kept the full model (MMGT-D2, not MMGT-D)
-and the stock-level logits had to sum to zero: with the same two branches and ranking
-objective but no constraint, the stock branch ranked no better than MMGT. A plausible
-reading is that, unconstrained, the second branch also learns the day's common
-direction (its excess logits shift the day's mean logit by a median of $0.18$), which
-is easier to fit than the differences between stocks. The
-separation is additive in logits: it fixes the day's mean logit over
-$\mathcal{V}_t$, but not its mean probability or what the hidden states encode.
+\textbf{Constraining the output may help ranking.} In MMGT, the market signal
+dominates the shared representation. Splitting timing from selection at the output
+lifted Rank IC only under two conditions: the market logit had to keep the full
+model (MMGT-D2, not MMGT-D), and the stock-level logits had to sum to zero. With the
+same two branches and ranking objective but no constraint, the stock branch ranked
+no better than MMGT. One plausible explanation is that, left unconstrained, the
+second branch also picks up the day's common direction, which is easier to fit than
+the differences between stocks; its excess logits move the day's mean logit by a
+median of $0.18$. The split is additive in logits. It pins down the day's mean logit
+over $\mathcal{V}_t$, but not its mean probability or what the hidden states encode.
 
-\textbf{Scope.} All results come from 87 large, hand-picked US stocks in 2014--2015,
-so we do not claim that the MCC levels, or the gains of MMGT and MMGT-D2, transfer to
-other markets, periods or broader universes. The evaluation problem itself depends on how
-strongly stocks move together within a day, which we find in every period we can
-measure: the hindsight oracle scores $0.46$--$0.65$ in each quarter of 2014--2015.
-Within-day and day-collapse MCC can be computed on any dataset with daily
-cross-sections.
+\textbf{Scope.} All our results come from 87 large, hand-picked US stocks over
+2014--2015, so we make no claim that the MCC levels, or the gains of MMGT and
+MMGT-D2, carry over to other markets, periods, or broader universes. The evaluation
+problem itself hinges on how strongly stocks move together within a day. We see this
+in every period we can measure: the hindsight oracle scores between $0.46$ and
+$0.65$ in each quarter of 2014--2015. Within-day and day-collapse MCC can be
+computed on any dataset with daily cross-sections.
 
 \textbf{Limitations.} \emph{Independence:} MMGT-D2 was designed after MMGT's test
-results were known, its gain is not replicated in period A, and no test period here
-is untouched by its development; StockNet has no later data, so an untouched
-period or market remains the most important open requirement. \emph{Statistics:}
-under the hierarchical block bootstrap, MMGT's advantage over the tuned baselines
-survives Holm adjustment only against the ALSTM, and MMGT-D2's Rank IC gain is
-significant with 5- and 10-day blocks but not with independently resampled days
-($p=0.071$). \emph{Attribution:} the baselines see prices only and we trained no
-per-stock models with the full profile; the controls are post-hoc, cover the
-standard period only, and leave the role of cross-stock attention unresolved.
-\emph{Comparability:}
-published
-StockNet results use other protocols; our reproduction of the attention backbone
-(MMGT-base, $0.139$) is below the $0.191$ reported by its
-authors~\cite{yoo2021dtml}, and we claim no new state of the art. \emph{Other:}
-the walk-forward periods reuse frozen settings, and those for period A were selected
-with models whose training data included A's dates, and federated training was
-simulated on one machine.
+results were known, its gain does not replicate in period A, and no test period here
+is untouched by its development. StockNet has no later data, so an untouched period
+or market is still the most important open requirement. \emph{Statistics:} under the
+hierarchical block bootstrap, MMGT's advantage over the tuned baselines survives Holm
+adjustment only against the ALSTM, and MMGT-D2's Rank IC gain is significant with 5-
+and 10-day blocks but not when days are resampled independently ($p=0.071$).
+\emph{Attribution:} the baselines see only prices, and we did not train per-stock
+models with the full profile. The controls are post-hoc, cover only the standard
+period, and leave the role of cross-stock attention unresolved.
+\emph{Comparability:} published StockNet results follow other protocols, and our
+reproduction of the attention backbone (MMGT-base, $0.139$) falls below the $0.191$
+its authors report~\cite{yoo2021dtml}. We claim no new state of the art.
+\emph{Other:} the walk-forward periods reuse frozen settings, the settings for
+period A were chosen using models whose training data included A's dates, and
+federated training was simulated on a single machine.
 
 % =====================================================================
 \section{Conclusion}
 
-Pooled scores on StockNet mix two abilities: forecasting the market's direction on a
-day and distinguishing stocks within that day. MMGT, a multimodal graph transformer,
-illustrates the problem: its pooled MCC of $0.146$ is above every tuned baseline,
-although over 64 test days only some of these gaps are significant, and the
-diagnostics indicate that market-level directional information is the predominant
-source of its score, with a Rank IC of $0.001$. As a proof of concept, MMGT-D2
-suggests that separating the two at the output can help: with a day-level market
-logit and stock-level excess logits that sum to zero each day, it improves
-full-universe Rank IC to $0.027$ on the standard test period, level with the best
-per-stock model, without a detectable change in pooled MCC ($0.151$; non-inferiority
-not established). The gain is not replicated in an earlier period and is not
-accompanied by better up/down discrimination; controls indicate that the zero-sum
-constraint contributes to it and that extra capacity alone does not produce it. The
-decomposition is
-additive in logits; it fixes neither the day's mean probability nor what the hidden
-states encode. Confirming the gain on an untouched period or market is the next step. We recommend
-reporting stock-selection and market-timing scores, block-resampled intervals and
-more than one test period in future work on this benchmark. A stock movement
-model should be judged not only by whether it predicts the market's direction, but
-also by whether it can distinguish the stocks within that market.
+Pooled performance on StockNet reflects two abilities: forecasting the market's direction on a given day, and selecting individual stocks within that day. MMGT, a multimodal graph transformer, illustrates the problem. Its pooled MCC of 0.146 is higher than that of every tuned baseline, although not all of these differences are significant over the 64 test days. The diagnostics suggest that its score comes largely from market-level directional information, while its stock-selection performance, measured by Rank IC, is near zero (0.001). As a proof of concept, we examine whether separating the two effects at the output can help. MMGT-D2 splits each prediction into a day-level market logit and stock-level excess logits that sum to zero across the stocks of the same day. On the standard test period this gives a full-universe Rank IC of 0.027, level with the best per-stock model, with no detectable change in pooled MCC (0.151; non-inferiority is not established). The gain is not replicated in an earlier period, and up/down discrimination does not improve. The controls indicate that the zero-sum constraint contributes to the gain and that extra capacity alone does not account for it. The decomposition is additive in logits; it fixes neither the day's mean probability nor what the hidden states encode. Confirming the gain on an untouched period or market is the next step. For future work on this benchmark, we recommend reporting stock-selection and market-timing scores separately, along with block-resampled intervals and more than one test period. A stock movement model should be judged not only by its ability to predict the market's direction, but also by its ability to distinguish between stocks within that market.
 
 \section*{Acknowledgment}
 
