@@ -78,52 +78,53 @@ selection, multimodal learning, graph transformer, federated learning, StockNet
 % =====================================================================
 \section{Introduction}
 
-A model that guesses how stocks will move can get a high pooled score and still be bad
-at picking stocks. Pooled scores are worked out over all the guesses in a test period
-at once, and a model can earn them in two different ways. It can \emph{time the
-market}, getting right the days when most stocks go up. Or it can \emph{select
-stocks}, getting right which stocks do better than others on a given day. In this
-paper, stock selection means this second kind of within-day sorting. We do not mean a
-portfolio plan.
+A model that predicts how stocks will move can earn a high pooled score and still be
+poor at picking stocks. Pooled scores are computed over all predictions in a test
+period at once, and a model can earn them in two different ways. It can \emph{time the
+market}, predicting the days on which most stocks go up. Or it can \emph{select
+stocks}, predicting which stocks do better than others on a given day. In this paper,
+stock selection means this second, within-day kind of ranking, not a portfolio
+strategy.
 
-This gap matters most for models that use more than one kind of input. The StockNet
-benchmark~\cite{xu2018stocknet} pairs price histories with tweets for 87 US stocks. A
-long line of models has since mixed the two
+The distinction matters most for models that use more than one kind of input. The
+StockNet benchmark~\cite{xu2018stocknet} pairs price histories with tweets for 87 US
+stocks. A long line of models has since combined the two
 sources~\cite{feng2019advalstm,sawhney2020mansf,sawhney2021fast,ang2022guided}, often
-adding graphs that tie firms
-together~\cite{chen2018gcn,feng2019rsr,cheng2022multimodality,wang2021review}. These
-models pass information between stocks, so they can pick up a shared day-level signal
-as easily as they pick up differences between stocks.
+adding graphs that link related
+firms~\cite{chen2018gcn,feng2019rsr,cheng2022multimodality,wang2021review}. These
+models pass information between stocks, so they can learn a shared day-level signal as
+easily as differences between stocks.
 
-StockNet pays well for the first skill. Picture an oracle that knows, after the fact,
-whether most stocks rose each day but knows nothing about any single stock. On the test
+StockNet rewards the first skill heavily. Consider an oracle that knows in hindsight
+whether most stocks rose each day, but nothing about any single stock. On the test
 period it would score an MCC of $0.625$. This oracle uses realised labels, so it is not
-a predictor and does not cap what a model can reach. What it does show is how much a
-pooled score can hand out for the market's direction alone. It also shows how easily
-progress on one skill can be taken for progress on the other. The evaluation is our
-main contribution; the model results are there to show it. Our contributions are:
+a predictor and does not bound what a model can achieve. What it does show is how much
+a pooled score can reward the market's direction alone, and how easily progress on one
+skill can be mistaken for progress on the other. The evaluation is our main
+contribution; the model results illustrate it. Our contributions are:
 \begin{enumerate}
 \item \textbf{Evaluation diagnosis.} We show that, on StockNet, pooled stock-day
 evaluation can strongly reward market timing even when a model has no stock-specific
-skill at all. We also show that the ranking of models moves from one test period to
-another as their market timing moves.
-\item \textbf{Separated diagnostics.} We bring in within-day MCC and day-collapse MCC to
-tell stock selection apart from market timing, and add pairwise accuracy and a
-market-logit score next to them. We also tie within-day MCC in practice to the known
-rank information coefficient (Rank IC).
+skill at all. We also show that the ranking of models changes from one test period to
+another as their market timing changes.
+\item \textbf{Separated diagnostics.} We introduce within-day MCC and day-collapse MCC
+to separate stock selection from market timing, and complement them with pairwise
+accuracy and a market-logit score. We also relate within-day MCC empirically to the
+established rank information coefficient (Rank IC).
 \item \textbf{Model analysis and a proof of concept.} For MMGT, a multimodal graph
 transformer, we show that most of its pooled performance comes from market-level
-directional information. We then put forward MMGT-D2, a two-branch output split. One
-branch keeps a day-level market logit; the other makes stock-level logits that must sum
-to zero within each day. On the standard test period it lifts full-universe Rank IC
-from $0.001$ to $0.027$. It does not detectably improve up/down sorting, though, and the
-gain does not hold in an earlier period, so we offer it only as a proof of concept. Our
-controls suggest that the zero-sum constraint is part of why it helps and that extra
-capacity by itself does not explain it.
-\item \textbf{An exploratory side study: federated training.} Under sector-partitioned
-federated training, the pooled score holds up while within-day MCC falls (significant
-across runs only). We cannot yet say whether this comes from federated averaging itself
-or from the sector-limited setting each client is trained in.
+directional information. We then propose MMGT-D2, which splits the output into two
+branches. One branch keeps a day-level market logit; the other produces stock-level
+excess logits that must sum to zero within each day. On the standard test period it
+raises full-universe Rank IC from $0.001$ to $0.027$. It does not detectably improve
+up/down discrimination, though, and the gain does not hold in an earlier period, so we
+offer it only as a proof of concept. Our controls suggest that the zero-sum constraint
+contributes to the gain and that extra capacity alone does not explain it.
+\item \textbf{An exploratory secondary study: federated training.} Under
+sector-partitioned federated training, the pooled score holds up while within-day MCC
+falls (significant across runs only). We cannot yet say whether this comes from
+federated averaging itself or from the sector-restricted setting in which each client
+is trained.
 \end{enumerate}
 
 % =====================================================================
