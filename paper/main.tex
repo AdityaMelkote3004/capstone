@@ -266,7 +266,7 @@ the most recent one.
 
 \textbf{2) Profile and market.} The encoded 47-feature profile is added to this
 summary. A market summary is then added to every stock. The released data contain
-no market index or capitalizations, so we use an equal-weighted proxy for the
+no market index or capitalisations, so we use an equal-weighted proxy for the
 87-stock universe,
 $\bar{x}_{\tau}=|\mathcal{P}_{\tau}|^{-1}\sum_{i\in\mathcal{P}_{\tau}}x_{i,\tau}$,
 where $x_{i,\tau}$ holds stock $i$'s 11 price features on day $\tau$ and
@@ -285,7 +285,7 @@ a_{ij,t}=\operatorname{softmax}_{j\in\mathcal{V}_t}\!\left(\frac{(W_Q h_{i,t})^{
 \end{equation}
 where $h_{i,t}$ is stock $i$'s representation from step~2 and $\mathcal{V}_t$ is the
 set of stocks with a valid input window on day $t$, over which the softmax
-normalizes. Each stock is updated with $\sum_{j\in\mathcal{V}_t} a_{ij,t}W_V h_{j,t}$
+normalises. Each stock is updated with $\sum_{j\in\mathcal{V}_t} a_{ij,t}W_V h_{j,t}$
 (four heads), followed by a residual connection
 and a feed-forward layer, as in a transformer layer; hence a graph transformer. The
 explicit stock graph enters through the peer features; adding it to the attention
@@ -329,16 +329,16 @@ split always predicts half of a day's stocks up, so on the 32 test days on which
 than $80\%$ of labels agree even a perfect ranking scores far below $1$ ($0.515$ on
 average, $0.11$ on the most lopsided day). \emph{Pairwise accuracy} does not depend
 on the daily class balance. With $\mathcal{U}_t$ and $\mathcal{D}_t$ the stocks
-labeled up and down on day $t$,
+labelled up and down on day $t$,
 \begin{equation}
 \mathrm{PA}=\frac{1}{T'}\sum_{t}\frac{1}{|\mathcal{U}_t||\mathcal{D}_t|}\sum_{i\in\mathcal{U}_t}\sum_{j\in\mathcal{D}_t}\Bigl(\mathbf{1}[p_{i,t}>p_{j,t}]+\tfrac{1}{2}\mathbf{1}[p_{i,t}=p_{j,t}]\Bigr),
 \end{equation}
-which is exactly the daily AUC over the labeled stocks, with ties counting half,
+which is exactly the daily AUC over the labelled stocks, with ties counting half,
 averaged over the same days ($0.5$ by chance). We use it as a cross-sectional reading
 of that AUC, not as an independent measure.
 The \emph{rank information coefficient} (Rank IC)~\cite{grinold2000active}, an
 established ranking measure, is the daily Spearman correlation between predicted
-probabilities and realized returns, averaged over days. We compute it over all of
+probabilities and realised returns, averaged over days. We compute it over all of
 $\mathcal{V}_t$ (the default), which includes the neutral-band stocks that the two
 measures above leave out, and separately over $\mathcal{S}_t$ and over the
 neutral-band stocks $\mathcal{V}_t\setminus\mathcal{S}_t$ (on days with at least
@@ -352,11 +352,11 @@ all differences between stocks:
 \begin{equation}
 \mathrm{MCC}_{\mathrm{dc}}=\mathrm{MCC}\bigl(\{(y_{i,t},\,\mathbf{1}[\bar p_t\ge 0.5])\}_{t,\,i\in\mathcal{S}_t}\bigr).
 \end{equation}
-It weighs days by their labeled stocks and depends on calibration, and because it
-averages probabilities over the labeled stocks, differences between stocks can still
+It weighs days by their labelled stocks and depends on calibration, and because it
+averages probabilities over the labelled stocks, differences between stocks can still
 move it (Section~\ref{sec:disent}). We therefore also score each day's \emph{market
 logit} $\bar z_t=|\mathcal{V}_t|^{-1}\sum_{i\in\mathcal{V}_t}z_{i,t}$:
-\emph{market-logit MCC} predicts every labeled stock of day $t$ as
+\emph{market-logit MCC} predicts every labelled stock of day $t$ as
 $\mathbf{1}[\bar z_t\ge 0]$, and \emph{daily AUC} scores $\bar z_t$, one observation
 per day, against the market's direction
 $M_t=\mathbf{1}\bigl[|\mathcal{V}_t|^{-1}\sum_{i\in\mathcal{V}_t}r_{i,t}>0\bigr]$,
@@ -941,7 +941,7 @@ federated training was simulated on a single machine.
 
 Pooled performance on StockNet reflects two abilities: forecasting the market's direction on a given day, and selecting individual stocks within that day. MMGT, a multimodal graph transformer, illustrates the problem. Its pooled MCC of 0.146 is higher than that of every tuned baseline, although not all of these differences are significant over the 64 test days. The diagnostics suggest that its score comes largely from market-level directional information, while its stock-selection performance, measured by Rank IC, is near zero (0.001). As a proof of concept, we examine whether separating the two effects at the output can help. MMGT-D2 splits each prediction into a day-level market logit and stock-level excess logits that sum to zero across the stocks of the same day. On the standard test period this gives a full-universe Rank IC of 0.027, level with the best per-stock model, with no detectable change in pooled MCC (0.151; non-inferiority is not established). The gain is not replicated in an earlier period, and up/down discrimination does not improve. The controls indicate that the zero-sum constraint contributes to the gain and that extra capacity alone does not account for it. The decomposition is additive in logits; it fixes neither the day's mean probability nor what the hidden states encode. Confirming the gain on an untouched period or market is the next step. For future work on this benchmark, we recommend reporting stock-selection and market-timing scores separately, along with block-resampled intervals and more than one test period. A stock movement model should be judged not only by its ability to predict the market's direction, but also by its ability to distinguish between stocks within that market.
 
-\section*{Acknowledgment}
+\section*{Acknowledgement}
 
 We thank our guide, Dr.~Mamatha H R, Department of Computer Science and
 Engineering, PES University, for guidance throughout this project.
